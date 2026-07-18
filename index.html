@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pizza Supreme - Durger King Style TMA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: var(--tg-theme-bg-color, #f4f5f6);
+            color: var(--tg-theme-text-color, #222222);
+        }
+        /* Durger King Category Nav bar style scrollbar hiding */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Dynamic transition effects */
+        .card-shadow {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+        .transition-all-ease {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-6">
+
+    <!-- HERO HEADER BANNER -->
+    <div class="bg-amber-500 text-white p-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-15 text-[10rem]">
+            <i class="fa-solid fa-pizza-slice"></i>
+        </div>
+        <div class="relative z-10 flex flex-col items-center text-center">
+            <span class="bg-white/20 text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-3 backdrop-blur-sm">Official Storefront</span>
+            <h1 class="text-3xl font-black tracking-tight">Pizza Supreme</h1>
+            <p class="text-xs text-white/90 mt-1.5 font-medium max-w-xs">Fresh gourmet pizzas baked to perfection, delivered straight to your door!</p>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto px-4 mt-6">
+
+        <!-- HORIZONTAL DYNAMIC CATEGORY BAR -->
+        <div class="sticky top-0 z-30 py-3 -mx-4 px-4 overflow-x-auto no-scrollbar flex space-x-2.5" id="category-nav">
+            <button onclick="switchCategory('classic')" id="btn-classic" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-amber-500 text-white">
+                🍕 Classic Pizza
+            </button>
+            <button onclick="switchCategory('premium')" id="btn-premium" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
+                ⭐ Premium Pizza
+            </button>
+            <button onclick="switchCategory('seafood')" id="btn-seafood" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
+                🦐 Seafood Pizza
+            </button>
+            <button onclick="switchCategory('sides')" id="btn-sides" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
+                🍟 Sides & Extras
+            </button>
+        </div>
+
+        <!-- PRODUCT GRID (High-fidelity Durger King Look) -->
+        <div class="grid grid-cols-2 gap-3.5 mt-4" id="product-grid">
+            <!-- Rendered dynamically by script -->
+        </div>
+
+    </div>
+
+    <!-- BOTTOM SHEET - ORDER SLIDE UP -->
+    <div id="checkout-sheet" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center hidden" onclick="toggleCheckoutSheet(false)">
+        <div class="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 max-h-[85vh] overflow-y-auto animate-slide-up" onclick="event.stopPropagation()">
+            
+            <!-- Drag Handle decoration -->
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-black text-gray-800">Review Basket</h2>
+                <button onclick="toggleCheckoutSheet(false)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Basket items list -->
+            <div id="basket-items-list" class="space-y-3 mb-6">
+                <!-- Loaded dynamically -->
+            </div>
+
+            <!-- Checkout Details Form -->
+            <div class="border-t border-gray-100 pt-5 mt-6">
+                <h3 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-truck-ramp-box text-amber-500"></i>
+                    <span>Delivery details</span>
+                </h3>
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Your Name *</label>
+                        <input type="text" id="cust-name" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="Type your name...">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Phone Number *</label>
+                        <input type="tel" id="cust-phone" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="09xxxxxxxxx">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Full Delivery Address *</label>
+                        <textarea id="cust-address" rows="2" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="Street, Township, City..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h-20"></div> <!-- Buffer space for main button overlay -->
+        </div>
+    </div>
+
+    <!-- ORDER PROCESSING SUCCESS CARD -->
+    <div id="success-screen" class="fixed inset-0 bg-white z-50 flex flex-col justify-center items-center p-6 hidden">
+        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-4xl mb-6 animate-bounce shadow-lg shadow-green-100/40">
+            <i class="fa-solid fa-check-double"></i>
+        </div>
+        <h2 class="text-2xl font-black text-gray-800 text-center">Order Transmitted!</h2>
+        <p class="text-xs text-gray-400 mt-2 text-center max-w-xs leading-relaxed font-medium">Your selection is packaging into standard Telegram payload format and writing to your bot backend automatically.</p>
+
+        <div class="bg-slate-900 text-emerald-400 p-4 rounded-3xl w-full max-w-xs mt-6 font-mono text-[10px] shadow-inner">
+            <p class="text-slate-500 mb-2">// Payload successfully sent:</p>
+            <pre id="success-payload" class="whitespace-pre-wrap break-all"></pre>
+        </div>
+
+        <button onclick="resetMiniApp()" class="mt-8 bg-amber-500 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-md hover:bg-amber-600 transition active:scale-95 text-xs">
+            Start New Order
+        </button>
+    </div>
+
+    <script>
+        // --- HIGH FIDELITY PRODUCT DICTIONARY ---
+        const PRODUCTS = {
+            classic: [
+                { id: "margherita", name: "Margherita", desc: "Classic mozzarella cheese, sweet corn, savory tomato base.", price: 15900, img: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?auto=format&fit=crop&w=300&q=80" },
+                { id: "classic_cheese", name: "Classic Cheese", desc: "Premium golden mozzarella double cheese layered.", price: 15900, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80" },
+                { id: "corn_cheese", name: "Corn Cheese", desc: "Creamy whole kernel sweet corn base with layers of cheese.", price: 15900, img: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80" },
+                { id: "vegetable_pizza", name: "Vegetable Pizza", desc: "Bell pepper, olives, tomatoes, and mushrooms on red base.", price: 15900, img: "https://images.unsplash.com/photo-1571066811602-71683a3f680d?auto=format&fit=crop&w=300&q=80" }
+            ],
+            premium: [
+                { id: "double_cheese", name: "Double Cheese", desc: "Rich mozzarella layers with sharp premium orange cheddar.", price: 18000, img: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=300&q=80" },
+                { id: "hawaiian", name: "Hawaiian Premium", desc: "Sweet golden pineapples with high-quality smoked ham slices.", price: 18000, img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80" },
+                { id: "meat_lover", name: "Meat Lover", desc: "Smoked bacon, sliced pepperoni, sausage & minced pork.", price: 18000, img: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?auto=format&fit=crop&w=300&q=80" }
+            ],
+            seafood: [
+                { id: "seafood_cocktail", name: "Seafood Cocktail", desc: "Premium prawns, squid rings, crabsticks on seafood base.", price: 18900, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80" },
+                { id: "seafood_mala", name: "Seafood Mala", desc: "Exotic hot Sichuan spicy Mala glaze with mixed fresh seafood.", price: 18900, img: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80" }
+            ],
+            sides: [
+                { id: "ap_fries", name: "French Fries", desc: "Thick golden crispy standard portion French fries.", price: 7500, img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=300&q=80" },
+                { id: "ap_nuggets", name: "Chicken Nuggets", desc: "Includes 5 pieces of crispy golden chicken nuggets.", price: 7900, img: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?auto=format&fit=crop&w=300&q=80" }
+            ]
+        };
+
+        // Cart state variables
+        let cart = {};
+        let activeCategory = "classic";
+        let isCheckoutView = false;
+        let tg = null;
+
+        // Initialize App & Hook Telegram SDK
+        window.onload = function() {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    tg.MainButton.onClick(handleMainButtonClick);
+                }
+            } catch (e) {
+                console.warn("Telegram WebApp SDK not initialized. Local sandbox running.");
+            }
+            renderStorefront();
+        }
+
+        function switchCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100";
+            });
+            const activeBtn = document.getElementById(`btn-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = "cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-amber-500 text-white";
+            }
+            renderStorefront();
+        }
+
+        // Render the Grid matching Durger King (Visual + Dual Action Buttons)
+        function renderStorefront() {
+            const grid = document.getElementById("product-grid");
+            grid.innerHTML = "";
+            const items = PRODUCTS[activeCategory] || [];
+
+            items.forEach(item => {
+                const qty = cart[item.id] ? cart[item.id].quantity : 0;
+                
+                let actionBtnHtml = "";
+                if (qty === 0) {
+                    // Show standard "+" button
+                    actionBtnHtml = `
+                        <button onclick="updateQty('${item.id}', 1)" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-2 rounded-xl text-xs shadow-sm shadow-amber-500/10 transitionactive:scale-95">
+                            ADD
+                        </button>
+                    `;
+                } else {
+                    // Show Durger King custom counter slider style: [- Qty +]
+                    actionBtnHtml = `
+                        <div class="flex items-center justify-between bg-amber-500 text-white rounded-xl py-1 px-2.5 w-full">
+                            <button onclick="updateQty('${item.id}', -1)" class="font-black text-sm hover:scale-125 transition-all-ease px-1">
+                                <i class="fa-solid fa-minus text-[10px]"></i>
+                            </button>
+                            <span class="text-xs font-bold w-6 text-center">${qty}</span>
+                            <button onclick="updateQty('${item.id}', 1)" class="font-black text-sm hover:scale-125 transition-all-ease px-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                const itemHtml = `
+                    <div class="bg-white rounded-3xl p-3.5 border border-gray-100 flex flex-col justify-between card-shadow relative">
+                        <!-- Dynamic Badge Counter showing at top right (just like Durger King) -->
+                        ${qty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-red-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center">${qty}</span>` : ""}
+                        
+                        <div>
+                            <img src="${item.img}" alt="${item.name}" class="w-full h-24 rounded-2xl object-cover border border-gray-50 mb-3">
+                            <h3 class="font-extrabold text-xs text-gray-800 line-clamp-1">${item.name}</h3>
+                            <p class="text-[10px] text-gray-400 mt-1 line-clamp-2 leading-relaxed h-7">${item.desc}</p>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Price</span>
+                                <span class="text-xs font-black text-amber-500">${item.price.toLocaleString()} Ks</span>
+                            </div>
+                            ${actionBtnHtml}
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        }
+
+        // Qty Increment/Decrement & Instant Cart syncing
+        function updateQty(itemId, amt) {
+            // Find item profile
+            let itemData = null;
+            Object.keys(PRODUCTS).forEach(cat => {
+                const found = PRODUCTS[cat].find(p => p.id === itemId);
+                if (found) itemData = found;
+            });
+
+            if (!itemData) return;
+
+            if (!cart[itemId]) {
+                cart[itemId] = {
+                    id: itemData.id,
+                    name: itemData.name,
+                    price: itemData.price,
+                    quantity: 0
+                };
+            }
+
+            cart[itemId].quantity += amt;
+
+            if (cart[itemId].quantity <= 0) {
+                delete cart[itemId];
+            }
+
+            renderStorefront();
+            syncMainButton();
+        }
+
+        // Programmatically control Telegram App native button style
+        function syncMainButton() {
+            const cartItems = Object.values(cart);
+            const totalQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            if (!tg) return;
+
+            if (totalQty > 0) {
+                if (!isCheckoutView) {
+                    tg.MainButton.setText(`VIEW BASKET (${totalPrice.toLocaleString()} Ks)`);
+                    tg.MainButton.show();
+                } else {
+                    tg.MainButton.setText(`PLACE ORDER (${totalPrice.toLocaleString()} Ks)`);
+                }
+            } else {
+                tg.MainButton.hide();
+                toggleCheckoutSheet(false);
+            }
+        }
+
+        function handleMainButtonClick() {
+            if (!isCheckoutView) {
+                // Open checkout view sheet
+                toggleCheckoutSheet(true);
+            } else {
+                // Submit Form
+                submitOrderPayload();
+            }
+        }
+
+        function toggleCheckoutSheet(show) {
+            const sheet = document.getElementById("checkout-sheet");
+            isCheckoutView = show;
+
+            if (show) {
+                sheet.classList.remove("hidden");
+                renderBasketItems();
+            } else {
+                sheet.classList.add("hidden");
+            }
+            syncMainButton();
+        }
+
+        function renderBasketItems() {
+            const list = document.getElementById("basket-items-list");
+            list.innerHTML = "";
+            const cartItems = Object.values(cart);
+
+            cartItems.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                const html = `
+                    <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100/50 flex justify-between items-center shadow-inner">
+                        <div>
+                            <h4 class="font-extrabold text-xs text-slate-800">${item.name}</h4>
+                            <p class="text-[10px] text-amber-500 font-extrabold mt-1">${item.price.toLocaleString()} Ks × ${item.quantity}</p>
+                        </div>
+                        <div class="flex items-center space-x-2.5 bg-white rounded-xl px-2 py-1 shadow-sm border border-gray-100">
+                            <button onclick="updateQty('${item.id}', -1); renderBasketItems();" class="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:bg-gray-100 transition"><i class="fa-solid fa-minus text-[8px]"></i></button>
+                            <span class="w-5 text-center font-black text-xs text-gray-700">${item.quantity}</span>
+                            <button onclick="updateQty('${item.id}', 1); renderBasketItems();" class="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:bg-gray-100 transition"><i class="fa-solid fa-plus text-[8px]"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function submitOrderPayload() {
+            const name = document.getElementById("cust-name").value.trim();
+            const phone = document.getElementById("cust-phone").value.trim();
+            const address = document.getElementById("cust-address").value.trim();
+
+            if (!name || !phone || !address) {
+                alert("Please fill in all required delivery details fields!");
+                return;
+            }
+
+            const payload = {
+                customer_info: {
+                    name: name,
+                    phone: phone,
+                    address: address
+                },
+                items: Object.values(cart).map(item => ({
+                    item_name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                }))
+            };
+
+            // Display payload simulation
+            document.getElementById("success-payload").innerText = JSON.stringify(payload, null, 2);
+            document.getElementById("success-screen").classList.remove("hidden");
+
+            if (tg) {
+                // Instantly pass JSON back to the Telegram python bot thread securely
+                tg.sendData(JSON.stringify(payload));
+            }
+        }
+
+        function resetMiniApp() {
+            cart = {};
+            document.getElementById("cust-name").value = "";
+            document.getElementById("cust-phone").value = "";
+            document.getElementById("cust-address").value = "";
+            document.getElementById("success-screen").classList.add("hidden");
+            toggleCheckoutSheet(false);
+            switchCategory('classic');
+        }
+    </script>
+</body>
+</html>
