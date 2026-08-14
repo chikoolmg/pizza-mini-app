@@ -2,395 +2,2407 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pizza Supreme - Durger King Style TMA</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts (Inter) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bite & Slice Pizzeria - Online Ordering</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #FF6A1F; /* Primary Vibrant Orange */
+            --primary-hover: #e55913;
+            --bg-main: #F7F7F7; /* Light grey main background */
+            --bg-card: #FFFFFF;
+            --text-main: #222222;
+            --text-muted: #777777;
+            --text-white: #FFFFFF;
+            --border-light: #EEEEEE;
+            --kbz-blue: #0056B3; 
+            --tg-star: #2AABEE; 
+            --star-gold: #FFC107;
+            --success-green: #10B981;
+            --danger-red: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-main);
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-            background-color: var(--tg-theme-bg-color, #f4f5f6);
-            color: var(--tg-theme-text-color, #222222);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        /* Durger King Category Nav bar style scrollbar hiding */
-        .no-scrollbar::-webkit-scrollbar {
+
+        #app-container {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background-color: var(--bg-main);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media (min-width: 600px) {
+            body { background-color: #1f1f23; }
+            #app-container {
+                max-width: 450px;
+                max-height: 920px;
+                height: 92vh;
+                border-radius: 28px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .page-view {
             display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
+
+        .page-view.active-view { display: flex; }
+
+        .scrollable-view-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 120px;
+        }
+
+        header {
+            background-color: var(--bg-card);
+            padding: 16px 20px 14px;
+            border-bottom: 1px solid var(--border-light);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        header h1 {
+            color: var(--text-main);
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .home-top-section {
+            background: var(--bg-card);
+            flex-shrink: 0;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .category-scroll {
+            display: flex;
+            overflow-x: auto;
+            background: var(--bg-card);
+            padding: 12px 16px;
+            gap: 12px;
             scrollbar-width: none;
+            scroll-behavior: smooth;
         }
-        /* Dynamic transition effects */
-        .card-shadow {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        .category-scroll::-webkit-scrollbar { display: none; }
+        
+        .cat-btn {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            width: 70px;
+            flex-shrink: 0;
         }
-        .transition-all-ease {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        .cat-icon-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-main);
+            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            font-size: 22px;
+            transition: 0.2s ease;
+            border: 2px solid transparent;
+            overflow: hidden;
         }
+        .cat-btn.active .cat-icon-container {
+            background: #FFF5F0;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .cat-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.2;
+        }
+        .cat-btn.active .cat-text { color: var(--primary); font-weight: 700; }
+
+        .grid-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 16px 120px 16px;
+            scroll-behavior: smooth;
+        }
+
+        .category-section { margin-bottom: 24px; }
+        .category-section-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 4px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .food-card {
+            background: var(--bg-card);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.03);
+            position: relative;
+        }
+        @keyframes qtyBump {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        .card-qty-stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            border-radius: 20px;
+            padding: 3px;
+            box-shadow: 0 4px 10px rgba(255, 106, 31, 0.25);
+        }
+        .card-qty-btn {
+            background: rgba(255,255,255,0.25);
+            color: var(--text-white);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+        }
+        .card-qty-num {
+            color: var(--text-white);
+            font-size: 13px;
+            font-weight: 800;
+            min-width: 14px;
+            text-align: center;
+            display: inline-block;
+        }
+        .card-qty-num.bump { animation: qtyBump 0.3s ease; }
+        .food-card:active { transform: scale(0.97); }
+        .food-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 18px 18px 0 0;
+            background-color: #eee;
+        }
+        .food-info {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .food-title-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 6px;
+            gap: 4px;
+        }
+        .food-info h3 {
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        .price-bubble {
+            background: var(--primary);
+            color: var(--text-white);
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            display: inline-block;
+            align-self: flex-start;
+        }
+        .food-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .food-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+        .meta-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .rating-star { color: #FFA801; }
+        .add-card-btn {
+            background: var(--primary);
+            color: var(--text-white);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(255, 106, 31, 0.25);
+        }
+
+        .cart-header {
+            background: var(--bg-card);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .cart-header h2 { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        
+        .cart-page-body {
+            padding: 16px 16px 120px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cart-section-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-light);
+        }
+
+        .cart-section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cart-items-list { display: flex; flex-direction: column; gap: 12px; }
+        .cart-item-row {
+            display: flex;
+            align-items: center;
+            background: var(--bg-main);
+            padding: 12px;
+            border-radius: 16px;
+            gap: 12px;
+        }
+        .cart-item-img {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        .cart-item-info { flex: 1; }
+        .cart-item-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .cart-item-options { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.3; }
+        .cart-item-price { font-size: 13px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .summary-row.grand-total {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            border-top: 1px dashed var(--border-light);
+            padding-top: 10px;
+            margin-top: 10px;
+            margin-bottom: 0;
+        }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            background-color: #FFFFFF;
+        }
+        textarea.form-control { resize: none; height: 70px; }
+
+        .btn-place-order {
+            background: #118B80; /* Teal color inspired by the provided image */
+            color: var(--text-white);
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(17, 139, 128, 0.35);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.1s;
+        }
+        .btn-place-order:active { transform: scale(0.98); }
+        .btn-primary-orange {
+            background: var(--primary);
+            box-shadow: 0 8px 20px rgba(255, 106, 31, 0.35);
+        }
+
+        .empty-cart-container {
+            text-align: center;
+            padding: 50px 20px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .empty-cart-icon { font-size: 54px; margin-bottom: 12px; display: block; }
+        .btn-browse {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* --- NEW CHECKOUT UI STYLES --- */
+        .checkout-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .checkout-card.active {
+            border-color: #118B80;
+            background-color: #F2FAF9;
+        }
+        .checkout-card.active-payment {
+            border-color: #118B80;
+            background-color: #F2FAF9;
+        }
+        .radio-custom {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: 0.2s;
+        }
+        .checkout-card.active .radio-custom,
+        .checkout-card.active-payment .radio-custom {
+            border-color: #118B80;
+        }
+        .checkout-card.active .radio-custom::after,
+        .checkout-card.active-payment .radio-custom::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background-color: #FFC107; /* Yellow dot like in image */
+            border-radius: 50%;
+        }
+        .address-info { flex: 1; }
+        .address-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .address-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .btn-edit-addr {
+            background: none; border: 1px solid #118B80; color: #118B80; 
+            padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .address-details { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+        
+        .payment-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 76px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-light);
+            border-radius: 24px 24px 0 0;
+            z-index: 20;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0 -8px 20px rgba(0,0,0,0.04);
+            transition: transform 0.3s ease;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            gap: 4px;
+            text-align: center;
+            flex: 1;
+            transition: color 0.2s;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 20px; }
+        .nav-item.cart-tab { position: relative; justify-content: flex-end; margin-top: -26px; }
+        .cart-icon-curved {
+            width: 54px;
+            height: 54px;
+            background: var(--primary);
+            color: var(--text-white);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            box-shadow: 0 6px 16px rgba(255, 106, 31, 0.35);
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #2D2D2D;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 800;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--bg-card);
+        }
+
+        /* FULL PAGE ITEM MODAL WITH FROZEN BOTTOM PANEL */
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 24px 24px 0 0;
+            height: 100%;
+            max-height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 1, 0.1, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        .modal-close {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-main);
+            cursor: pointer;
+            z-index: 15;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-body-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .modal-img {
+            width: 100%;
+            height: 230px;
+            object-fit: cover;
+            border-radius: 0 0 24px 24px;
+            margin-bottom: 16px;
+            background-color: #eee;
+        }
+        .modal-inner-padding {
+            padding: 0 20px;
+        }
+        .modal-title { font-size: 20px; color: var(--text-main); font-weight: 800; margin-bottom: 6px; }
+        .modal-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+
+        .options-group { margin-bottom: 22px; }
+        .options-header-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .options-header-line h4 { font-size: 14px; font-weight: 700; color: var(--text-main); }
+
+        .size-button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .size-btn {
+            background-color: #F1F1F1;
+            border: none;
+            padding: 12px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .size-btn.active {
+            background-color: var(--primary);
+            color: var(--text-white);
+            box-shadow: 0 4px 10px rgba(255, 106, 31, 0.25);
+        }
+        .size-price { font-size: 11px; font-weight: 500; }
+        .size-btn.active .size-price { color: var(--text-white); }
+
+        .option-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            background-color: var(--bg-main);
+            transition: 0.2s;
+        }
+        .option-item-row:has(input:checked) {
+            border-color: var(--primary);
+            background-color: #FFF5F0;
+        }
+        .option-item-label { display: flex; align-items: center; gap: 10px; }
+        .option-item-label input { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
+        .option-item-price { color: var(--primary); font-weight: 700; }
+        
+        /* FROZEN / STICKY MODAL FOOTER PANEL */
+        .modal-footer-frozen {
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-light);
+            gap: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .qty-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-main);
+            border-radius: 14px;
+            padding: 4px;
+        }
+        .qty-btn {
+            background: var(--bg-card);
+            border: none;
+            border-radius: 10px;
+            width: 34px;
+            height: 34px;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .qty-val { font-size: 15px; font-weight: 800; width: 22px; text-align: center; color: var(--text-main); }
+        
+        .in-cart-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #FFF1E8;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            width: fit-content;
+        }
+        .in-cart-indicator span.bump { display: inline-block; animation: qtyBump 0.3s ease; }
+        @keyframes cartRowFlash {
+            0% { background: rgba(255,106,31,0.28); }
+            100% { background: transparent; }
+        }
+        .cart-row-highlight { animation: cartRowFlash 1.6s ease; border-radius: 14px; }
+        
+        .btn-add-cart {
+            background: var(--primary);
+            color: var(--text-white);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            flex: 1;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(255, 106, 31, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toast-msg {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #2D2D2D;
+            color: #FFFFFF;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 200;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .toast-msg.show { transform: translateX(-50%) translateY(0); }
+
+        .simple-card-view {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        /* EXPLORE RESTAURANTS TAB STYLES */
+        .restaurant-card {
+            background: var(--bg-card);
+            border-radius: 18px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .restaurant-card:active { transform: scale(0.98); }
+        .restaurant-banner {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            position: relative;
+        }
+        .restaurant-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .restaurant-details {
+            padding: 14px;
+        }
+        .restaurant-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .restaurant-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ADMIN SECTION STYLES */
+        .admin-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .admin-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .admin-item-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .admin-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--border-light);
+        }
+        .btn-danger {
+            background: var(--danger-red); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .btn-success {
+            background: var(--success-green); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .btn-secondary {
+            background: #E5E7EB; color: var(--text-main); border: none; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+        
+        .cat-manager-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-light);
+            cursor: grab;
+            transition: background 0.2s;
+        }
+        .cat-manager-row.dragging { opacity: 0.5; background: #FFF5F0; }
+        .cat-manager-row:last-child { border-bottom: none; }
+        
+        .opt-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .opt-row .form-control { padding: 8px 10px; font-size: 12px; flex: 1; }
+        .fixed-size-label {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            background: #EFEFEF;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+        }
+        .admin-hint { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4; }
+        .option-item-row.option-hidden { display: none; }
     </style>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="min-h-screen pb-6">
+<body>
 
-    <!-- HERO HEADER BANNER -->
-    <div class="bg-amber-500 text-white p-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 opacity-15 text-[10rem]">
-            <i class="fa-solid fa-pizza-slice"></i>
+<div id="app-container">
+    <div id="toast" class="toast-msg">🛒 Item added to Cart!</div>
+
+    <!-- HOME VIEW -->
+    <div id="home-view" class="page-view active-view">
+        <div class="home-top-section">
+            <header>
+                <h1 id="active-restaurant-title">Bite & Slice Pizzeria</h1>
+                <span style="font-size: 20px;">🍕</span>
+            </header>
+            <div class="category-scroll" id="cat-scroll"></div>
         </div>
-        <div class="relative z-10 flex flex-col items-center text-center">
-            <span class="bg-white/20 text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-3 backdrop-blur-sm">Official Storefront</span>
-            <h1 class="text-3xl font-black tracking-tight">Pizza Supreme</h1>
-            <p class="text-xs text-white/90 mt-1.5 font-medium max-w-xs">Fresh gourmet pizzas baked to perfection, delivered straight to your door!</p>
-        </div>
+        <main class="grid-content" id="main-content-scroll"></main>
     </div>
 
-    <!-- MAIN CONTAINER -->
-    <div class="max-w-md mx-auto px-4 mt-6">
-
-        <!-- HORIZONTAL DYNAMIC CATEGORY BAR -->
-        <div class="sticky top-0 z-30 py-3 -mx-4 px-4 overflow-x-auto no-scrollbar flex space-x-2.5" id="category-nav">
-            <button onclick="switchCategory('classic')" id="btn-classic" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-amber-500 text-white">
-                🍕 Classic Pizza
-            </button>
-            <button onclick="switchCategory('premium')" id="btn-premium" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
-                ⭐ Premium Pizza
-            </button>
-            <button onclick="switchCategory('seafood')" id="btn-seafood" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
-                🦐 Seafood Pizza
-            </button>
-            <button onclick="switchCategory('sides')" id="btn-sides" class="cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100">
-                🍟 Sides & Extras
-            </button>
-        </div>
-
-        <!-- PRODUCT GRID (High-fidelity Durger King Look) -->
-        <div class="grid grid-cols-2 gap-3.5 mt-4" id="product-grid">
-            <!-- Rendered dynamically by script -->
-        </div>
-
-    </div>
-
-    <!-- BOTTOM SHEET - ORDER SLIDE UP -->
-    <div id="checkout-sheet" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center hidden" onclick="toggleCheckoutSheet(false)">
-        <div class="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 max-h-[85vh] overflow-y-auto animate-slide-up" onclick="event.stopPropagation()">
+    <!-- EXPLORE RESTAURANTS VIEW -->
+    <div id="explore-view" class="page-view">
+        <header>
+            <h1>Explore Restaurants 🍽️</h1>
+        </header>
+        <div class="scrollable-view-content" style="padding: 16px;">
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; font-weight: 500;">Select a restaurant to view their live menu:</p>
             
-            <!-- Drag Handle decoration -->
-            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-black text-gray-800">Review Basket</h2>
-                <button onclick="toggleCheckoutSheet(false)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <!-- Basket items list -->
-            <div id="basket-items-list" class="space-y-3 mb-6">
-                <!-- Loaded dynamically -->
-            </div>
-
-            <!-- Checkout Details Form -->
-            <div class="border-t border-gray-100 pt-5 mt-6">
-                <h3 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center space-x-2">
-                    <i class="fa-solid fa-truck-ramp-box text-amber-500"></i>
-                    <span>Delivery details</span>
-                </h3>
-                <div class="space-y-3.5">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Your Name *</label>
-                        <input type="text" id="cust-name" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="Type your name...">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Phone Number *</label>
-                        <input type="tel" id="cust-phone" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="09xxxxxxxxx">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Full Delivery Address *</label>
-                        <textarea id="cust-address" rows="2" class="w-full border border-gray-100 bg-gray-50 rounded-2xl px-4 py-3.5 text-sm focus:border-amber-500 focus:bg-white focus:outline-none transition-all-ease font-medium text-gray-800" placeholder="Street, Township, City..."></textarea>
+            <div class="restaurant-card" onclick="switchToRestaurant('Bite & Slice Pizzeria')">
+                <div style="position: relative;">
+                    <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop" class="restaurant-banner" alt="Pizza">
+                    <span class="restaurant-tag">Selected Main</span>
+                </div>
+                <div class="restaurant-details">
+                    <div class="restaurant-title">Bite & Slice Pizzeria 🍕</div>
+                    <p style="font-size: 12px; color: var(--text-muted);">Authentic Italian Pizzas, Crusts & Cheesy Sides</p>
+                    <div class="restaurant-meta">
+                        <span>⭐ 4.9 (120+)</span>
+                        <span>⏱ 20-25 min</span>
+                        <span>🛵 Free Delivery</span>
                     </div>
                 </div>
             </div>
-
-            <div class="h-20"></div> <!-- Buffer space for main button overlay -->
         </div>
     </div>
 
-    <!-- ORDER PROCESSING SUCCESS CARD -->
-    <div id="success-screen" class="fixed inset-0 bg-white z-50 flex flex-col justify-center items-center p-6 hidden">
-        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-4xl mb-6 animate-bounce shadow-lg shadow-green-100/40">
-            <i class="fa-solid fa-check-double"></i>
+    <!-- CART VIEW -->
+    <div id="cart-view" class="page-view">
+        <div class="cart-header">
+            <h2>Your Cart 🛒</h2>
+            <span style="font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer;" onclick="switchNavTab('home')">+ Add Items</span>
         </div>
-        <h2 class="text-2xl font-black text-gray-800 text-center">Order Transmitted!</h2>
-        <p class="text-xs text-gray-400 mt-2 text-center max-w-xs leading-relaxed font-medium">Your selection is packaging into standard Telegram payload format and writing to your bot backend automatically.</p>
-
-        <div class="bg-slate-900 text-emerald-400 p-4 rounded-3xl w-full max-w-xs mt-6 font-mono text-[10px] shadow-inner">
-            <p class="text-slate-500 mb-2">// Payload successfully sent:</p>
-            <pre id="success-payload" class="whitespace-pre-wrap break-all"></pre>
-        </div>
-
-        <button onclick="resetMiniApp()" class="mt-8 bg-amber-500 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-md hover:bg-amber-600 transition active:scale-95 text-xs">
-            Start New Order
-        </button>
+        <div id="cart-page-content" class="scrollable-view-content cart-page-body"></div>
     </div>
 
-    <script>
-        // --- HIGH FIDELITY PRODUCT DICTIONARY ---
-        const PRODUCTS = {
-            classic: [
-                { id: "margherita", name: "Margherita", desc: "Classic mozzarella cheese, sweet corn, savory tomato base.", price: 15900, img: "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?auto=format&fit=crop&w=300&q=80" },
-                { id: "classic_cheese", name: "Classic Cheese", desc: "Premium golden mozzarella double cheese layered.", price: 15900, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80" },
-                { id: "corn_cheese", name: "Corn Cheese", desc: "Creamy whole kernel sweet corn base with layers of cheese.", price: 15900, img: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80" },
-                { id: "vegetable_pizza", name: "Vegetable Pizza", desc: "Bell pepper, olives, tomatoes, and mushrooms on red base.", price: 15900, img: "https://images.unsplash.com/photo-1571066811602-71683a3f680d?auto=format&fit=crop&w=300&q=80" }
+    <!-- CHECKOUT VIEW (NEWLY ADDED) -->
+    <div id="checkout-view" class="page-view">
+        <header style="justify-content: flex-start; gap: 20px;">
+            <button style="background:none; border:none; font-size: 20px; font-weight: bold; color: #118B80; cursor:pointer;" onclick="switchNavTab('cart')">❮</button>
+            <h1 style="flex:1; text-align: left; font-size: 18px;">Checkout</h1>
+        </header>
+        <div id="checkout-page-content" class="scrollable-view-content" style="padding: 16px;">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="profile-view" class="page-view">
+        <header>
+            <h1>My Profile 👤</h1>
+        </header>
+        <div class="scrollable-view-content" style="padding: 16px;">
+            <div class="simple-card-view" style="padding: 20px;">
+                <div style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px;">👤</div>
+                <h3 id="profile-display-name" style="font-size: 16px; color: var(--text-main); text-align: center;">
+    Guest Customer
+</h3>
+
+<p id="telegram-user-info"
+   style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+    Telegram information loading...
+</p>
+                <button class="btn-browse" style="width: 100%; margin-top: 14px; font-size: 12px;" onclick="switchNavTab('cart')">Edit Saved Profile Info</button>
+            </div>
+
+            <!-- ADMIN ACCESS -->
+            <div class="simple-card-view" style="border: 1px dashed var(--primary); background: #FFF8F4;">
+                <p style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">⚙️ Admin Controls</p>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Manage food categories, items, dynamic options, photos, and prices with instant saved persistence.</p>
+                <button class="btn-browse" style="width: 100%; font-size: 12px; background: #222;" onclick="openAdminPortal()">Open Menu Manager (Admin)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div id="admin-view" class="page-view">
+        <!-- Kept exactly the same -->
+        <header>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button style="background:none; border:none; font-size: 18px; cursor:pointer;" onclick="goHomeFromAdmin()">⬅️</button>
+                <h1 style="font-size: 18px;">Menu Manager ⚙️</h1>
+            </div>
+        </header>
+
+        <div class="scrollable-view-content" style="padding: 16px;">
+            <div class="admin-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <p style="font-size: 14px; font-weight: 700; color: var(--text-main);">📁 Manage Categories</p>
+                    <button class="btn-success" style="padding: 4px 8px; font-size: 11px;" onclick="addCategoryPrompt()">+ Category</button>
+                </div>
+                <div id="admin-cat-list" style="background: var(--bg-main); border-radius: 12px; padding: 10px;">
+                </div>
+                <p style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 8px;">(Drag and drop ☰ to rearrange categories)</p>
+            </div>
+
+            <div class="admin-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <p style="font-size: 14px; font-weight: 700; color: var(--text-main);">🍕 Edit Food Items</p>
+                    <button class="btn-success" style="padding: 4px 8px; font-size: 11px;" onclick="addNewDishPrompt()">+ Food Item</button>
+                </div>
+                <select id="admin-category-select" class="form-control" onchange="renderAdminMenuList()" style="font-weight: 600; margin-bottom: 14px;"></select>
+                <div id="admin-items-container"></div>
+            </div>
+
+            <div class="admin-card" style="margin-top: 20px; background: #F9FAFB;">
+                <p style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">🛠️ Master Config & Backup</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-secondary" onclick="exportMenuBackup()" style="flex: 1;">📥 Export JSON</button>
+                    <button class="btn-secondary" onclick="importMenuBackup()" style="flex: 1;">📤 Import JSON</button>
+                </div>
+                <button class="btn-danger" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 12px;" onclick="resetMenuToDefault()">⚠️ Reset Menu to Default Original</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Curved Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="main-bottom-nav">
+        <div class="nav-item active" onclick="switchNavTab('home')">
+            <span class="nav-icon">🏠</span>Home
+        </div>
+        <div class="nav-item" onclick="switchNavTab('explore')">
+            <span class="nav-icon">🧭</span>Explore
+        </div>
+        <div class="nav-item cart-tab" onclick="switchNavTab('cart')">
+            <div class="cart-icon-curved">
+                🛒
+                <div class="cart-badge" id="cart-badge-count">0</div>
+            </div>
+            Cart
+        </div>
+        <div class="nav-item" onclick="switchNavTab('profile')">
+            <span class="nav-icon">👤</span>Profile
+        </div>
+    </nav>
+
+    <!-- Full Screen Item Detail Modal with Frozen Add to Cart Panel -->
+    <div class="modal-overlay" id="item-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-body-scroll">
+                <img src="" class="modal-img" id="m-img" alt="food">
+                <div class="modal-inner-padding">
+                    <h2 class="modal-title" id="m-title">Item Name</h2>
+                    <p class="modal-desc" id="m-desc">Description.</p>
+                    <div class="in-cart-indicator" id="m-in-cart-indicator" style="display:none;" onclick="goToCartAndHighlight(currentModalDish && currentModalDish.id)">
+                        🛒 <span id="m-in-cart-qty">0</span> already in your cart — tap to view
+                    </div>
+
+                    <div id="dynamic-sizes-container"></div>
+                    <div id="dynamic-single-choice-container"></div>
+                    <div id="dynamic-extras-container"></div>
+                </div>
+            </div>
+            <div class="modal-footer-frozen">
+                <div class="qty-control">
+                    <button class="qty-btn" onclick="updateQty(-1)">-</button>
+                    <span class="qty-val" id="m-qty">1</span>
+                    <button class="qty-btn" onclick="updateQty(1)">+</button>
+                </div>
+                <button class="btn-add-cart" id="btn-add-cart" onclick="addToCartAction()">
+                    <span>Add to Cart</span>
+                    <span id="m-total-price">0 MMK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADDRESS FORM MODAL (full-screen) -->
+    <div class="modal-overlay" id="address-modal">
+        <div class="modal-content" style="height: 100%; max-height: 100%; border-radius: 0; padding: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;">
+                <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main);" id="address-modal-title">Add New Address</h3>
+                <button style="background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer;" onclick="closeAddressModal()">×</button>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 20px;">
+                <input type="hidden" id="addr-id-input">
+                <div class="form-group">
+                    <label>Address Label (e.g., Home, Office)</label>
+                    <input type="text" id="addr-label-input" class="form-control" placeholder="Home">
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="addr-name-input" class="form-control" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="addr-phone-input" class="form-control" placeholder="+95 912345678">
+                </div>
+                <div class="form-group">
+                    <label>Detailed Address</label>
+                    <textarea id="addr-detail-input" class="form-control" placeholder="123 Street Name, City, State"></textarea>
+                </div>
+            </div>
+
+            <div style="padding: 16px 20px; border-top: 1px solid var(--border-light); flex-shrink: 0;">
+                <button class="btn-place-order" onclick="saveAddress()">Save Address</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // ================= TELEGRAM MINI APP =================
+
+    const tg = window.Telegram?.WebApp;
+
+if (tg) {
+    tg.ready();
+    tg.expand();
+}
+
+const telegramUser = tg?.initDataUnsafe?.user || null;
+    function displayTelegramUser() {
+
+    const nameElement = document.getElementById('profile-display-name');
+    const infoElement = document.getElementById('telegram-user-info');
+
+    if (!nameElement || !infoElement) return;
+
+    if (!telegramUser) {
+        nameElement.innerText = "Guest Customer";
+        infoElement.innerText = "Not opened from Telegram";
+        return;
+    }
+
+    nameElement.innerText =
+        telegramUser.first_name || "Telegram User";
+
+    infoElement.innerText =
+    `Telegram ID: ${telegramUser.id}`;
+
+    console.log("Telegram Mini App started.");
+
+    if (telegramUser) {
+        console.log("Telegram User ID:", telegramUser.id);
+        console.log("Telegram First Name:", telegramUser.first_name);
+        console.log("Telegram Username:", telegramUser.username);
+    } else {
+        console.log("Not opened inside Telegram.");
+    }
+
+    // ================= EXISTING APP =================
+
+    const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7';
+    const STORAGE_KEY_ADDRESSES = 'bite_slice_user_addresses'; // New address storage
+    const PIZZA_CATEGORY_ID = 'cat-1'; // The original "Premium Pizza" category. New items added inside THIS
+                                        // category automatically get the standard crust/topping options below.
+                                        // Any other category — including newly created ones — starts blank.
+
+    // Deep-cloned so every item gets its own independent copy of the options (not a shared reference).
+    function getDefaultPizzaOptions() {
+        return JSON.parse(JSON.stringify({
+            singleChoiceTitle: 'Select Crust Type (Optional)',
+            singleChoices: [
+                { name: 'Cheese Crust', minSizeIndex: 1, prices: [0, 2500, 3000] },
+                { name: 'Cheese-in-Sausage Crust', minSizeIndex: 1, prices: [0, 3500, 4200] },
+                { name: 'Triple Crust', minSizeIndex: 1, prices: [0, 4500, 5500] }
             ],
-            premium: [
-                { id: "double_cheese", name: "Double Cheese", desc: "Rich mozzarella layers with sharp premium orange cheddar.", price: 18000, img: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=300&q=80" },
-                { id: "hawaiian", name: "Hawaiian Premium", desc: "Sweet golden pineapples with high-quality smoked ham slices.", price: 18000, img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80" },
-                { id: "meat_lover", name: "Meat Lover", desc: "Smoked bacon, sliced pepperoni, sausage & minced pork.", price: 18000, img: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?auto=format&fit=crop&w=300&q=80" }
-            ],
-            seafood: [
-                { id: "seafood_cocktail", name: "Seafood Cocktail", desc: "Premium prawns, squid rings, crabsticks on seafood base.", price: 18900, img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80" },
-                { id: "seafood_mala", name: "Seafood Mala", desc: "Exotic hot Sichuan spicy Mala glaze with mixed fresh seafood.", price: 18900, img: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80" }
-            ],
-            sides: [
-                { id: "ap_fries", name: "French Fries", desc: "Thick golden crispy standard portion French fries.", price: 7500, img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=300&q=80" },
-                { id: "ap_nuggets", name: "Chicken Nuggets", desc: "Includes 5 pieces of crispy golden chicken nuggets.", price: 7900, img: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?auto=format&fit=crop&w=300&q=80" }
+            extrasTitle: 'Add Toppings',
+            extras: [
+                { name: 'Ham', prices: [1000, 1500, 2000] },
+                { name: 'Bacon', prices: [1200, 1700, 2200] },
+                { name: 'Pineapple', prices: [800, 1200, 1600] },
+                { name: 'Seafood', prices: [1800, 2400, 3000] },
+                { name: 'Sausage', prices: [1000, 1500, 2000] }
             ]
-        };
+        }));
+    }
 
-        // Cart state variables
-        let cart = {};
-        let activeCategory = "classic";
-        let isCheckoutView = false;
-        let tg = null;
+    let menuCategories = [];
+    let activeCategoryName = '';
+    let isManualClickScroll = false;
+    let manualScrollTimer = null;
 
-        // Initialize App & Hook Telegram SDK
-        window.onload = function() {
-            try {
-                if (window.Telegram && window.Telegram.WebApp) {
-                    tg = window.Telegram.WebApp;
-                    tg.ready();
-                    tg.expand();
-                    tg.MainButton.onClick(handleMainButtonClick);
-                }
-            } catch (e) {
-                console.warn("Telegram WebApp SDK not initialized. Local sandbox running.");
-            }
-            renderStorefront();
+    let currentModalDish = null;
+    let modalQuantityValue = 1;
+    let selectedSizeIndex = -1; 
+    let selectedSingleChoiceIndex = -1; 
+    let selectedExtras = []; 
+
+    let cartItems = [];
+
+    // --- CHECKOUT DATA STATE ---
+    let savedAddresses = JSON.parse(localStorage.getItem(STORAGE_KEY_ADDRESSES)) || [];
+    let activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
+    let selectedPaymentMethod = 'kbzpay'; // Default payment
+
+    /* ================= HISTORY API LOGIC ================= */
+    let currentTabId = 'home';
+    
+    function switchNavTab(tabName, fromHistory = false) {
+        document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active-view'));
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
+
+        const bottomNav = document.getElementById('main-bottom-nav');
+        // Hide nav bar for Admin AND Checkout pages
+        if (tabName === 'admin' || tabName === 'checkout') {
+            bottomNav.style.display = 'none';
+            document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = '20px');
+        } else {
+            bottomNav.style.display = 'flex';
+            document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = '120px');
         }
 
-        function switchCategory(cat) {
-            activeCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = "cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-white text-gray-500 border border-gray-100";
-            });
-            const activeBtn = document.getElementById(`btn-${cat}`);
-            if (activeBtn) {
-                activeBtn.className = "cat-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold whitespace-nowrap shadow-sm transition-all-ease bg-amber-500 text-white";
-            }
-            renderStorefront();
+        const targetView = document.getElementById(`${tabName}-view`);
+        if(targetView) targetView.classList.add('active-view');
+
+        const tabIcons = { 'home': 0, 'explore': 1, 'cart': 2, 'profile': 3 };
+        if (tabIcons[tabName] !== undefined) {
+            document.querySelectorAll('.bottom-nav .nav-item')[tabIcons[tabName]].classList.add('active');
         }
 
-        // Render the Grid matching Durger King (Visual + Dual Action Buttons)
-        function renderStorefront() {
-            const grid = document.getElementById("product-grid");
-            grid.innerHTML = "";
-            const items = PRODUCTS[activeCategory] || [];
+        if (tabName === 'cart') renderCartPage();
+        if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
+        if (tabName === 'admin') {
+            renderAdminCategoryManager();
+            populateAdminCategorySelect();
+            renderAdminMenuList();
+        }
 
-            items.forEach(item => {
-                const qty = cart[item.id] ? cart[item.id].quantity : 0;
-                
-                let actionBtnHtml = "";
-                if (qty === 0) {
-                    // Show standard "+" button
-                    actionBtnHtml = `
-                        <button onclick="updateQty('${item.id}', 1)" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-2 rounded-xl text-xs shadow-sm shadow-amber-500/10 transitionactive:scale-95">
-                            ADD
-                        </button>
-                    `;
+        if (!fromHistory) {
+            const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
+            if (tabName === 'home' && currentTabId !== 'home') {
+                history.back();
+                return;
+            } else if (PRIMARY_TABS.includes(tabName)) {
+                // Bottom-nav tabs collapse into one history slot so hopping between them
+                // doesn't pile up Back-button presses.
+                if (currentTabId === 'home') {
+                    history.pushState({ tab: tabName }, '');
                 } else {
-                    // Show Durger King custom counter slider style: [- Qty +]
-                    actionBtnHtml = `
-                        <div class="flex items-center justify-between bg-amber-500 text-white rounded-xl py-1 px-2.5 w-full">
-                            <button onclick="updateQty('${item.id}', -1)" class="font-black text-sm hover:scale-125 transition-all-ease px-1">
-                                <i class="fa-solid fa-minus text-[10px]"></i>
-                            </button>
-                            <span class="text-xs font-bold w-6 text-center">${qty}</span>
-                            <button onclick="updateQty('${item.id}', 1)" class="font-black text-sm hover:scale-125 transition-all-ease px-1">
-                                <i class="fa-solid fa-plus text-[10px]"></i>
-                            </button>
-                        </div>
-                    `;
+                    history.replaceState({ tab: tabName }, '');
                 }
+            } else {
+                // Drill-in screens (checkout, admin, ...) always push a new entry so the
+                // device Back button steps back through them one screen at a time
+                // (e.g. Checkout -> Back lands on Cart, not Home).
+                history.pushState({ tab: tabName }, '');
+            }
+        }
+        currentTabId = tabName;
+    }
 
-                const itemHtml = `
-                    <div class="bg-white rounded-3xl p-3.5 border border-gray-100 flex flex-col justify-between card-shadow relative">
-                        <!-- Dynamic Badge Counter showing at top right (just like Durger King) -->
-                        ${qty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-red-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center">${qty}</span>` : ""}
-                        
-                        <div>
-                            <img src="${item.img}" alt="${item.name}" class="w-full h-24 rounded-2xl object-cover border border-gray-50 mb-3">
-                            <h3 class="font-extrabold text-xs text-gray-800 line-clamp-1">${item.name}</h3>
-                            <p class="text-[10px] text-gray-400 mt-1 line-clamp-2 leading-relaxed h-7">${item.desc}</p>
+    function switchToRestaurant(name) {
+        document.getElementById('active-restaurant-title').innerText = name;
+        switchNavTab('home');
+        showToast(`Viewing ${name}`);
+    }
+
+    // Admin is opened from the Profile tab, so it sits two screens deep (Home -> Profile -> Admin).
+    // Its own "Home" shortcut needs to jump straight to Home rather than one step back to Profile.
+    function goHomeFromAdmin() {
+        history.replaceState({ tab: 'home' }, '');
+        switchNavTab('home', true);
+    }
+
+    window.addEventListener('popstate', (e) => {
+        const modal = document.getElementById('item-modal');
+        const addrModal = document.getElementById('address-modal');
+        if (modal.classList.contains('open')) {
+            closeModal(true); 
+        }
+        if (addrModal.classList.contains('open')) {
+            closeAddressModal();
+        }
+        if (e.state && e.state.tab) {
+            switchNavTab(e.state.tab, true);
+        } else {
+            switchNavTab('home', true);
+        }
+    });
+
+    /* ================= CORE DATA PERSISTENCE ================= */
+    function initData() {
+        try {
+            const savedMenu = localStorage.getItem(STORAGE_KEY_MENU_DATA);
+            if (savedMenu) {
+                const parsed = JSON.parse(savedMenu);
+                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                    menuCategories = parsed;
+                    activeCategoryName = menuCategories[0].name;
+                    return;
+                }
+            }
+        } catch(e) {
+            console.error("Error loading saved admin menu data", e);
+        }
+        generateDefaultMenuData();
+    }
+
+    function generateDefaultMenuData() {
+        menuCategories = [
+            {
+                id: 'cat-1', name: 'Premium Pizza', icon: '⭐', sizeNames: ['Small', 'Medium', 'Large'],
+                items: [
+                    {
+                        id: 101, name: 'Cheesy Margherita', price: 8500, image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600&auto=format&fit=crop', description: 'Classic delight with 100% real mozzarella cheese and fresh basil leaves.', rating: '4.9', time: '20-25 Min',
+                        // Sizes: names are always Small/Medium/Large; price is set per size.
+                        sizes: [{name: 'Small', price: 8500}, {name: 'Medium', price: 12500}, {name: 'Large', price: 16500}],
+
+                        // Single choice (radio) crust options — optional, toggleable, hidden on Small.
+                        // Multiple choice (checkbox) add-ons — price varies by size, aligned to sizes[].
+                        ...getDefaultPizzaOptions()
+                    }
+                ]
+            }
+        ];
+        activeCategoryName = menuCategories[0].name;
+        saveMenuDataToStorage();
+    }
+
+    function saveMenuDataToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY_MENU_DATA, JSON.stringify(menuCategories));
+        } catch(e) {}
+    }
+
+    /* ================= HOME RENDERING (Kept exactly identical) ================= */
+    function renderTabs() {
+        const scrollContainer = document.getElementById('cat-scroll');
+        scrollContainer.innerHTML = '';
+        menuCategories.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = `cat-btn ${cat.name === activeCategoryName ? 'active' : ''}`;
+            btn.id = `cat-tab-${cat.id}`;
+            btn.onclick = () => scrollToCategory(cat.name, cat.id);
+            btn.innerHTML = `<div class="cat-icon-container">${cat.icon}</div><span class="cat-text">${cat.name}</span>`;
+            scrollContainer.appendChild(btn);
+        });
+    }
+
+    function renderAllCategorySections() {
+        const container = document.getElementById('main-content-scroll');
+        container.innerHTML = '';
+        menuCategories.forEach(cat => {
+            const section = document.createElement('div');
+            section.className = 'category-section';
+            section.id = `cat-sec-${cat.id}`;
+            section.innerHTML = `<div class="category-section-title"><span>${cat.icon}</span> ${cat.name}</div><div class="item-grid" id="grid-${cat.id}"></div>`;
+            container.appendChild(section);
+            
+            const grid = document.getElementById(`grid-${cat.id}`);
+            cat.items.forEach(dish => {
+                const card = document.createElement('div');
+                card.className = 'food-card';
+                card.onclick = () => openModal(dish);
+                let displayPrice = Math.round(dish.price);
+                if(dish.sizes && dish.sizes.length > 0) displayPrice = Math.min(...dish.sizes.map(s => Math.round(s.price))) + '+';
+                const dishQty = getCartQuantityForDish(dish.id);
+
+                card.innerHTML = `
+                    <img src="${dish.image}" loading="lazy" alt="${dish.name}" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
+                    <div class="food-info">
+                        <div class="food-title-row">
+                            <h3>${dish.name}</h3><span class="price-bubble">${displayPrice} MMK</span>
                         </div>
-                        
-                        <div class="mt-3">
-                            <div class="flex justify-between items-center mb-2.5">
-                                <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Price</span>
-                                <span class="text-xs font-black text-amber-500">${item.price.toLocaleString()} Ks</span>
+                        <p class="food-desc">${dish.description}</p>
+                        <div class="food-meta">
+                            <div class="meta-group"><span class="rating-star">★</span>${dish.rating || '4.8'}</div>
+                            <div class="meta-group"><span>⏱</span>${dish.time || '15 Min'}</div>
+                            <div class="card-qty-zone" id="qty-zone-${dish.id}">${buildCardQtyControlHTML(dishQty)}</div>
+                        </div>
+                    </div>`;
+                wireCardQtyControls(card, dish);
+                grid.appendChild(card);
+            });
+        });
+        container.addEventListener('scroll', handleMenuScroll, { passive: true });
+    }
+
+    function scrollToCategory(catName, catId) {
+        activeCategoryName = catName;
+        updateActiveTabUI(catId);
+        const targetSection = document.getElementById(`cat-sec-${catId}`);
+        const mainContainer = document.getElementById('main-content-scroll');
+        if (targetSection && mainContainer) {
+            isManualClickScroll = true;
+            if (manualScrollTimer) clearTimeout(manualScrollTimer);
+            const targetTop = targetSection.offsetTop - mainContainer.offsetTop - 8;
+            mainContainer.scrollTo({ top: targetTop, behavior: 'smooth' });
+            manualScrollTimer = setTimeout(() => { isManualClickScroll = false; }, 600);
+        }
+    }
+
+    function handleMenuScroll() {
+        if (isManualClickScroll) return;
+        const mainContainer = document.getElementById('main-content-scroll');
+        const containerTop = mainContainer.scrollTop + mainContainer.offsetTop;
+
+        let currentActiveCat = menuCategories[0];
+        for (let i = 0; i < menuCategories.length; i++) {
+            const cat = menuCategories[i];
+            const section = document.getElementById(`cat-sec-${cat.id}`);
+            if (section && containerTop >= section.offsetTop - 70) {
+                currentActiveCat = cat;
+            }
+        }
+        if (currentActiveCat && currentActiveCat.name !== activeCategoryName) {
+            activeCategoryName = currentActiveCat.name;
+            updateActiveTabUI(currentActiveCat.id);
+        }
+    }
+
+    function updateActiveTabUI(catId) {
+        document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(`cat-tab-${catId}`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+
+    /* ================= MODAL LOGIC (Kept exactly identical) ================= */
+    function openModal(dish) {
+        currentModalDish = dish;
+        modalQuantityValue = 1;
+        selectedExtras = [];
+        
+        document.getElementById('m-img').src = dish.image;
+        document.getElementById('m-title').innerText = dish.name;
+        document.getElementById('m-desc').innerText = dish.description;
+        refreshModalInCartIndicator(dish.id);
+        
+        const sizeContainer = document.getElementById('dynamic-sizes-container');
+        const scContainer = document.getElementById('dynamic-single-choice-container');
+        const extrasContainer = document.getElementById('dynamic-extras-container');
+        
+        if (dish.sizes && dish.sizes.length > 0) {
+            selectedSizeIndex = 0;
+            sizeContainer.innerHTML = `
+                <div class="options-group">
+                    <div class="options-header-line"><h4>Select Size</h4></div>
+                    <div class="size-button-group">
+                        ${dish.sizes.map((s, i) => `
+                            <button class="size-btn ${i===0?'active':''}" id="modal-size-btn-${i}" onclick="selectDynamicSize(${i})">
+                                ${s.name} <span class="size-price">${Math.round(s.price)} MMK</span>
+                            </button>`).join('')}
+                    </div>
+                </div>`;
+        } else {
+            selectedSizeIndex = -1;
+            sizeContainer.innerHTML = '';
+        }
+
+        selectedSingleChoiceIndex = -1;
+        selectedExtras = [];
+        renderCrustOptions();
+        renderExtraOptions();
+        
+        updateModalPrice();
+        document.getElementById('item-modal').classList.add('open');
+        
+        if (!history.state || history.state.type !== 'modal') {
+            history.pushState({ ...history.state, type: 'modal' }, '');
+        }
+    }
+
+    function closeModal(fromPopState = false) {
+        const modal = document.getElementById('item-modal');
+        if (modal.classList.contains('open')) {
+            modal.classList.remove('open');
+            if (!fromPopState) history.back(); 
+        }
+    }
+
+    // Renders the crust (single-choice/radio) options for the currently open dish,
+    // hiding any choice whose minSizeIndex is above the selected size (e.g. hidden on Small).
+    // Radios here are optional and can be unchecked by clicking the selected one again.
+    function renderCrustOptions() {
+        const scContainer = document.getElementById('dynamic-single-choice-container');
+        const dish = currentModalDish;
+        if (!dish.singleChoices || dish.singleChoices.length === 0) {
+            scContainer.innerHTML = '';
+            return;
+        }
+        const title = dish.singleChoiceTitle || 'Select Option';
+        scContainer.innerHTML = `
+            <div class="options-group">
+                <div class="options-header-line">
+                    <h4>${title}</h4><span style="font-size: 11px; color: var(--primary); font-weight: 600;">(Optional)</span>
+                </div>
+                <div>
+                    ${dish.singleChoices.map((sc, i) => {
+                        const available = selectedSizeIndex >= 0 ? selectedSizeIndex >= (sc.minSizeIndex || 0) : true;
+                        const price = getChoicePrice(sc);
+                        const checked = selectedSingleChoiceIndex === i;
+                        return `
+                            <label class="option-item-row ${available ? '' : 'option-hidden'}">
+                                <div class="option-item-label">
+                                    <input type="radio" name="modal-single-choice" ${checked ? 'checked' : ''} onclick="handleCrustClick(this, ${i})">
+                                    <span>${sc.name}</span>
+                                </div>
+                                <span class="option-item-price">${price > 0 ? '+' + Math.round(price) + ' MMK' : 'Free'}</span>
+                            </label>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    }
+
+    // Renders the multiple-choice (checkbox) add-ons, showing the price for the currently selected size.
+    function renderExtraOptions() {
+        const extrasContainer = document.getElementById('dynamic-extras-container');
+        const dish = currentModalDish;
+        if (!dish.extras || dish.extras.length === 0) {
+            extrasContainer.innerHTML = '';
+            return;
+        }
+        const title = dish.extrasTitle || 'Add Extras';
+        extrasContainer.innerHTML = `
+            <div class="options-group">
+                <div class="options-header-line"><h4>${title}</h4></div>
+                <div>
+                    ${dish.extras.map((ex, i) => {
+                        const price = getChoicePrice(ex);
+                        const checked = selectedExtras.includes(i);
+                        return `
+                            <label class="option-item-row">
+                                <div class="option-item-label">
+                                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExtra(${i}, this.checked)">
+                                    <span>${ex.name}</span>
+                                </div>
+                                <span class="option-item-price">+${Math.round(price)} MMK</span>
+                            </label>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    }
+
+    // Returns the price of a crust/extra option for the currently selected size.
+    // Supports the new per-size `prices` array, with a fallback to a flat `price` for older data.
+    function getChoicePrice(choice) {
+        if (Array.isArray(choice.prices)) {
+            const idx = selectedSizeIndex >= 0 ? selectedSizeIndex : 0;
+            return Math.round(choice.prices[idx] || 0);
+        }
+        return Math.round(choice.price || 0);
+    }
+
+    function selectDynamicSize(idx) {
+        selectedSizeIndex = idx;
+        document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`modal-size-btn-${idx}`).classList.add('active');
+
+        // A crust choice may no longer be available on the newly selected size — clear it if so.
+        if (selectedSingleChoiceIndex >= 0) {
+            const sc = currentModalDish.singleChoices[selectedSingleChoiceIndex];
+            if ((sc.minSizeIndex || 0) > selectedSizeIndex) selectedSingleChoiceIndex = -1;
+        }
+        renderCrustOptions();
+        renderExtraOptions();
+        updateModalPrice();
+    }
+    // Radios are optional here: clicking an already-selected crust option unchecks it.
+    function handleCrustClick(el, idx) {
+        if (selectedSingleChoiceIndex === idx) {
+            selectedSingleChoiceIndex = -1;
+            el.checked = false;
+        } else {
+            selectedSingleChoiceIndex = idx;
+        }
+        updateModalPrice();
+    }
+    function toggleExtra(idx, isChecked) {
+        if(isChecked) selectedExtras.push(idx);
+        else selectedExtras = selectedExtras.filter(id => id !== idx);
+        updateModalPrice();
+    }
+    function updateQty(delta) {
+        if (modalQuantityValue + delta >= 1) {
+            modalQuantityValue += delta;
+            updateModalPrice();
+        }
+    }
+
+    function updateModalPrice() {
+        document.getElementById('m-qty').innerText = modalQuantityValue;
+        let base = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
+        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(currentModalDish.singleChoices[selectedSingleChoiceIndex]) : 0;
+        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(currentModalDish.extras[idx]), 0);
+        const finalTotal = ((base + scPrice + extrasTotal) * modalQuantityValue);
+        document.getElementById('m-total-price').innerText = finalTotal + ' MMK';
+    }
+
+    function addToCartAction() {
+        // Crust (single-choice) selection is optional — no validation blocks adding to cart.
+        let singleUnitPrice = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
+        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(currentModalDish.singleChoices[selectedSingleChoiceIndex]) : 0;
+        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(currentModalDish.extras[idx]), 0);
+        
+        let optionsDetails = [];
+        if (selectedSizeIndex >= 0) optionsDetails.push(currentModalDish.sizes[selectedSizeIndex].name);
+        if (selectedSingleChoiceIndex >= 0) optionsDetails.push(currentModalDish.singleChoices[selectedSingleChoiceIndex].name);
+        if (selectedExtras.length > 0) optionsDetails.push("Extras: " + selectedExtras.map(idx => currentModalDish.extras[idx].name).join(', '));
+
+        cartItems.push({
+            id: Date.now(),
+            dishId: currentModalDish.id,
+            name: currentModalDish.name,
+            image: currentModalDish.image,
+            unitPrice: singleUnitPrice + scPrice + extrasTotal,
+            quantity: modalQuantityValue,
+            options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard'
+        });
+
+        updateCartBadge();
+        refreshCardQtyZone(currentModalDish.id, true);
+        showToast(`Added to Cart!`);
+        closeModal();
+    }
+
+    // Finds a dish object by id across all categories (used when we only have a dishId on hand,
+    // e.g. refreshing a Home card from the Cart page or after an order is placed).
+    function findDishById(dishId) {
+        for (const cat of menuCategories) {
+            const found = cat.items.find(i => i.id === dishId);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    // Total quantity of a given dish currently in the cart, across all its cart lines
+    // (regardless of size/crust/topping customization) — shown on its Home card and in the modal.
+    function getCartQuantityForDish(dishId) {
+        return cartItems.reduce((sum, ci) => sum + (ci.dishId === dishId ? ci.quantity : 0), 0);
+    }
+
+    // Returns the markup for a Home card's quantity control: a lone "+" while the item isn't
+    // in the cart, or a full "− qty +" stepper once it is (the minus icon only exists here).
+    function buildCardQtyControlHTML(qty) {
+        if (qty > 0) {
+            return `
+                <div class="card-qty-stepper">
+                    <button class="card-qty-btn card-minus-btn">−</button>
+                    <span class="card-qty-num">${qty}</span>
+                    <button class="card-qty-btn card-plus-btn">+</button>
+                </div>`;
+        }
+        return `<button class="add-card-btn">+</button>`;
+    }
+
+    // Wires whichever button(s) currently exist inside a card's qty-zone to the given dish.
+    function wireCardQtyControls(scopeEl, dish) {
+        const addBtn = scopeEl.querySelector('.add-card-btn');
+        if (addBtn) addBtn.onclick = (e) => cardPlusClicked(e, dish);
+        const plusBtn = scopeEl.querySelector('.card-plus-btn');
+        if (plusBtn) plusBtn.onclick = (e) => cardPlusClicked(e, dish);
+        const minusBtn = scopeEl.querySelector('.card-minus-btn');
+        if (minusBtn) minusBtn.onclick = (e) => cardMinusClicked(e, dish);
+    }
+
+    // "+" on a Home card: if this dish has sizes and isn't in the cart yet, we can't guess which
+    // size — open the modal instead. If it's already in the cart (a size has been chosen), or the
+    // dish has no sizes at all, just bump the existing/default line directly.
+    function cardPlusClicked(event, dish) {
+        event.stopPropagation();
+        const hasSizes = dish.sizes && dish.sizes.length > 0;
+        const existingLine = [...cartItems].reverse().find(ci => ci.dishId === dish.id);
+
+        if (hasSizes && !existingLine) {
+            openModal(dish);
+            return;
+        }
+
+        if (existingLine) {
+            existingLine.quantity += 1;
+        } else {
+            cartItems.push({ id: Date.now(), dishId: dish.id, name: dish.name, image: dish.image, unitPrice: Math.round(dish.price), quantity: 1, options: 'Standard' });
+        }
+
+        updateCartBadge();
+        refreshCardQtyZone(dish.id, true);
+    }
+
+    // "−" on a Home card (only rendered once the item is in the cart): decreases the most
+    // recently added line for this dish, removing it once it reaches zero.
+    function cardMinusClicked(event, dish) {
+        event.stopPropagation();
+        for (let i = cartItems.length - 1; i >= 0; i--) {
+            if (cartItems[i].dishId === dish.id) {
+                cartItems[i].quantity -= 1;
+                if (cartItems[i].quantity <= 0) cartItems.splice(i, 1);
+                break;
+            }
+        }
+        updateCartBadge();
+        refreshCardQtyZone(dish.id, false);
+    }
+
+    // Re-renders a Home card's qty-zone to match the cart, and briefly bumps the number when
+    // an item is added (not on removal, so the "click effect" only fires on add, as requested).
+    function refreshCardQtyZone(dishId, animate) {
+        const zone = document.getElementById(`qty-zone-${dishId}`);
+        if (!zone) return;
+        const dish = findDishById(dishId);
+        if (!dish) return;
+        const qty = getCartQuantityForDish(dishId);
+        zone.innerHTML = buildCardQtyControlHTML(qty);
+        wireCardQtyControls(zone, dish);
+        if (animate && qty > 0) {
+            const numEl = zone.querySelector('.card-qty-num');
+            if (numEl) numEl.classList.add('bump');
+        }
+        refreshModalInCartIndicator(dishId);
+    }
+
+    function resetAllCardQtyZones() {
+        menuCategories.forEach(cat => cat.items.forEach(dish => refreshCardQtyZone(dish.id, false)));
+    }
+
+    // Keeps the "already in your cart" pill on the item modal in sync — only touches the DOM
+    // if the modal currently open is for this same dish.
+    function refreshModalInCartIndicator(dishId) {
+        if (!currentModalDish || currentModalDish.id !== dishId) return;
+        const indicator = document.getElementById('m-in-cart-indicator');
+        const qtyEl = document.getElementById('m-in-cart-qty');
+        if (!indicator || !qtyEl) return;
+        const qty = getCartQuantityForDish(dishId);
+        qtyEl.innerText = qty;
+        indicator.style.display = qty > 0 ? 'inline-flex' : 'none';
+    }
+
+    // Tapping the "already in cart" pill on the modal jumps to the Cart tab and flashes
+    // that item's row(s) so the user can find it at a glance.
+    function goToCartAndHighlight(dishId) {
+        if (dishId === undefined || dishId === null) return;
+        closeModal();
+        switchNavTab('cart');
+        setTimeout(() => highlightCartItemsForDish(dishId), 350);
+    }
+
+    function highlightCartItemsForDish(dishId) {
+        const rows = document.querySelectorAll(`.cart-item-row[data-dish-id="${dishId}"]`);
+        if (rows.length === 0) return;
+        rows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        rows.forEach(row => {
+            row.classList.add('cart-row-highlight');
+            setTimeout(() => row.classList.remove('cart-row-highlight'), 1600);
+        });
+    }
+
+    /* ================= CART RENDERING ================= */
+    function updateCartBadge() {
+        document.getElementById('cart-badge-count').innerText = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    }
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = `🛒 ${msg}`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function renderCartPage() {
+        const container = document.getElementById('cart-page-content');
+        if (cartItems.length === 0) {
+            container.innerHTML = `
+                <div class="empty-cart-container">
+                    <span class="empty-cart-icon">🍕</span>
+                    <h3>Your cart is empty!</h3>
+                    <button class="btn-browse" onclick="switchNavTab('home')">Browse Menu</button>
+                </div>
+            `;
+            return;
+        }
+
+        let itemsHtml = '';
+        let subtotal = 0;
+        cartItems.forEach((item, index) => {
+            const itemTotal = item.unitPrice * item.quantity;
+            subtotal += itemTotal;
+            itemsHtml += `
+                <div class="cart-item-row" data-dish-id="${item.dishId !== undefined ? item.dishId : ''}">
+                    <img src="${item.image}" class="cart-item-img" alt="food" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-options">${item.options}</div>
+                        <div class="cart-item-price">${itemTotal} MMK</div>
+                    </div>
+                    <div class="qty-control" style="transform: scale(0.85);">
+                        <button class="qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button>
+                        <span class="qty-val">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        const tax = Math.round(subtotal * 0.05); // 5% commercial tax
+        const delivery = 2000; // Fixed delivery fee
+        const grandTotal = subtotal + tax + delivery;
+
+        container.innerHTML = `
+            <div class="cart-section-card">
+                <div class="cart-section-title"><span>📋</span> Order Items</div>
+                <div class="cart-items-list">${itemsHtml}</div>
+            </div>
+            <div class="cart-section-card">
+                <div class="cart-section-title"><span>💵</span> Summary</div>
+                <div class="summary-row"><span>Subtotal</span><span>${subtotal} MMK</span></div>
+                <div class="summary-row"><span>Tax (5%)</span><span>${tax} MMK</span></div>
+                <div class="summary-row"><span>Delivery Fee</span><span>${delivery} MMK</span></div>
+                <div class="summary-row grand-total"><span>Total Amount</span><span style="color: var(--primary);">${grandTotal} MMK</span></div>
+            </div>
+            <div style="margin-top: 12px; margin-bottom: 30px;">
+                <!-- Updated this button to route to the new Checkout view instead of finalizing order immediately -->
+                <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Place the order</button>
+            </div>
+        `;
+    }
+
+    function updateCartItemQty(index, delta) {
+        const dishId = cartItems[index].dishId;
+        cartItems[index].quantity += delta;
+        if (cartItems[index].quantity <= 0) cartItems.splice(index, 1);
+        updateCartBadge();
+        renderCartPage();
+        if (dishId !== undefined) refreshCardQtyZone(dishId, delta > 0);
+    }
+
+    /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
+    
+    function goToCheckout() {
+        if(cartItems.length === 0) return;
+        switchNavTab('checkout');
+        
+        // If it's the users first time and they have no addresses, automatically ask for one
+        if (savedAddresses.length === 0) {
+            openAddressModal();
+        }
+    }
+
+    function renderCheckoutPage() {
+        const container = document.getElementById('checkout-page-content');
+        
+        let subtotal = 0;
+        cartItems.forEach(item => subtotal += item.unitPrice * item.quantity);
+        const tax = Math.round(subtotal * 0.05);
+        const deliveryFee = 2000;
+        const grandTotal = subtotal + tax + deliveryFee;
+
+        // Build Address Section
+        let addressHtml = '';
+        const MAX_ADDRESSES = 2;
+        if (savedAddresses.length === 0) {
+            addressHtml = `
+                <div class="checkout-card" style="justify-content: center; align-items: center; padding: 24px;" onclick="openAddressModal()">
+                    <span style="color: #118B80; font-weight: 600; font-size: 14px;">+ Add New Delivery Address</span>
+                </div>
+            `;
+        } else {
+            savedAddresses.forEach(addr => {
+                const isActive = addr.id === activeAddressId;
+                addressHtml += `
+                <div class="checkout-card ${isActive ? 'active' : ''}" onclick="selectAddress(${addr.id})">
+                    <div class="radio-custom"></div>
+                    <div class="address-info">
+                        <div class="address-info-header">
+                            <span class="address-title">${addr.label}</span>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <button class="btn-edit-addr" onclick="event.stopPropagation(); openAddressModal(${addr.id})">Change</button>
+                                <button style="background:none; border:none; color:#E5484D; font-size:12px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); deleteAddressPrompt(${addr.id})">Remove</button>
                             </div>
-                            ${actionBtnHtml}
+                        </div>
+                        <div class="address-details">
+                            <p>${addr.name}</p>
+                            <p>${addr.address}</p>
+                            <p>${addr.phone}</p>
                         </div>
                     </div>
-                `;
-                grid.insertAdjacentHTML('beforeend', itemHtml);
+                </div>`;
             });
-        }
-
-        // Qty Increment/Decrement & Instant Cart syncing
-        function updateQty(itemId, amt) {
-            // Find item profile
-            let itemData = null;
-            Object.keys(PRODUCTS).forEach(cat => {
-                const found = PRODUCTS[cat].find(p => p.id === itemId);
-                if (found) itemData = found;
-            });
-
-            if (!itemData) return;
-
-            if (!cart[itemId]) {
-                cart[itemId] = {
-                    id: itemData.id,
-                    name: itemData.name,
-                    price: itemData.price,
-                    quantity: 0
-                };
-            }
-
-            cart[itemId].quantity += amt;
-
-            if (cart[itemId].quantity <= 0) {
-                delete cart[itemId];
-            }
-
-            renderStorefront();
-            syncMainButton();
-        }
-
-        // Programmatically control Telegram App native button style
-        function syncMainButton() {
-            const cartItems = Object.values(cart);
-            const totalQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-            const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-            if (!tg) return;
-
-            if (totalQty > 0) {
-                if (!isCheckoutView) {
-                    tg.MainButton.setText(`VIEW BASKET (${totalPrice.toLocaleString()} Ks)`);
-                    tg.MainButton.show();
-                } else {
-                    tg.MainButton.setText(`PLACE ORDER (${totalPrice.toLocaleString()} Ks)`);
-                }
-            } else {
-                tg.MainButton.hide();
-                toggleCheckoutSheet(false);
-            }
-        }
-
-        function handleMainButtonClick() {
-            if (!isCheckoutView) {
-                // Open checkout view sheet
-                toggleCheckoutSheet(true);
-            } else {
-                // Submit Form
-                submitOrderPayload();
-            }
-        }
-
-        function toggleCheckoutSheet(show) {
-            const sheet = document.getElementById("checkout-sheet");
-            isCheckoutView = show;
-
-            if (show) {
-                sheet.classList.remove("hidden");
-                renderBasketItems();
-            } else {
-                sheet.classList.add("hidden");
-            }
-            syncMainButton();
-        }
-
-        function renderBasketItems() {
-            const list = document.getElementById("basket-items-list");
-            list.innerHTML = "";
-            const cartItems = Object.values(cart);
-
-            cartItems.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                const html = `
-                    <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100/50 flex justify-between items-center shadow-inner">
-                        <div>
-                            <h4 class="font-extrabold text-xs text-slate-800">${item.name}</h4>
-                            <p class="text-[10px] text-amber-500 font-extrabold mt-1">${item.price.toLocaleString()} Ks × ${item.quantity}</p>
-                        </div>
-                        <div class="flex items-center space-x-2.5 bg-white rounded-xl px-2 py-1 shadow-sm border border-gray-100">
-                            <button onclick="updateQty('${item.id}', -1); renderBasketItems();" class="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:bg-gray-100 transition"><i class="fa-solid fa-minus text-[8px]"></i></button>
-                            <span class="w-5 text-center font-black text-xs text-gray-700">${item.quantity}</span>
-                            <button onclick="updateQty('${item.id}', 1); renderBasketItems();" class="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:bg-gray-100 transition"><i class="fa-solid fa-plus text-[8px]"></i></button>
-                        </div>
+            if (savedAddresses.length < MAX_ADDRESSES) {
+                addressHtml += `
+                    <div style="text-align: right; margin-bottom: 16px;">
+                        <button style="background: none; border: none; color: #118B80; font-weight: 600; font-size: 12px; cursor: pointer;" onclick="openAddressModal()">
+                            + Add Another Address
+                        </button>
                     </div>
                 `;
-                list.insertAdjacentHTML('beforeend', html);
-            });
+            } else {
+                addressHtml += `
+                    <div style="text-align: right; margin-bottom: 16px;">
+                        <span class="admin-hint">Maximum of ${MAX_ADDRESSES} addresses reached — remove one to add another.</span>
+                    </div>
+                `;
+            }
         }
 
-        function submitOrderPayload() {
-            const name = document.getElementById("cust-name").value.trim();
-            const phone = document.getElementById("cust-phone").value.trim();
-            const address = document.getElementById("cust-address").value.trim();
+        container.innerHTML = `
+            <div class="cart-section-title" style="margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
+            ${addressHtml}
 
-            if (!name || !phone || !address) {
-                alert("Please fill in all required delivery details fields!");
+            <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method</div>
+            <div class="checkout-card ${selectedPaymentMethod === 'kbzpay' ? 'active-payment' : ''}" onclick="selectPayment('kbzpay')">
+                <div class="payment-label" style="flex: 1;">
+                    <span style="font-size: 20px;">📱</span> KBZ PAY
+                </div>
+                <div class="radio-custom"></div>
+            </div>
+            <div class="checkout-card ${selectedPaymentMethod === 'cod' ? 'active-payment' : ''}" onclick="selectPayment('cod')">
+                <div class="payment-label" style="flex: 1;">
+                    <span style="font-size: 20px;">💵</span> Cash On Delivery
+                </div>
+                <div class="radio-custom"></div>
+            </div>
+
+            <div class="cart-section-card" style="margin-top: 24px; margin-bottom: 24px; border: none; background: white;">
+                <div class="summary-row"><span>Shipping fee:</span><span>${deliveryFee} MMK</span></div>
+                <div class="summary-row"><span>Tax (5%):</span><span>${tax} MMK</span></div>
+                <div class="summary-row"><span>Subtotal:</span><span>${subtotal} MMK</span></div>
+                <div class="summary-row grand-total"><span>Total:</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
+            </div>
+
+            <button class="btn-place-order" onclick="submitFinalOrder()">Make Payment</button>
+        `;
+    }
+
+    function selectAddress(id) {
+        activeAddressId = id;
+        renderCheckoutPage(); // Re-render to update selected UI state
+    }
+
+    function selectPayment(method) {
+        selectedPaymentMethod = method;
+        renderCheckoutPage();
+    }
+
+    const MAX_SAVED_ADDRESSES = 2;
+
+    // --- Address Modal Logic ---
+    function openAddressModal(id = null) {
+        const modal = document.getElementById('address-modal');
+
+        if (!id && savedAddresses.length >= MAX_SAVED_ADDRESSES) {
+            alert(`You can save up to ${MAX_SAVED_ADDRESSES} addresses. Remove one before adding another.`);
+            return;
+        }
+        
+        if (id) {
+            // Edit existing
+            const addr = savedAddresses.find(a => a.id === id);
+            document.getElementById('address-modal-title').innerText = 'Edit Address';
+            document.getElementById('addr-id-input').value = addr.id;
+            document.getElementById('addr-label-input').value = addr.label;
+            document.getElementById('addr-name-input').value = addr.name;
+            document.getElementById('addr-phone-input').value = addr.phone;
+            document.getElementById('addr-detail-input').value = addr.address;
+        } else {
+            // Create new
+            document.getElementById('address-modal-title').innerText = 'Add New Address';
+            document.getElementById('addr-id-input').value = '';
+            document.getElementById('addr-label-input').value = 'Home';
+            document.getElementById('addr-name-input').value = '';
+            document.getElementById('addr-phone-input').value = '';
+            document.getElementById('addr-detail-input').value = '';
+        }
+
+        modal.classList.add('open');
+    }
+
+    function closeAddressModal() {
+        document.getElementById('address-modal').classList.remove('open');
+    }
+
+    function deleteAddressPrompt(id) {
+        const addr = savedAddresses.find(a => a.id === id);
+        if (!addr) return;
+        if (!confirm(`Remove the "${addr.label}" address?`)) return;
+
+        savedAddresses = savedAddresses.filter(a => a.id !== id);
+        if (activeAddressId === id) {
+            activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
+        }
+        localStorage.setItem(STORAGE_KEY_ADDRESSES, JSON.stringify(savedAddresses));
+        renderCheckoutPage();
+        showToast("Address removed.");
+    }
+
+    function saveAddress() {
+        const idInput = document.getElementById('addr-id-input').value;
+        const label = document.getElementById('addr-label-input').value.trim() || 'Address';
+        const name = document.getElementById('addr-name-input').value.trim();
+        const phone = document.getElementById('addr-phone-input').value.trim();
+        const addressText = document.getElementById('addr-detail-input').value.trim();
+
+        if (!name || !phone || !addressText) {
+            alert("Please fill in all address details.");
+            return;
+        }
+
+        if (idInput) {
+            // Update existing
+            const index = savedAddresses.findIndex(a => a.id == idInput);
+            if (index !== -1) {
+                savedAddresses[index] = { id: parseInt(idInput), label, name, phone, address: addressText };
+            }
+        } else {
+            // Add new (guarded by the cap in openAddressModal, but double-checked here too)
+            if (savedAddresses.length >= MAX_SAVED_ADDRESSES) {
+                alert(`You can save up to ${MAX_SAVED_ADDRESSES} addresses. Remove one before adding another.`);
                 return;
             }
-
-            const payload = {
-                customer_info: {
-                    name: name,
-                    phone: phone,
-                    address: address
-                },
-                items: Object.values(cart).map(item => ({
-                    item_name: item.name,
-                    price: item.price,
-                    quantity: item.quantity
-                }))
-            };
-
-            // Display payload simulation
-            document.getElementById("success-payload").innerText = JSON.stringify(payload, null, 2);
-            document.getElementById("success-screen").classList.remove("hidden");
-
-            if (tg) {
-                // Instantly pass JSON back to the Telegram python bot thread securely
-                tg.sendData(JSON.stringify(payload));
-            }
+            const newId = Date.now();
+            savedAddresses.push({ id: newId, label, name, phone, address: addressText });
+            activeAddressId = newId; // Auto select the new one
         }
 
-        function resetMiniApp() {
-            cart = {};
-            document.getElementById("cust-name").value = "";
-            document.getElementById("cust-phone").value = "";
-            document.getElementById("cust-address").value = "";
-            document.getElementById("success-screen").classList.add("hidden");
-            toggleCheckoutSheet(false);
-            switchCategory('classic');
+        // Persist to local storage
+        localStorage.setItem(STORAGE_KEY_ADDRESSES, JSON.stringify(savedAddresses));
+        
+        closeAddressModal();
+        renderCheckoutPage();
+    }
+
+    // --- Final Submission ---
+    function submitFinalOrder() {
+        if (savedAddresses.length === 0 || !activeAddressId) {
+            alert("Please provide a delivery address before making payment.");
+            return;
         }
-    </script>
+
+        // Switch back to cart tab layout but show the original success screen
+        cartItems = [];
+        updateCartBadge();
+        resetAllCardQtyZones();
+        switchNavTab('cart');
+        
+        const container = document.getElementById('cart-page-content');
+        container.innerHTML = `
+            <div class="cart-section-card" style="text-align: center; padding: 32px 20px;">
+                <div style="font-size: 60px; margin-bottom: 12px;">🎉</div>
+                <h2>Order Placed!</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Thank you. Your order is being prepared by the kitchen and will be delivered to your selected address.</p>
+                <button class="btn-browse" onclick="switchNavTab('home')" style="width: 100%; margin-top:20px; padding: 14px;">Back to Home</button>
+            </div>
+        `;
+    }
+
+    /* ================= ADMIN MANAGEMENT (Kept exactly identical) ================= */
+    function openAdminPortal() {
+        const pin = prompt(`🔑 Enter Admin PIN: (1234)`, "");
+        if (pin === '1234') switchNavTab('admin');
+        else if(pin !== null) alert("❌ Incorrect PIN.");
+    }
+
+    let dragSrcIndex = null;
+    function handleDragStart(e, index) { dragSrcIndex = index; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', index); e.target.classList.add('dragging'); }
+    function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
+    function handleDrop(e, targetIndex) {
+        e.stopPropagation(); e.preventDefault();
+        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+            const draggedItem = menuCategories[dragSrcIndex];
+            menuCategories.splice(dragSrcIndex, 1);
+            menuCategories.splice(targetIndex, 0, draggedItem);
+            saveMenuDataToStorage();
+            refreshAdminAndHome();
+        }
+        document.querySelectorAll('.cat-manager-row').forEach(row => row.classList.remove('dragging'));
+        return false;
+    }
+    function handleDragEnd(e) { e.target.classList.remove('dragging'); }
+
+    function renderAdminCategoryManager() {
+        const container = document.getElementById('admin-cat-list');
+        container.innerHTML = '';
+        menuCategories.forEach((cat, index) => {
+            const sizeNames = cat.sizeNames || [];
+            container.innerHTML += `
+                <div class="cat-manager-row" draggable="true" ondragstart="handleDragStart(event, ${index})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${index})" ondragend="handleDragEnd(event)">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px; pointer-events: none;">
+                            <span style="color:var(--text-muted); font-size:18px;">☰</span>
+                            <span>${cat.icon}</span>
+                            <span style="font-size:13px; font-weight:600;">${cat.name} (${cat.items.length} items)</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-secondary" style="padding:4px 8px;" onclick="editCategoryPrompt(${index})">✏️</button>
+                            <button class="btn-danger" style="padding:4px 8px;" onclick="deleteCategory(${index})">🗑️</button>
+                        </div>
+                    </div>
+                    <div draggable="false" style="margin-top:8px;">
+                        <button class="btn-secondary" style="font-size:10px;" onclick="toggleEditPanel('cat-sizes-${index}')">📏 Manage Sizes (${sizeNames.length})</button>
+                        <div id="cat-sizes-${index}" draggable="false" style="display:none; margin-top:8px; background:#F9FAFB; padding:8px; border-radius:8px;">
+                            <p class="admin-hint">These size names apply to every item in "${cat.name}". Leave empty for items with one flat price (e.g. a category like Chicken doesn't need Small/Medium/Large).</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                                ${sizeNames.length > 0 ? sizeNames.map((sz, si) => `
+                                    <span style="background:#fff;border:1px solid var(--border-light);border-radius:20px;padding:4px 10px;font-size:11px;display:flex;align-items:center;gap:6px;">
+                                        ${sz} <button style="background:none;border:none;color:#E5484D;cursor:pointer;font-weight:700;font-size:13px;" onclick="removeCategorySize(${index}, ${si})">×</button>
+                                    </span>`).join('') : '<span class="admin-hint">No sizes yet — items in this category use a single price.</span>'}
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <input type="text" class="form-control" id="new-size-name-${index}" placeholder="e.g. Regular" style="flex:1; padding:8px 10px; font-size:12px;">
+                                <button class="btn-secondary" style="font-size:11px;" onclick="addCategorySize(${index})">+ Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function addCategorySize(catIndex) {
+        const input = document.getElementById(`new-size-name-${catIndex}`);
+        const name = input.value.trim();
+        if (!name) return;
+        const cat = menuCategories[catIndex];
+        if (!cat.sizeNames) cat.sizeNames = [];
+        if (cat.sizeNames.some(s => s.toLowerCase() === name.toLowerCase())) {
+            alert('That size name already exists in this category.');
+            return;
+        }
+        cat.sizeNames.push(name);
+        syncCategorySizesToItems(catIndex);
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast(`"${name}" added — set its price on each item.`);
+    }
+
+    function removeCategorySize(catIndex, sizeIndex) {
+        const cat = menuCategories[catIndex];
+        const removedName = cat.sizeNames[sizeIndex];
+        if (!confirm(`Remove size "${removedName}" from "${cat.name}"? This removes its price from every item in this category.`)) return;
+        cat.sizeNames.splice(sizeIndex, 1);
+        syncCategorySizesToItems(catIndex);
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Size removed.");
+    }
+
+    // Keeps every item's `sizes` array in sync with its category's `sizeNames` — adding new
+    // entries (price starts at 0 until set) and dropping ones that were removed, while
+    // preserving existing prices for names that still exist.
+    function syncCategorySizesToItems(catIndex) {
+        const cat = menuCategories[catIndex];
+        const names = cat.sizeNames || [];
+        cat.items.forEach(item => {
+            const oldSizes = item.sizes || [];
+            item.sizes = names.map(n => {
+                const existing = oldSizes.find(s => s.name === n);
+                return { name: n, price: existing ? existing.price : 0 };
+            });
+            if (item.sizes.length > 0) item.price = item.sizes[0].price;
+        });
+    }
+
+    function addCategoryPrompt() {
+        const name = prompt("Enter new category name:");
+        if(!name) return;
+        const icon = prompt("Enter Emoji/Text icon:", "🍽️");
+        // New categories start with no size options — use "Manage Sizes" to add custom ones
+        // (e.g. a Chicken category doesn't need Small/Medium/Large).
+        menuCategories.push({ id: 'cat-' + Date.now(), name: name.trim(), icon: icon || '🍽️', items: [], sizeNames: [] });
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Added & Saved!");
+    }
+
+    function editCategoryPrompt(index) {
+        const cat = menuCategories[index];
+        const newName = prompt("Edit category name:", cat.name);
+        if(newName === null) return;
+        const newIcon = prompt("Edit text/emoji icon:", cat.icon);
+        if(newIcon === null) return;
+        cat.name = newName.trim() || cat.name;
+        cat.icon = newIcon.trim() || cat.icon;
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Saved!");
+    }
+
+    function deleteCategory(index) {
+        if(confirm(`Delete category "${menuCategories[index].name}" and all its items?`)){
+            menuCategories.splice(index, 1);
+            saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Deleted.");
+        }
+    }
+
+    function populateAdminCategorySelect() {
+        const select = document.getElementById('admin-category-select');
+        select.innerHTML = '';
+        menuCategories.forEach((cat, index) => { select.innerHTML += `<option value="${index}">${cat.name}</option>`; });
+    }
+
+    function renderAdminMenuList() {
+        const select = document.getElementById('admin-category-select');
+        if(!select.value) return;
+        const catIndex = select.value;
+        const cat = menuCategories[catIndex];
+        const container = document.getElementById('admin-items-container');
+        container.innerHTML = '';
+
+        if(cat.items.length === 0) {
+            container.innerHTML = `<p style="font-size:12px; color:var(--text-muted); text-align:center;">No items here yet.</p>`;
+            return;
+        }
+
+        cat.items.forEach((dish, index) => {
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            
+            card.innerHTML = `
+                <div class="admin-item-header" onclick="toggleEditPanel('edit-panel-${catIndex}-${index}')">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="${dish.image}" class="admin-thumb" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
+                        <div>
+                            <div class="admin-item-title">${dish.name}</div>
+                            <span style="font-size: 11px; color: var(--primary); font-weight: 700;">${Math.round(dish.price)} MMK${(dish.sizes && dish.sizes.length > 0) ? ' (' + dish.sizes[0].name + ')' : ''}</span>
+                        </div>
+                    </div>
+                    <span>✏️/▼</span>
+                </div>
+                <div id="edit-panel-${catIndex}-${index}" style="display:none; margin-top:16px; border-top:1px dashed var(--border-light); padding-top:12px;">
+                    <div class="form-group"><label>Name</label><input type="text" class="form-control i-name" value="${dish.name}"></div>
+                    <div class="form-group"><label>Time</label><input type="text" class="form-control i-time" value="${dish.time || '15 Min'}"></div>
+                    <div class="form-group"><label>Image URL</label><input type="text" class="form-control i-img" value="${dish.image}"></div>
+                    <div class="form-group"><label>Description</label><textarea class="form-control i-desc">${dish.description}</textarea></div>
+                    
+                    ${(cat.sizeNames && cat.sizeNames.length > 0) ? `
+                    <div style="background:#F9FAFB; padding:10px; border-radius:10px; margin-bottom:12px;">
+                        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">📏 Size & Pricing</label>
+                        <p class="admin-hint">Size names come from the "${cat.name}" category — manage the names in Categories. Only price is edited here.</p>
+                        <div id="sizes-box-${catIndex}-${index}">
+                            ${cat.sizeNames.map(sizeName => {
+                                const existing = (dish.sizes||[]).find(s => s.name === sizeName);
+                                const priceVal = existing ? Math.round(existing.price) : '';
+                                return `
+                                <div class="opt-row">
+                                    <span class="fixed-size-label">${sizeName}</span>
+                                    <input type="number" class="form-control s-price" data-size-name="${sizeName}" value="${priceVal}" placeholder="Price MMK">
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="form-group"><label>Price (MMK)</label><input type="number" class="form-control i-price" value="${Math.round(dish.price)}"></div>
+                    `}
+
+                    <p class="admin-hint" style="margin-bottom:16px;">🔘 Crust options and 🧀 topping add-ons are managed directly in the HTML/data (not through this panel). Editing and saving here won't remove or change them.</p>
+
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <button class="btn-danger" onclick="deleteDishItem(${catIndex}, ${index})">🗑️ Delete Item</button>
+                        <button class="btn-success" style="flex:1;" onclick="saveDishItem(${catIndex}, ${index}, 'edit-panel-${catIndex}-${index}')">💾 Save Changes</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleEditPanel(id) { const el = document.getElementById(id); el.style.display = (el.style.display === 'none') ? 'block' : 'none'; }
+
+    function saveDishItem(catIndex, itemIndex, panelId) {
+        const panel = document.getElementById(panelId);
+        const name = panel.querySelector('.i-name').value;
+        const img = panel.querySelector('.i-img').value;
+        const desc = panel.querySelector('.i-desc').value;
+        const time = panel.querySelector('.i-time').value;
+
+        // Size names come from the category (see Categories -> Manage Sizes) — only price is read here.
+        // A category with no size names uses a single flat price instead.
+        const cat = menuCategories[catIndex];
+        let sizes = [];
+        let price;
+        if (cat.sizeNames && cat.sizeNames.length > 0) {
+            const sPrices = panel.querySelectorAll('.s-price');
+            sPrices.forEach(input => sizes.push({ name: input.dataset.sizeName, price: Math.round(input.value || 0) }));
+            price = sizes.length > 0 ? sizes[0].price : 0;
+        } else {
+            const priceInput = panel.querySelector('.i-price');
+            price = Math.round((priceInput ? priceInput.value : 0) || 0);
+        }
+
+        // Crust (singleChoices) and topping add-ons (extras) are edited directly in the data/HTML,
+        // not through this panel — carry the existing values over untouched.
+        const existing = menuCategories[catIndex].items[itemIndex];
+        menuCategories[catIndex].items[itemIndex] = {
+            ...existing,
+            name, price, image: img, description: desc, time, sizes
+        };
+
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Item Saved to Storage!");
+    }
+
+    function deleteDishItem(catIndex, itemIndex) {
+        if(confirm("Delete this food item completely?")) {
+            menuCategories[catIndex].items.splice(itemIndex, 1);
+            saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Item Deleted.");
+        }
+    }
+
+    function addNewDishPrompt() {
+        const select = document.getElementById('admin-category-select');
+        if(!select.value) return;
+        const catIndex = select.value;
+        const cat = menuCategories[catIndex];
+        const name = prompt("Enter new food name:");
+        if(!name) return;
+
+        // Sizes come from the category (see Categories -> Manage Sizes). A category with no
+        // size names defined just uses a single flat price for its items.
+        let sizes = [];
+        let price;
+        if (cat.sizeNames && cat.sizeNames.length > 0) {
+            const basePrice = Math.round(prompt(`Price for "${cat.sizeNames[0]}" (MMK):`, "8500") || 8500);
+            sizes = cat.sizeNames.map(n => ({ name: n, price: basePrice }));
+            price = basePrice;
+        } else {
+            price = Math.round(prompt("Price (MMK):", "3000") || 3000);
+        }
+
+        // Items added inside the original Premium Pizza category automatically inherit the
+        // standard crust/topping options. Any other category (including a brand-new one) starts blank.
+        const pizzaOptions = (cat.id === PIZZA_CATEGORY_ID)
+            ? getDefaultPizzaOptions()
+            : { singleChoiceTitle: '', singleChoices: [], extrasTitle: '', extras: [] };
+
+        menuCategories[catIndex].items.push({
+            id: Date.now(), name: name, price,
+            image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600',
+            description: 'Delicious newly added item.', rating: '4.5', time: '15 Min',
+            sizes, ...pizzaOptions
+        });
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Added " + name);
+    }
+
+    function refreshAdminAndHome() {
+        renderTabs(); renderAllCategorySections(); renderAdminCategoryManager();
+        populateAdminCategorySelect(); renderAdminMenuList();
+    }
+
+    function resetMenuToDefault() {
+        if(confirm("⚠️ Reset to factory defaults? All custom changes will be erased!")) {
+            generateDefaultMenuData(); refreshAdminAndHome(); showToast("Factory Reset Complete.");
+        }
+    }
+    
+    function exportMenuBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(menuCategories, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "bite_slice_menu_v5_mmk.json");
+        document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
+    }
+
+    function importMenuBackup() {
+        const jsonStr = prompt("Paste your menu backup JSON code here:");
+        if(!jsonStr) return;
+        try {
+            const parsed = JSON.parse(jsonStr);
+            if (Array.isArray(parsed)) {
+                menuCategories = parsed; saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Menu imported & saved!");
+            } else alert("❌ Invalid format. Please use a valid backup.");
+        } catch(e) { alert("❌ Failed to parse JSON code."); }
+    }
+
+    window.onload = () => {
+
+    initData();
+    renderTabs();
+    renderAllCategorySections();
+
+    displayTelegramUser();
+};
+</script>
 </body>
 </html>
