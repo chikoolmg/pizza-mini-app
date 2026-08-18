@@ -2404,389 +2404,205 @@ async function submitFinalOrder() {
 
     function addCategoryPrompt() {
         const name = prompt("Enter new category name:");
-        if(!name) return;
-        const icon = prompt("Enter Emoji/Text icon:", "🍽️");
-        // New categories start with no size options — use "Manage Sizes" to add custom ones
-        // (e.g. a Chicken category doesn't need Small/Medium/Large).
-        menuCategories.push({ id: 'cat-' + Date.now(), name: name.trim(), icon: icon || '🍽️', items: [], sizeNames: [] });
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Added & Saved!");
+        if (!name) return;
+        const icon = prompt("Enter category emoji icon (e.g. 🍕):", "🍕") || "🍕";
+        menuCategories.push({
+            id: 'cat-' + Date.now(),
+            name: name,
+            icon: icon,
+            sizeNames: [],
+            items: []
+        });
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
+        showToast(`Category "${name}" added`);
     }
 
     function editCategoryPrompt(index) {
         const cat = menuCategories[index];
         const newName = prompt("Edit category name:", cat.name);
-        if(newName === null) return;
-        const newIcon = prompt("Edit text/emoji icon:", cat.icon);
-        if(newIcon === null) return;
+        if (newName === null) return;
+        const newIcon = prompt("Edit category icon:", cat.icon);
         cat.name = newName.trim() || cat.name;
-        cat.icon = newIcon.trim() || cat.icon;
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Saved!");
+        cat.icon = newIcon ? newIcon.trim() : cat.icon;
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
     }
 
     function deleteCategory(index) {
-        if(confirm(`Delete category "${menuCategories[index].name}" and all its items?`)){
-            menuCategories.splice(index, 1);
-            saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Category Deleted.");
+        const cat = menuCategories[index];
+        if (!confirm(`Delete category "${cat.name}" and all its items?`)) return;
+        menuCategories.splice(index, 1);
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
+    }
+
+    function toggleEditPanel(id) {
+        const panel = document.getElementById(id);
+        if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    let activeCatOptType = '';
+    function showCatOptionForm(index, type) {
+        activeCatOptType = type;
+        const form = document.getElementById(`cat-opt-form-${index}`);
+        if (form) form.style.display = 'block';
+    }
+
+    function cancelCatOptionForm(index) {
+        const form = document.getElementById(`cat-opt-form-${index}`);
+        if (form) form.style.display = 'none';
+    }
+
+    function submitCatOptionForm(index) {
+        const cat = menuCategories[index];
+        const scope = document.getElementById(`cat-opt-scope-${index}`).value;
+        const caption = document.getElementById(`cat-opt-caption-${index}`).value.trim();
+        const price = parseFloat(document.getElementById(`cat-opt-price-${index}`).value) || 0;
+
+        if (!caption) return alert("Please enter option caption.");
+
+        const optObj = { name: caption, price: price };
+        if (scope) optObj.forSize = scope;
+
+        if (activeCatOptType === 'single') {
+            if (!cat.categorySingleOptions) cat.categorySingleOptions = [];
+            cat.categorySingleOptions.push(optObj);
+        } else {
+            if (!cat.categoryMultiOptions) cat.categoryMultiOptions = [];
+            cat.categoryMultiOptions.push(optObj);
         }
+
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
+    }
+
+    function renderCatOptionListHTML(options, type, catIndex) {
+        if (!options || options.length === 0) return '';
+        return options.map((opt, optIndex) => `
+            <div style="display:flex; justify-space-between; align-items:center; background:#fff; padding:6px 10px; border-radius:6px; margin-bottom:4px; font-size:11px; border:1px solid var(--border-light);">
+                <span>${type === 'single' ? '🔘' : '☑️'} ${opt.name} ${opt.forSize ? `(${opt.forSize})` : ''} - ${opt.price} MMK</span>
+                <button style="background:none; border:none; color:#E5484D; cursor:pointer; font-weight:bold;" onclick="removeCatOption(${catIndex}, '${type}', ${optIndex})">×</button>
+            </div>
+        `).join('');
+    }
+
+    function removeCatOption(catIndex, type, optIndex) {
+        const cat = menuCategories[catIndex];
+        if (type === 'single') cat.categorySingleOptions.splice(optIndex, 1);
+        else cat.categoryMultiOptions.splice(optIndex, 1);
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
     }
 
     function populateAdminCategorySelect() {
         const select = document.getElementById('admin-category-select');
-        select.innerHTML = '';
-        menuCategories.forEach((cat, index) => { select.innerHTML += `<option value="${index}">${cat.name}</option>`; });
+        if (!select) return;
+        select.innerHTML = menuCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
 
     function renderAdminMenuList() {
         const select = document.getElementById('admin-category-select');
-        if(!select.value) return;
-        const catIndex = select.value;
-        const cat = menuCategories[catIndex];
         const container = document.getElementById('admin-items-container');
-        container.innerHTML = '';
+        if (!select || !container) return;
+        const cat = menuCategories.find(c => c.id === select.value);
+        if (!cat) { container.innerHTML = ''; return; }
 
-        if(cat.items.length === 0) {
-            container.innerHTML = `<p style="font-size:12px; color:var(--text-muted); text-align:center;">No items here yet.</p>`;
-            return;
-        }
-
-        cat.items.forEach((dish, index) => {
-            const card = document.createElement('div');
-            card.className = 'admin-card';
-            
-            card.innerHTML = `
-                <div class="admin-item-header" onclick="toggleEditPanel('edit-panel-${catIndex}-${index}')">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${dish.image}" class="admin-thumb" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
-                        <div>
-                            <div class="admin-item-title">${dish.name}</div>
-                            <span style="font-size: 11px; color: var(--primary); font-weight:700;">${Math.round(dish.price)} MMK${(dish.sizes && dish.sizes.length > 0) ? ' (' + dish.sizes[0].name + ')' : ''}</span>
-                        </div>
-                    </div>
-                    <span>✏️/▼</span>
-                </div>
-                <div id="edit-panel-${catIndex}-${index}" style="display:none; margin-top:16px; border-top:1px dashed var(--border-light); padding-top:12px;">
-                    <div class="form-group"><label>Name</label><input type="text" class="form-control i-name" value="${dish.name}"></div>
-                    <div class="form-group"><label>Time</label><input type="text" class="form-control i-time" value="${dish.time || '15 Min'}"></div>
-                    <div class="form-group"><label>Image URL</label><input type="text" class="form-control i-img" value="${dish.image}"></div>
-                    <div class="form-group"><label>Description</label><textarea class="form-control i-desc">${dish.description}</textarea></div>
-                    
-                    ${(cat.sizeNames && cat.sizeNames.length > 0) ? `
-                    <div style="background:#F9FAFB; padding:10px; border-radius:10px; margin-bottom:12px;">
-                        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">📏 Size & Pricing</label>
-                        <p class="admin-hint">Size names come from the "${cat.name}" category — manage the names in Categories. Only price is edited here.</p>
-                        <div id="sizes-box-${catIndex}-${index}">
-                            ${cat.sizeNames.map(sizeName => {
-                                const existing = (dish.sizes||[]).find(s => s.name === sizeName);
-                                const priceVal = existing ? Math.round(existing.price) : '';
-                                return `
-                                <div class="opt-row">
-                                    <span class="fixed-size-label">${sizeName}</span>
-                                    <input type="number" class="form-control s-price" data-size-name="${sizeName}" value="${priceVal}" placeholder="Price MMK">
-                                </div>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                    ` : `
-                    <div class="form-group"><label>Price (MMK)</label><input type="number" class="form-control i-price" value="${Math.round(dish.price)}"></div>
-                    `}
-
-                    <div style="background:#F9FAFB; padding:10px; border-radius:10px; margin-bottom:16px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <label style="font-size:12px;font-weight:700;">🧩 Option Manager</label>
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn-secondary" style="font-size:11px; padding:5px 8px;" onclick="showOptionForm(${catIndex},${index},'single')">➕ Add Single Option</button>
-                                <button class="btn-secondary" style="font-size:11px; padding:5px 8px;" onclick="showOptionForm(${catIndex},${index},'multiple')">➕ Add Multiple Option</button>
-                            </div>
-                        </div>
-                        <p class="admin-hint">🔘 Single options let the customer pick one (like crust type). 🧀 Multiple options are add-ons they can stack (like toppings).</p>
-                        <div id="opt-form-${catIndex}-${index}" style="display:none; background:#fff; border:1px solid var(--border-light); border-radius:8px; padding:8px; margin:8px 0;">
-                            <select id="opt-scope-${catIndex}-${index}" class="form-control" style="margin-bottom:6px; font-size:12px;">
-                                <option value="">Option for Default (All Sizes)</option>
-                                ${(cat.sizeNames || []).map(sz => `<option value="${sz}">Option for ${sz}</option>`).join('')}
-                            </select>
-                            <input type="text" id="opt-caption-${catIndex}-${index}" class="form-control" placeholder="Caption (e.g. Extra Cheese)" style="margin-bottom:6px; font-size:12px;">
-                            <input type="number" id="opt-price-${catIndex}-${index}" class="form-control" placeholder="Price (MMK)" style="margin-bottom:6px; font-size:12px;">
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn-secondary" style="flex:1; font-size:11px;" onclick="cancelOptionForm(${catIndex},${index})">Cancel</button>
-                                <button class="btn-success" style="flex:1; font-size:11px;" onclick="submitOptionForm(${catIndex},${index})">Add Option</button>
-                            </div>
-                        </div>
-                        ${renderOptionListHTML(dish.singleChoices || [], 'single', catIndex, index)}
-                        ${renderOptionListHTML(dish.extras || [], 'multiple', catIndex, index)}
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; gap:10px;">
-                        <button class="btn-danger" onclick="deleteDishItem(${catIndex}, ${index})">🗑️ Delete Item</button>
-                        <button class="btn-success" style="flex:1;" onclick="saveDishItem(${catIndex}, ${index}, 'edit-panel-${catIndex}-${index}')">💾 Save Changes</button>
+        container.innerHTML = cat.items.map((item, itemIdx) => `
+            <div style="background:var(--bg-main); padding:10px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${item.image}" class="admin-thumb" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
+                    <div>
+                        <div class="admin-item-title">${item.name}</div>
+                        <div style="font-size:11px; color:var(--text-muted);">${item.price} MMK</div>
                     </div>
                 </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    function toggleEditPanel(id) { const el = document.getElementById(id); el.style.display = (el.style.display === 'none') ? 'block' : 'none'; }
-
-    /* ================= OPTION MANAGER (per item) ================= */
-    // Renders the read-only list of an item's own single/multiple options with a delete
-    // button on each — category-wide defaults aren't shown/removable here, only in
-    // Manage Categories, since they don't belong to this item.
-    function renderOptionListHTML(list, type, catIndex, itemIndex) {
-        const label = type === 'single' ? '🔘 Single Options' : '🧀 Multiple Options';
-        if (!list || list.length === 0) {
-            return `<p class="admin-hint" style="margin:6px 0 0;">${label}: none yet.</p>`;
-        }
-        return `
-            <div style="margin-top:6px;">
-                <p style="font-size:10px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">${label}</p>
-                ${list.map((o, i) => `
-                    <div class="opt-row" style="justify-content:space-between;">
-                        <span style="font-size:11px;">${o.name} <span style="color:var(--text-muted);">(${o.forSize ? o.forSize : 'Default'})</span></span>
-                        <span style="font-size:11px; display:flex; align-items:center; gap:8px;">
-                            ${Math.round(o.price || 0)} MMK
-                            <button style="background:none; border:none; color:#E5484D; cursor:pointer; font-weight:700; font-size:13px;" onclick="deleteItemOption(${catIndex},${itemIndex},'${type}',${i})">×</button>
-                        </span>
-                    </div>`).join('')}
-            </div>`;
-    }
-
-    function showOptionForm(catIndex, itemIndex, type) {
-        const form = document.getElementById(`opt-form-${catIndex}-${itemIndex}`);
-        form.dataset.type = type;
-        form.style.display = 'block';
-        document.getElementById(`opt-caption-${catIndex}-${itemIndex}`).value = '';
-        document.getElementById(`opt-price-${catIndex}-${itemIndex}`).value = '';
-    }
-
-    function cancelOptionForm(catIndex, itemIndex) {
-        document.getElementById(`opt-form-${catIndex}-${itemIndex}`).style.display = 'none';
-    }
-
-    // Re-opens an item's edit panel (and its Option Manager form) after refreshAdminAndHome()
-    // rebuilds the admin DOM — otherwise the admin loses their place after every add/remove.
-    function reopenItemPanel(catIndex, itemIndex) {
-        setTimeout(() => {
-            const panel = document.getElementById(`edit-panel-${catIndex}-${itemIndex}`);
-            if (panel) panel.style.display = 'block';
-        }, 0);
-    }
-
-    function submitOptionForm(catIndex, itemIndex) {
-        const form = document.getElementById(`opt-form-${catIndex}-${itemIndex}`);
-        const type = form.dataset.type;
-        const scope = document.getElementById(`opt-scope-${catIndex}-${itemIndex}`).value;
-        const caption = document.getElementById(`opt-caption-${catIndex}-${itemIndex}`).value.trim();
-        const price = Math.round(document.getElementById(`opt-price-${catIndex}-${itemIndex}`).value || 0);
-        if (!caption) { alert('Please enter a caption for the option.'); return; }
-
-        const dish = menuCategories[catIndex].items[itemIndex];
-        const entry = { name: caption, price, forSize: scope || null };
-        if (type === 'single') {
-            if (!dish.singleChoices) dish.singleChoices = [];
-            dish.singleChoices.push(entry);
-        } else {
-            if (!dish.extras) dish.extras = [];
-            dish.extras.push(entry);
-        }
-
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option added!');
-        reopenItemPanel(catIndex, itemIndex);
-    }
-
-    function deleteItemOption(catIndex, itemIndex, type, optIndex) {
-        const dish = menuCategories[catIndex].items[itemIndex];
-        const arr = type === 'single' ? dish.singleChoices : dish.extras;
-        if (!arr || !arr[optIndex]) return;
-        if (!confirm(`Remove "${arr[optIndex].name}"?`)) return;
-        arr.splice(optIndex, 1);
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option removed.');
-        reopenItemPanel(catIndex, itemIndex);
-    }
-
-    /* ================= OPTION MANAGER (per category — applies to all items in it) ================= */
-    function renderCatOptionListHTML(list, type, catIndex) {
-        const label = type === 'single' ? '🔘 Single Options' : '🧀 Multiple Options';
-        if (!list || list.length === 0) {
-            return `<p class="admin-hint" style="margin:6px 0 0;">${label}: none yet.</p>`;
-        }
-        return `
-            <div style="margin-top:6px;">
-                <p style="font-size:10px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">${label}</p>
-                ${list.map((o, i) => `
-                    <div class="opt-row" style="justify-content:space-between;">
-                        <span style="font-size:11px;">${o.name} <span style="color:var(--text-muted);">(${o.forSize ? o.forSize : 'Default'})</span></span>
-                        <span style="font-size:11px; display:flex; align-items:center; gap:8px;">
-                            ${Math.round(o.price || 0)} MMK
-                            <button style="background:none; border:none; color:#E5484D; cursor:pointer; font-weight:700; font-size:13px;" onclick="deleteCategoryOption(${catIndex},'${type}',${i})">×</button>
-                        </span>
-                    </div>`).join('')}
-            </div>`;
-    }
-
-    function showCatOptionForm(catIndex, type) {
-        const form = document.getElementById(`cat-opt-form-${catIndex}`);
-        form.dataset.type = type;
-        form.style.display = 'block';
-        document.getElementById(`cat-opt-caption-${catIndex}`).value = '';
-        document.getElementById(`cat-opt-price-${catIndex}`).value = '';
-    }
-
-    function cancelCatOptionForm(catIndex) {
-        document.getElementById(`cat-opt-form-${catIndex}`).style.display = 'none';
-    }
-
-    function reopenCatOptionsPanel(catIndex) {
-        setTimeout(() => {
-            const panel = document.getElementById(`cat-opts-${catIndex}`);
-            if (panel) panel.style.display = 'block';
-        }, 0);
-    }
-
-    function submitCatOptionForm(catIndex) {
-        const form = document.getElementById(`cat-opt-form-${catIndex}`);
-        const type = form.dataset.type;
-        const scope = document.getElementById(`cat-opt-scope-${catIndex}`).value;
-        const caption = document.getElementById(`cat-opt-caption-${catIndex}`).value.trim();
-        const price = Math.round(document.getElementById(`cat-opt-price-${catIndex}`).value || 0);
-        if (!caption) { alert('Please enter a caption for the option.'); return; }
-
-        const cat = menuCategories[catIndex];
-        const entry = { name: caption, price, forSize: scope || null };
-        if (type === 'single') {
-            if (!cat.categorySingleOptions) cat.categorySingleOptions = [];
-            cat.categorySingleOptions.push(entry);
-        } else {
-            if (!cat.categoryMultiOptions) cat.categoryMultiOptions = [];
-            cat.categoryMultiOptions.push(entry);
-        }
-
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Category option added — now on every item in this category!');
-        reopenCatOptionsPanel(catIndex);
-    }
-
-    function deleteCategoryOption(catIndex, type, optIndex) {
-        const cat = menuCategories[catIndex];
-        const arr = type === 'single' ? cat.categorySingleOptions : cat.categoryMultiOptions;
-        if (!arr || !arr[optIndex]) return;
-        if (!confirm(`Remove "${arr[optIndex].name}" from every item in "${cat.name}"?`)) return;
-        arr.splice(optIndex, 1);
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option removed.');
-        reopenCatOptionsPanel(catIndex);
-    }
-
-    function saveDishItem(catIndex, itemIndex, panelId) {
-        const panel = document.getElementById(panelId);
-        const name = panel.querySelector('.i-name').value;
-        const img = panel.querySelector('.i-img').value;
-        const desc = panel.querySelector('.i-desc').value;
-        const time = panel.querySelector('.i-time').value;
-
-        // Size names come from the category (see Categories -> Manage Sizes) — only price is read here.
-        // A category with no size names uses a single flat price instead.
-        const cat = menuCategories[catIndex];
-        let sizes = [];
-        let price;
-        if (cat.sizeNames && cat.sizeNames.length > 0) {
-            const sPrices = panel.querySelectorAll('.s-price');
-            sPrices.forEach(input => sizes.push({ name: input.dataset.sizeName, price: Math.round(input.value || 0) }));
-            price = sizes.length > 0 ? sizes[0].price : 0;
-        } else {
-            const priceInput = panel.querySelector('.i-price');
-            price = Math.round((priceInput ? priceInput.value : 0) || 0);
-        }
-
-        // Crust (singleChoices) and topping add-ons (extras) are edited directly in the data/HTML,
-        // not through this panel — carry the existing values over untouched.
-        const existing = menuCategories[catIndex].items[itemIndex];
-        menuCategories[catIndex].items[itemIndex] = {
-            ...existing,
-            name, price, image: img, description: desc, time, sizes
-        };
-
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Item Saved to Storage!");
-    }
-
-    function deleteDishItem(catIndex, itemIndex) {
-        if(confirm("Delete this food item completely?")) {
-            menuCategories[catIndex].items.splice(itemIndex, 1);
-            saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Item Deleted.");
-        }
+                <button class="btn-danger" onclick="deleteFoodItem('${cat.id}', ${itemIdx})">Delete</button>
+            </div>
+        `).join('');
     }
 
     function addNewDishPrompt() {
         const select = document.getElementById('admin-category-select');
-        if(!select.value) return;
-        const catIndex = select.value;
-        const cat = menuCategories[catIndex];
-        const name = prompt("Enter new food name:");
-        if(!name) return;
+        if (!select) return;
+        const cat = menuCategories.find(c => c.id === select.value);
+        if (!cat) return alert("Select a category first.");
 
-        // Sizes come from the category (see Categories -> Manage Sizes). A category with no
-        // size names defined just uses a single flat price for its items.
-        let sizes = [];
-        let price;
-        if (cat.sizeNames && cat.sizeNames.length > 0) {
-            const basePrice = Math.round(prompt(`Price for "${cat.sizeNames[0]}" (MMK):`, "8500") || 8500);
-            sizes = cat.sizeNames.map(n => ({ name: n, price: basePrice }));
-            price = basePrice;
-        } else {
-            price = Math.round(prompt("Price (MMK):", "3000") || 3000);
-        }
+        const name = prompt("Dish name:");
+        if (!name) return;
+        const price = parseFloat(prompt("Price (MMK):", "5000")) || 0;
+        const img = prompt("Image URL:", "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop");
+        const desc = prompt("Description:", "Delicious item");
 
-        // Items added inside the original Premium Pizza category automatically inherit the
-        // standard crust/topping options. Any other category (including a brand-new one) starts blank.
-        const pizzaOptions = (cat.id === PIZZA_CATEGORY_ID)
-            ? getDefaultPizzaOptions()
-            : { singleChoiceTitle: '', singleChoices: [], extrasTitle: '', extras: [] };
-
-        menuCategories[catIndex].items.push({
-            id: Date.now(), name: name, price,
-            image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600',
-            description: 'Delicious newly added item.', rating: '4.5', time: '15 Min',
-            sizes, ...pizzaOptions
+        cat.items.push({
+            id: Date.now(),
+            name: name,
+            price: price,
+            image: img,
+            description: desc,
+            rating: "4.8",
+            time: "15-20 Min",
+            sizes: (cat.sizeNames || []).map(sz => ({ name: sz, price: price }))
         });
-        saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Added " + name);
+
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
+    }
+
+    function deleteFoodItem(catId, itemIdx) {
+        const cat = menuCategories.find(c => c.id === catId);
+        if (!cat || !confirm(`Delete "${cat.items[itemIdx].name}"?`)) return;
+        cat.items.splice(itemIdx, 1);
+        saveMenuDataToStorage();
+        refreshAdminAndHome();
     }
 
     function refreshAdminAndHome() {
-        renderTabs(); renderAllCategorySections(); renderAdminCategoryManager();
-        populateAdminCategorySelect(); renderAdminMenuList();
+        renderTabs();
+        renderAllCategorySections();
+        renderAdminCategoryManager();
+        populateAdminCategorySelect();
+        renderAdminMenuList();
     }
 
-    function resetMenuToDefault() {
-        if(confirm("⚠️ Reset to factory defaults? All custom changes will be erased!")) {
-            generateDefaultMenuData(); refreshAdminAndHome(); showToast("Factory Reset Complete.");
-        }
-    }
-    
     function exportMenuBackup() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(menuCategories, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "bite_slice_menu_v5_mmk.json");
-        document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(menuCategories));
+        const anchor = document.createElement('a');
+        anchor.setAttribute("href", dataStr);
+        anchor.setAttribute("download", "menu_backup.json");
+        anchor.click();
     }
 
     function importMenuBackup() {
-        const jsonStr = prompt("Paste your menu backup JSON code here:");
-        if(!jsonStr) return;
+        const jsonStr = prompt("Paste your exported JSON data here:");
+        if (!jsonStr) return;
         try {
             const parsed = JSON.parse(jsonStr);
             if (Array.isArray(parsed)) {
-                menuCategories = parsed; saveMenuDataToStorage(); refreshAdminAndHome(); showToast("Menu imported & saved!");
-            } else alert("❌ Invalid format. Please use a valid backup.");
-        } catch(e) { alert("❌ Failed to parse JSON code."); }
+                menuCategories = parsed;
+                saveMenuDataToStorage();
+                refreshAdminAndHome();
+                showToast("Menu imported!");
+            }
+        } catch(e) { alert("Invalid JSON format."); }
     }
 
-    window.onload = () => {
+    function resetMenuToDefault() {
+        if (!confirm("Reset menu to default original?")) return;
+        generateDefaultMenuData();
+        refreshAdminAndHome();
+        showToast("Reset to default!");
+    }
 
-    initData();
-    renderTabs();
-    renderAllCategorySections();
-
-    displayTelegramUser();
-    setupTelegramBackButton();
-    updateTelegramBackButton();
-};
+    // App Startup Entry Point
+    document.addEventListener('DOMContentLoaded', () => {
+        initData();
+        displayTelegramUser();
+        setupTelegramBackButton();
+        renderTabs();
+        renderAllCategorySections();
+        updateCartBadge();
+    });
 </script>
 </body>
 </html>
