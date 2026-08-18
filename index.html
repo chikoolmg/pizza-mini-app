@@ -8,9 +8,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --primary: #FF6A1F; /* Primary Vibrant Orange */
-            --primary-hover: #e55913;
-            --bg-main: #F7F7F7; /* Light grey main background */
+            --primary: #2AABEE; /* Telegram-style light blue */
+            --primary-hover: #1E96D1;
+            --primary-tint: #EAF6FE; /* Light blue tint for backgrounds */
+            --bg-main: #F7F9FA; /* Light grey-blue main background */
             --bg-card: #FFFFFF;
             --text-main: #222222;
             --text-muted: #777777;
@@ -145,7 +146,7 @@
             overflow: hidden;
         }
         .cat-btn.active .cat-icon-container {
-            background: #FFF5F0;
+            background: var(--primary-tint);
             border-color: var(--primary);
             transform: translateY(-2px);
         }
@@ -709,7 +710,7 @@
         }
         .option-item-row:has(input:checked) {
             border-color: var(--primary);
-            background-color: #FFF5F0;
+            background-color: var(--primary-tint);
         }
         .option-item-label { display: flex; align-items: center; gap: 10px; }
         .option-item-label input { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
@@ -907,7 +908,7 @@
             cursor: grab;
             transition: background 0.2s;
         }
-        .cat-manager-row.dragging { opacity: 0.5; background: #FFF5F0; }
+        .cat-manager-row.dragging { opacity: 0.5; background: var(--primary-tint); }
         .cat-manager-row:last-child { border-bottom: none; }
         
         .opt-row {
@@ -1002,7 +1003,8 @@
         </header>
         <div class="scrollable-view-content" style="padding: 16px;">
             <div class="simple-card-view" style="padding: 20px;">
-                <div style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px;">👤</div>
+                <div id="profile-avatar-fallback" style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; overflow: hidden;">👤</div>
+                <img id="profile-avatar-img" src="" alt="Profile photo" style="display:none; width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 2px solid var(--primary-tint);">
                 <h3 id="profile-display-name" style="font-size: 16px; color: var(--text-main); text-align: center;">
     Guest Customer
 </h3>
@@ -1011,11 +1013,14 @@
    style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;">
     Telegram information loading...
 </p>
+<p id="telegram-username-info"
+   style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 2px; display:none;">
+</p>
                 <button class="btn-browse" style="width: 100%; margin-top: 14px; font-size: 12px;" onclick="switchNavTab('cart')">Edit Saved Profile Info</button>
             </div>
 
             <!-- ADMIN ACCESS -->
-            <div class="simple-card-view" style="border: 1px dashed var(--primary); background: #FFF8F4;">
+            <div class="simple-card-view" style="border: 1px dashed var(--primary); background: var(--primary-tint);">
                 <p style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">⚙️ Admin Controls</p>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Manage food categories, items, dynamic options, photos, and prices with instant saved persistence.</p>
                 <button class="btn-browse" style="width: 100%; font-size: 12px; background: #222;" onclick="openAdminPortal()">Open Menu Manager (Admin)</button>
@@ -1131,7 +1136,7 @@
                     <input type="text" id="addr-label-input" class="form-control" placeholder="Home">
                 </div>
                 <div class="form-group">
-                    <label>Full Name</label>
+                    <label>Full Name <span id="addr-name-lock-hint" style="font-weight:400; color: var(--text-muted); display:none;">(from your Telegram account)</span></label>
                     <input type="text" id="addr-name-input" class="form-control" placeholder="John Doe">
                 </div>
                 <div class="form-group">
@@ -1167,20 +1172,48 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 
     const nameElement = document.getElementById('profile-display-name');
     const infoElement = document.getElementById('telegram-user-info');
+    const usernameElement = document.getElementById('telegram-username-info');
+    const avatarImg = document.getElementById('profile-avatar-img');
+    const avatarFallback = document.getElementById('profile-avatar-fallback');
 
     if (!nameElement || !infoElement) return;
 
     if (!telegramUser) {
         nameElement.innerText = "Guest Customer";
         infoElement.innerText = "Not opened from Telegram";
+        if (usernameElement) usernameElement.style.display = 'none';
         return;
     }
 
-    nameElement.innerText =
-        telegramUser.first_name || "Telegram User";
+    nameElement.innerText = getTelegramFullName() || telegramUser.first_name || "Telegram User";
 
     infoElement.innerText =
     `Telegram ID: ${telegramUser.id}`;
+
+    // Telegram username, shown right under the ID (only when the user has one set).
+    if (usernameElement) {
+        if (telegramUser.username) {
+            usernameElement.innerText = `@${telegramUser.username}`;
+            usernameElement.style.display = 'block';
+        } else {
+            usernameElement.style.display = 'none';
+        }
+    }
+
+    // Telegram's WebApp initData only includes a `photo_url` for the user in limited
+    // cases (mainly Premium accounts) — use it when present, otherwise keep the emoji
+    // avatar fallback rather than failing silently.
+    if (avatarImg && avatarFallback) {
+        if (telegramUser.photo_url) {
+            avatarImg.src = telegramUser.photo_url;
+            avatarImg.style.display = 'block';
+            avatarFallback.style.display = 'none';
+            avatarImg.onerror = () => { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; };
+        } else {
+            avatarImg.style.display = 'none';
+            avatarFallback.style.display = 'flex';
+        }
+    }
 
     console.log("Telegram Mini App started.");
 
@@ -1191,9 +1224,81 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     } else {
         console.log("Not opened inside Telegram.");
     }
+}
+
+    // Returns the user's Telegram display name (first + last), used to lock the
+    // checkout name field. Empty string when not opened inside Telegram.
+    function getTelegramFullName() {
+        if (!telegramUser) return '';
+        return [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ');
+    }
+
+    // ================= TELEGRAM BACK BUTTON =================
+    // Mirrors how production Telegram Mini Apps (e.g. the Burger King bot) handle
+    // navigation: Telegram's own native BackButton (top-left arrow in its header) is
+    // shown whenever we're not on the Home screen, wired to our own history.back().
+    // That way both the on-screen arrow AND the phone's system/gesture back button
+    // route through our in-app navigation instead of minimizing/closing the Mini App.
+    function setupTelegramBackButton() {
+        if (!tg || !tg.BackButton) return;
+        tg.BackButton.onClick(() => { history.back(); });
+    }
+
+    function updateTelegramBackButton() {
+        if (!tg || !tg.BackButton) return;
+        const modal = document.getElementById('item-modal');
+        const addrModal = document.getElementById('address-modal');
+        const modalOpen = modal && modal.classList.contains('open');
+        const addrModalOpen = addrModal && addrModal.classList.contains('open');
+        const shouldShow = modalOpen || addrModalOpen || currentTabId !== 'home';
+        if (shouldShow) tg.BackButton.show();
+        else tg.BackButton.hide();
+    }
 
     // ================= EXISTING APP =================
+    // ================= TELEGRAM BACKEND CONNECTION =================
+const SERVER_URL = 'https://chitkool.pythonanywhere.com';
 
+async function submitFinalOrder() {
+    if (!cartItems.length) return alert('Your cart is empty');
+    const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
+    if (!activeAddr) return alert('Please select a valid delivery address');
+
+    let subtotal = cartItems.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
+    let tax = Math.round(subtotal * 0.05);
+    let delivery = 2000;
+    let grandTotal = subtotal + tax + delivery;
+
+    const orderData = {
+        initData: tg?.initData || '',
+        user: telegramUser || { id: 0, first_name: activeAddr.name },
+        address: activeAddr,
+        paymentMethod: selectedPaymentMethod,
+        items: cartItems,
+        pricing: { subtotal, tax, delivery, total: grandTotal }
+    };
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            cartItems = [];
+            updateCartBadge();
+            showToast("Order Placed Successfully!");
+            setTimeout(() => tg?.close(), 1000);
+        } else {
+            alert('Order Submission Failed: ' + (result.error || 'Server error'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Could not connect to server. Please ensure server is active.');
+    }
+}
     const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7';
     const STORAGE_KEY_ADDRESSES = 'bite_slice_user_addresses'; // New address storage
     const PIZZA_CATEGORY_ID = 'cat-1'; // The original "Premium Pizza" category. New items added inside THIS
@@ -1292,6 +1397,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             }
         }
         currentTabId = tabName;
+        updateTelegramBackButton();
     }
 
     function switchToRestaurant(name) {
@@ -1321,6 +1427,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         } else {
             switchNavTab('home', true);
         }
+        updateTelegramBackButton();
     });
 
     /* ================= CORE DATA PERSISTENCE ================= */
@@ -1466,6 +1573,11 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     /* ================= MODAL LOGIC (Kept exactly identical) ================= */
     function openModal(dish) {
         currentModalDish = dish;
+        // Combine this item's own options with its category's Option Manager defaults —
+        // computed once per modal-open so every selection/price function below reads a
+        // stable, consistent list (dish._effSingleChoices / dish._effExtras).
+        currentModalDish._effSingleChoices = getEffectiveSingleChoices(dish);
+        currentModalDish._effExtras = getEffectiveExtras(dish);
         modalQuantityValue = 1;
         selectedExtras = [];
         
@@ -1506,6 +1618,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         if (!history.state || history.state.type !== 'modal') {
             history.pushState({ ...history.state, type: 'modal' }, '');
         }
+        updateTelegramBackButton();
     }
 
     function closeModal(fromPopState = false) {
@@ -1514,6 +1627,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             modal.classList.remove('open');
             if (!fromPopState) history.back(); 
         }
+        updateTelegramBackButton();
     }
 
     // Renders the crust (single-choice/radio) options for the currently open dish,
@@ -1522,7 +1636,15 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     function renderCrustOptions() {
         const scContainer = document.getElementById('dynamic-single-choice-container');
         const dish = currentModalDish;
-        if (!dish.singleChoices || dish.singleChoices.length === 0) {
+        const allChoices = dish._effSingleChoices || dish.singleChoices || [];
+        // Options scoped to a specific size are fully hidden (not just greyed out) when
+        // that size isn't selected — index kept from the full list so click handlers
+        // still target the right entry in dish._effSingleChoices.
+        const visible = allChoices
+            .map((sc, i) => ({ sc, i }))
+            .filter(({ sc }) => isOptionAvailableForSize(sc, dish));
+
+        if (visible.length === 0) {
             scContainer.innerHTML = '';
             return;
         }
@@ -1533,12 +1655,11 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
                     <h4>${title}</h4><span style="font-size: 11px; color: var(--primary); font-weight: 600;">(Optional)</span>
                 </div>
                 <div>
-                    ${dish.singleChoices.map((sc, i) => {
-                        const available = selectedSizeIndex >= 0 ? selectedSizeIndex >= (sc.minSizeIndex || 0) : true;
+                    ${visible.map(({ sc, i }) => {
                         const price = getChoicePrice(sc);
                         const checked = selectedSingleChoiceIndex === i;
                         return `
-                            <label class="option-item-row ${available ? '' : 'option-hidden'}">
+                            <label class="option-item-row">
                                 <div class="option-item-label">
                                     <input type="radio" name="modal-single-choice" ${checked ? 'checked' : ''} onclick="handleCrustClick(this, ${i})">
                                     <span>${sc.name}</span>
@@ -1554,7 +1675,12 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     function renderExtraOptions() {
         const extrasContainer = document.getElementById('dynamic-extras-container');
         const dish = currentModalDish;
-        if (!dish.extras || dish.extras.length === 0) {
+        const allExtras = dish._effExtras || dish.extras || [];
+        const visible = allExtras
+            .map((ex, i) => ({ ex, i }))
+            .filter(({ ex }) => isOptionAvailableForSize(ex, dish));
+
+        if (visible.length === 0) {
             extrasContainer.innerHTML = '';
             return;
         }
@@ -1563,7 +1689,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             <div class="options-group">
                 <div class="options-header-line"><h4>${title}</h4></div>
                 <div>
-                    ${dish.extras.map((ex, i) => {
+                    ${visible.map(({ ex, i }) => {
                         const price = getChoicePrice(ex);
                         const checked = selectedExtras.includes(i);
                         return `
@@ -1596,9 +1722,12 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 
         // A crust choice may no longer be available on the newly selected size — clear it if so.
         if (selectedSingleChoiceIndex >= 0) {
-            const sc = currentModalDish.singleChoices[selectedSingleChoiceIndex];
-            if ((sc.minSizeIndex || 0) > selectedSizeIndex) selectedSingleChoiceIndex = -1;
+            const sc = (currentModalDish._effSingleChoices || currentModalDish.singleChoices)[selectedSingleChoiceIndex];
+            if (sc && !isOptionAvailableForSize(sc, currentModalDish)) selectedSingleChoiceIndex = -1;
         }
+        // Same for any checked extras that are scoped to a size no longer selected.
+        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
+        selectedExtras = selectedExtras.filter(idx => isOptionAvailableForSize(effExtras[idx], currentModalDish));
         renderCrustOptions();
         renderExtraOptions();
         updateModalPrice();
@@ -1627,23 +1756,27 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 
     function updateModalPrice() {
         document.getElementById('m-qty').innerText = modalQuantityValue;
+        const effSingleChoices = currentModalDish._effSingleChoices || currentModalDish.singleChoices || [];
+        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
         let base = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
-        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(currentModalDish.singleChoices[selectedSingleChoiceIndex]) : 0;
-        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(currentModalDish.extras[idx]), 0);
+        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(effSingleChoices[selectedSingleChoiceIndex]) : 0;
+        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(effExtras[idx]), 0);
         const finalTotal = ((base + scPrice + extrasTotal) * modalQuantityValue);
         document.getElementById('m-total-price').innerText = finalTotal + ' MMK';
     }
 
     function addToCartAction() {
         // Crust (single-choice) selection is optional — no validation blocks adding to cart.
+        const effSingleChoices = currentModalDish._effSingleChoices || currentModalDish.singleChoices || [];
+        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
         let singleUnitPrice = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
-        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(currentModalDish.singleChoices[selectedSingleChoiceIndex]) : 0;
-        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(currentModalDish.extras[idx]), 0);
+        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(effSingleChoices[selectedSingleChoiceIndex]) : 0;
+        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(effExtras[idx]), 0);
         
         let optionsDetails = [];
         if (selectedSizeIndex >= 0) optionsDetails.push(currentModalDish.sizes[selectedSizeIndex].name);
-        if (selectedSingleChoiceIndex >= 0) optionsDetails.push(currentModalDish.singleChoices[selectedSingleChoiceIndex].name);
-        if (selectedExtras.length > 0) optionsDetails.push("Extras: " + selectedExtras.map(idx => currentModalDish.extras[idx].name).join(', '));
+        if (selectedSingleChoiceIndex >= 0) optionsDetails.push(effSingleChoices[selectedSingleChoiceIndex].name);
+        if (selectedExtras.length > 0) optionsDetails.push("Extras: " + selectedExtras.map(idx => effExtras[idx].name).join(', '));
 
         cartItems.push({
             id: Date.now(),
@@ -1669,6 +1802,41 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             if (found) return found;
         }
         return null;
+    }
+
+    // Finds the category object that owns a given dish (by id, so it survives copies/refs).
+    function getCategoryForDish(dish) {
+        if (!dish) return null;
+        return menuCategories.find(c => c.items.some(i => i.id === dish.id)) || null;
+    }
+
+    // Combines an item's own options with its category's Option Manager defaults.
+    // Category-wide options are prepended so they render first, followed by the item's own.
+    function getEffectiveSingleChoices(dish) {
+        const cat = getCategoryForDish(dish);
+        const catOpts = (cat && cat.categorySingleOptions) || [];
+        return [...catOpts, ...(dish.singleChoices || [])];
+    }
+    function getEffectiveExtras(dish) {
+        const cat = getCategoryForDish(dish);
+        const catOpts = (cat && cat.categoryMultiOptions) || [];
+        return [...catOpts, ...(dish.extras || [])];
+    }
+
+    // Whether an option (single or multiple) should be shown for the currently selected size.
+    // - opt.forSize set -> only available when that exact size name is selected (Option Manager).
+    // - opt.minSizeIndex set (legacy pizza crusts) -> available from that size upward.
+    // - neither set ("Default") -> available for every size.
+    function isOptionAvailableForSize(opt, dish) {
+        if (opt.forSize) {
+            if (selectedSizeIndex < 0 || !dish.sizes) return false;
+            const currentSize = dish.sizes[selectedSizeIndex];
+            return !!currentSize && currentSize.name === opt.forSize;
+        }
+        if (opt.minSizeIndex !== undefined) {
+            return selectedSizeIndex >= 0 ? selectedSizeIndex >= opt.minSizeIndex : true;
+        }
+        return true;
     }
 
     // Total quantity of a given dish currently in the cart, across all its cart lines
@@ -1776,7 +1944,13 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     // that item's row(s) so the user can find it at a glance.
     function goToCartAndHighlight(dishId) {
         if (dishId === undefined || dishId === null) return;
-        closeModal();
+        // Close the modal WITHOUT letting it call history.back() — that back navigation
+        // is asynchronous and would race with switchNavTab('cart') below, landing the
+        // user back on Home instead of Cart. Collapse its history entry ourselves instead.
+        closeModal(true);
+        if (history.state && history.state.type === 'modal') {
+            history.replaceState({ tab: currentTabId }, '');
+        }
         switchNavTab('cart');
         setTimeout(() => highlightCartItemsForDish(dishId), 350);
     }
@@ -2007,11 +2181,39 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             document.getElementById('addr-detail-input').value = '';
         }
 
+        // The recipient name always comes from Telegram and is locked — it's the same
+        // person delivery is confirmed with, so it shouldn't drift from their account name.
+        applyTelegramNameLock();
+
         modal.classList.add('open');
+        updateTelegramBackButton();
+    }
+
+    // Forces the address "Full Name" field to the user's Telegram name and locks it,
+    // when opened inside Telegram. Falls back to a normal editable field otherwise
+    // (e.g. testing outside Telegram, where there's no name to lock to).
+    function applyTelegramNameLock() {
+        const nameInput = document.getElementById('addr-name-input');
+        if (!nameInput) return;
+        const hint = document.getElementById('addr-name-lock-hint');
+        const fullName = getTelegramFullName();
+        if (fullName) {
+            nameInput.value = fullName;
+            nameInput.readOnly = true;
+            nameInput.style.background = '#F3F4F6';
+            nameInput.style.color = 'var(--text-muted)';
+            if (hint) hint.style.display = 'inline';
+        } else {
+            nameInput.readOnly = false;
+            nameInput.style.background = '';
+            nameInput.style.color = '';
+            if (hint) hint.style.display = 'none';
+        }
     }
 
     function closeAddressModal() {
         document.getElementById('address-modal').classList.remove('open');
+        updateTelegramBackButton();
     }
 
     function deleteAddressPrompt(id) {
@@ -2031,7 +2233,8 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     function saveAddress() {
         const idInput = document.getElementById('addr-id-input').value;
         const label = document.getElementById('addr-label-input').value.trim() || 'Address';
-        const name = document.getElementById('addr-name-input').value.trim();
+        // Name is locked to the Telegram account name whenever one is available.
+        const name = getTelegramFullName() || document.getElementById('addr-name-input').value.trim();
         const phone = document.getElementById('addr-phone-input').value.trim();
         const addressText = document.getElementById('addr-detail-input').value.trim();
 
@@ -2140,10 +2343,34 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
                                         ${sz} <button style="background:none;border:none;color:#E5484D;cursor:pointer;font-weight:700;font-size:13px;" onclick="removeCategorySize(${index}, ${si})">×</button>
                                     </span>`).join('') : '<span class="admin-hint">No sizes yet — items in this category use a single price.</span>'}
                             </div>
-                            <div style="display:flex; gap:6px;">
-                                <input type="text" class="form-control" id="new-size-name-${index}" placeholder="e.g. Regular" style="flex:1; padding:8px 10px; font-size:12px;">
-                                <button class="btn-secondary" style="font-size:11px;" onclick="addCategorySize(${index})">+ Add</button>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <input type="text" class="form-control" id="new-size-name-${index}" placeholder="e.g. Regular" style="width:100%; padding:8px 10px; font-size:12px;">
+                                <button class="btn-secondary" style="width:100%; font-size:11px;" onclick="addCategorySize(${index})">+ Add Size</button>
                             </div>
+                        </div>
+                    </div>
+                    <div draggable="false" style="margin-top:8px;">
+                        <button class="btn-secondary" style="font-size:10px;" onclick="toggleEditPanel('cat-opts-${index}')">🧩 Category Options (${((cat.categorySingleOptions||[]).length + (cat.categoryMultiOptions||[]).length)})</button>
+                        <div id="cat-opts-${index}" draggable="false" style="display:none; margin-top:8px; background:#F9FAFB; padding:8px; border-radius:8px;">
+                            <p class="admin-hint">These options automatically apply to every item in "${cat.name}" — no need to add them one by one.</p>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                                <button class="btn-secondary" style="width:100%; font-size:11px;" onclick="showCatOptionForm(${index},'single')">➕ Add Single Option</button>
+                                <button class="btn-secondary" style="width:100%; font-size:11px;" onclick="showCatOptionForm(${index},'multiple')">➕ Add Multiple Option</button>
+                            </div>
+                            <div id="cat-opt-form-${index}" style="display:none; background:#fff; border:1px solid var(--border-light); border-radius:8px; padding:8px; margin-bottom:8px;">
+                                <select id="cat-opt-scope-${index}" class="form-control" style="margin-bottom:6px; font-size:12px;">
+                                    <option value="">Option for Default (All Sizes)</option>
+                                    ${sizeNames.map(sz => `<option value="${sz}">Option for ${sz}</option>`).join('')}
+                                </select>
+                                <input type="text" id="cat-opt-caption-${index}" class="form-control" placeholder="Caption (e.g. Extra Cheese)" style="margin-bottom:6px; font-size:12px;">
+                                <input type="number" id="cat-opt-price-${index}" class="form-control" placeholder="Price (MMK)" style="margin-bottom:6px; font-size:12px;">
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn-secondary" style="flex:1; font-size:11px;" onclick="cancelCatOptionForm(${index})">Cancel</button>
+                                    <button class="btn-success" style="flex:1; font-size:11px;" onclick="submitCatOptionForm(${index})">Add</button>
+                                </div>
+                            </div>
+                            ${renderCatOptionListHTML(cat.categorySingleOptions||[], 'single', index)}
+                            ${renderCatOptionListHTML(cat.categoryMultiOptions||[], 'multiple', index)}
                         </div>
                     </div>
                 </div>`;
@@ -2247,7 +2474,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
                         <img src="${dish.image}" class="admin-thumb" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
                         <div>
                             <div class="admin-item-title">${dish.name}</div>
-                            <span style="font-size: 11px; color: var(--primary); font-weight: 700;">${Math.round(dish.price)} MMK${(dish.sizes && dish.sizes.length > 0) ? ' (' + dish.sizes[0].name + ')' : ''}</span>
+                            <span style="font-size: 11px; color: var(--primary); font-weight:700;">${Math.round(dish.price)} MMK${(dish.sizes && dish.sizes.length > 0) ? ' (' + dish.sizes[0].name + ')' : ''}</span>
                         </div>
                     </div>
                     <span>✏️/▼</span>
@@ -2278,7 +2505,30 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
                     <div class="form-group"><label>Price (MMK)</label><input type="number" class="form-control i-price" value="${Math.round(dish.price)}"></div>
                     `}
 
-                    <p class="admin-hint" style="margin-bottom:16px;">🔘 Crust options and 🧀 topping add-ons are managed directly in the HTML/data (not through this panel). Editing and saving here won't remove or change them.</p>
+                    <div style="background:#F9FAFB; padding:10px; border-radius:10px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <label style="font-size:12px;font-weight:700;">🧩 Option Manager</label>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-secondary" style="font-size:11px; padding:5px 8px;" onclick="showOptionForm(${catIndex},${index},'single')">➕ Add Single Option</button>
+                                <button class="btn-secondary" style="font-size:11px; padding:5px 8px;" onclick="showOptionForm(${catIndex},${index},'multiple')">➕ Add Multiple Option</button>
+                            </div>
+                        </div>
+                        <p class="admin-hint">🔘 Single options let the customer pick one (like crust type). 🧀 Multiple options are add-ons they can stack (like toppings).</p>
+                        <div id="opt-form-${catIndex}-${index}" style="display:none; background:#fff; border:1px solid var(--border-light); border-radius:8px; padding:8px; margin:8px 0;">
+                            <select id="opt-scope-${catIndex}-${index}" class="form-control" style="margin-bottom:6px; font-size:12px;">
+                                <option value="">Option for Default (All Sizes)</option>
+                                ${(cat.sizeNames || []).map(sz => `<option value="${sz}">Option for ${sz}</option>`).join('')}
+                            </select>
+                            <input type="text" id="opt-caption-${catIndex}-${index}" class="form-control" placeholder="Caption (e.g. Extra Cheese)" style="margin-bottom:6px; font-size:12px;">
+                            <input type="number" id="opt-price-${catIndex}-${index}" class="form-control" placeholder="Price (MMK)" style="margin-bottom:6px; font-size:12px;">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-secondary" style="flex:1; font-size:11px;" onclick="cancelOptionForm(${catIndex},${index})">Cancel</button>
+                                <button class="btn-success" style="flex:1; font-size:11px;" onclick="submitOptionForm(${catIndex},${index})">Add Option</button>
+                            </div>
+                        </div>
+                        ${renderOptionListHTML(dish.singleChoices || [], 'single', catIndex, index)}
+                        ${renderOptionListHTML(dish.extras || [], 'multiple', catIndex, index)}
+                    </div>
 
                     <div style="display:flex; justify-content:space-between; gap:10px;">
                         <button class="btn-danger" onclick="deleteDishItem(${catIndex}, ${index})">🗑️ Delete Item</button>
@@ -2291,6 +2541,153 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     }
 
     function toggleEditPanel(id) { const el = document.getElementById(id); el.style.display = (el.style.display === 'none') ? 'block' : 'none'; }
+
+    /* ================= OPTION MANAGER (per item) ================= */
+    // Renders the read-only list of an item's own single/multiple options with a delete
+    // button on each — category-wide defaults aren't shown/removable here, only in
+    // Manage Categories, since they don't belong to this item.
+    function renderOptionListHTML(list, type, catIndex, itemIndex) {
+        const label = type === 'single' ? '🔘 Single Options' : '🧀 Multiple Options';
+        if (!list || list.length === 0) {
+            return `<p class="admin-hint" style="margin:6px 0 0;">${label}: none yet.</p>`;
+        }
+        return `
+            <div style="margin-top:6px;">
+                <p style="font-size:10px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">${label}</p>
+                ${list.map((o, i) => `
+                    <div class="opt-row" style="justify-content:space-between;">
+                        <span style="font-size:11px;">${o.name} <span style="color:var(--text-muted);">(${o.forSize ? o.forSize : 'Default'})</span></span>
+                        <span style="font-size:11px; display:flex; align-items:center; gap:8px;">
+                            ${Math.round(o.price || 0)} MMK
+                            <button style="background:none; border:none; color:#E5484D; cursor:pointer; font-weight:700; font-size:13px;" onclick="deleteItemOption(${catIndex},${itemIndex},'${type}',${i})">×</button>
+                        </span>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function showOptionForm(catIndex, itemIndex, type) {
+        const form = document.getElementById(`opt-form-${catIndex}-${itemIndex}`);
+        form.dataset.type = type;
+        form.style.display = 'block';
+        document.getElementById(`opt-caption-${catIndex}-${itemIndex}`).value = '';
+        document.getElementById(`opt-price-${catIndex}-${itemIndex}`).value = '';
+    }
+
+    function cancelOptionForm(catIndex, itemIndex) {
+        document.getElementById(`opt-form-${catIndex}-${itemIndex}`).style.display = 'none';
+    }
+
+    // Re-opens an item's edit panel (and its Option Manager form) after refreshAdminAndHome()
+    // rebuilds the admin DOM — otherwise the admin loses their place after every add/remove.
+    function reopenItemPanel(catIndex, itemIndex) {
+        setTimeout(() => {
+            const panel = document.getElementById(`edit-panel-${catIndex}-${itemIndex}`);
+            if (panel) panel.style.display = 'block';
+        }, 0);
+    }
+
+    function submitOptionForm(catIndex, itemIndex) {
+        const form = document.getElementById(`opt-form-${catIndex}-${itemIndex}`);
+        const type = form.dataset.type;
+        const scope = document.getElementById(`opt-scope-${catIndex}-${itemIndex}`).value;
+        const caption = document.getElementById(`opt-caption-${catIndex}-${itemIndex}`).value.trim();
+        const price = Math.round(document.getElementById(`opt-price-${catIndex}-${itemIndex}`).value || 0);
+        if (!caption) { alert('Please enter a caption for the option.'); return; }
+
+        const dish = menuCategories[catIndex].items[itemIndex];
+        const entry = { name: caption, price, forSize: scope || null };
+        if (type === 'single') {
+            if (!dish.singleChoices) dish.singleChoices = [];
+            dish.singleChoices.push(entry);
+        } else {
+            if (!dish.extras) dish.extras = [];
+            dish.extras.push(entry);
+        }
+
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option added!');
+        reopenItemPanel(catIndex, itemIndex);
+    }
+
+    function deleteItemOption(catIndex, itemIndex, type, optIndex) {
+        const dish = menuCategories[catIndex].items[itemIndex];
+        const arr = type === 'single' ? dish.singleChoices : dish.extras;
+        if (!arr || !arr[optIndex]) return;
+        if (!confirm(`Remove "${arr[optIndex].name}"?`)) return;
+        arr.splice(optIndex, 1);
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option removed.');
+        reopenItemPanel(catIndex, itemIndex);
+    }
+
+    /* ================= OPTION MANAGER (per category — applies to all items in it) ================= */
+    function renderCatOptionListHTML(list, type, catIndex) {
+        const label = type === 'single' ? '🔘 Single Options' : '🧀 Multiple Options';
+        if (!list || list.length === 0) {
+            return `<p class="admin-hint" style="margin:6px 0 0;">${label}: none yet.</p>`;
+        }
+        return `
+            <div style="margin-top:6px;">
+                <p style="font-size:10px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">${label}</p>
+                ${list.map((o, i) => `
+                    <div class="opt-row" style="justify-content:space-between;">
+                        <span style="font-size:11px;">${o.name} <span style="color:var(--text-muted);">(${o.forSize ? o.forSize : 'Default'})</span></span>
+                        <span style="font-size:11px; display:flex; align-items:center; gap:8px;">
+                            ${Math.round(o.price || 0)} MMK
+                            <button style="background:none; border:none; color:#E5484D; cursor:pointer; font-weight:700; font-size:13px;" onclick="deleteCategoryOption(${catIndex},'${type}',${i})">×</button>
+                        </span>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function showCatOptionForm(catIndex, type) {
+        const form = document.getElementById(`cat-opt-form-${catIndex}`);
+        form.dataset.type = type;
+        form.style.display = 'block';
+        document.getElementById(`cat-opt-caption-${catIndex}`).value = '';
+        document.getElementById(`cat-opt-price-${catIndex}`).value = '';
+    }
+
+    function cancelCatOptionForm(catIndex) {
+        document.getElementById(`cat-opt-form-${catIndex}`).style.display = 'none';
+    }
+
+    function reopenCatOptionsPanel(catIndex) {
+        setTimeout(() => {
+            const panel = document.getElementById(`cat-opts-${catIndex}`);
+            if (panel) panel.style.display = 'block';
+        }, 0);
+    }
+
+    function submitCatOptionForm(catIndex) {
+        const form = document.getElementById(`cat-opt-form-${catIndex}`);
+        const type = form.dataset.type;
+        const scope = document.getElementById(`cat-opt-scope-${catIndex}`).value;
+        const caption = document.getElementById(`cat-opt-caption-${catIndex}`).value.trim();
+        const price = Math.round(document.getElementById(`cat-opt-price-${catIndex}`).value || 0);
+        if (!caption) { alert('Please enter a caption for the option.'); return; }
+
+        const cat = menuCategories[catIndex];
+        const entry = { name: caption, price, forSize: scope || null };
+        if (type === 'single') {
+            if (!cat.categorySingleOptions) cat.categorySingleOptions = [];
+            cat.categorySingleOptions.push(entry);
+        } else {
+            if (!cat.categoryMultiOptions) cat.categoryMultiOptions = [];
+            cat.categoryMultiOptions.push(entry);
+        }
+
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Category option added — now on every item in this category!');
+        reopenCatOptionsPanel(catIndex);
+    }
+
+    function deleteCategoryOption(catIndex, type, optIndex) {
+        const cat = menuCategories[catIndex];
+        const arr = type === 'single' ? cat.categorySingleOptions : cat.categoryMultiOptions;
+        if (!arr || !arr[optIndex]) return;
+        if (!confirm(`Remove "${arr[optIndex].name}" from every item in "${cat.name}"?`)) return;
+        arr.splice(optIndex, 1);
+        saveMenuDataToStorage(); refreshAdminAndHome(); showToast('Option removed.');
+        reopenCatOptionsPanel(catIndex);
+    }
 
     function saveDishItem(catIndex, itemIndex, panelId) {
         const panel = document.getElementById(panelId);
@@ -2402,6 +2799,8 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     renderAllCategorySections();
 
     displayTelegramUser();
+    setupTelegramBackButton();
+    updateTelegramBackButton();
 };
 </script>
 </body>
