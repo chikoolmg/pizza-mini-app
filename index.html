@@ -1304,7 +1304,8 @@ async function submitFinalOrder() {
         alert('Could not connect to server. Please ensure server is active.');
     }
 }
-    const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7'; // shared shop-wide menu — same for every customer, this is correct as-is
+    const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7'; // local cache of the shared menu — server (see API_BASE) is now the real source of truth
+    const API_BASE = 'https://chitkool.pythonanywhere.com'; // your Flask backend on PythonAnywhere
     // Addresses are scoped PER Telegram account (by their numeric user id), not just per device —
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
@@ -1439,7 +1440,28 @@ async function submitFinalOrder() {
     });
 
     /* ================= CORE DATA PERSISTENCE ================= */
-    function initData() {
+    // Menu now lives on the server so every customer (and every one of your own
+    // devices) sees the same thing. localStorage is kept only as an offline
+    // fallback in case the server can't be reached when the app opens.
+    async function initData() {
+        try {
+            const res = await fetch(`${API_BASE}/api/menu`);
+            if (res.ok) {
+                const parsed = await res.json();
+                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                    menuCategories = parsed;
+                    activeCategoryName = menuCategories[0].name;
+                    // Keep a local copy so the app still has *something* to show
+                    // next time if the server is briefly unreachable.
+                    try { localStorage.setItem(STORAGE_KEY_MENU_DATA, JSON.stringify(menuCategories)); } catch(e) {}
+                    return;
+                }
+            }
+        } catch(e) {
+            console.error("Could not load menu from server, falling back to local cache", e);
+        }
+
+        // Server unreachable or returned nothing usable — try the last known copy.
         try {
             const savedMenu = localStorage.getItem(STORAGE_KEY_MENU_DATA);
             if (savedMenu) {
@@ -1478,9 +1500,19 @@ async function submitFinalOrder() {
     }
 
     function saveMenuDataToStorage() {
+        // Local cache first, so the admin's own UI stays snappy and has a fallback.
         try {
             localStorage.setItem(STORAGE_KEY_MENU_DATA, JSON.stringify(menuCategories));
         } catch(e) {}
+
+        // Push the full menu to the server so every device sees this change.
+        // NOTE: this endpoint has no login check yet — fine while you're testing,
+        // but add the admin-auth step before real customers start using this.
+        fetch(`${API_BASE}/api/admin/menu-data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ menu: menuCategories })
+        }).catch(err => console.error("Failed to sync menu to server", err));
     }
 
     /* ================= HOME RENDERING (Kept exactly identical) ================= */
@@ -2595,8 +2627,8 @@ async function submitFinalOrder() {
     }
 
     // App Startup Entry Point
-    document.addEventListener('DOMContentLoaded', () => {
-        initData();
+    document.addEventListener('DOMContentLoaded', async () => {
+        await initData();
         displayTelegramUser();
         setupTelegramBackButton();
         renderTabs();
