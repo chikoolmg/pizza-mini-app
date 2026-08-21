@@ -1157,23 +1157,41 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 const SERVER_URL = 'https://chitkool.pythonanywhere.com';
 
 async function submitFinalOrder() {
+    if (isSubmittingOrder) return; // Prevent double/rapid taps from firing multiple orders
     if (!cartItems.length) return alert('Your cart is empty');
-    const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
-    if (!activeAddr) return alert('Please select a valid delivery address');
+
+    let activeAddr = null;
+    if (deliveryMethod === 'delivery') {
+        activeAddr = savedAddresses.find(a => a.id === activeAddressId);
+        if (!activeAddr) return alert('Please select a valid delivery address');
+    }
 
     let subtotal = cartItems.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
-    let tax = Math.round(subtotal * 0.05);
-    let delivery = 2000;
-    let grandTotal = subtotal + tax + delivery;
+    let fee = 500; // Flat app/service fee (tax-inclusive), not percentage-based
+    let delivery = deliveryMethod === 'pickup' ? 0 : 2000;
+    let grandTotal = subtotal + fee + delivery;
 
     const orderData = {
         initData: tg?.initData || '',
-        user: telegramUser || { id: 0, first_name: activeAddr.name },
+        user: telegramUser || { id: 0, first_name: activeAddr ? activeAddr.name : (telegramUser?.first_name || 'Guest') },
         address: activeAddr,
+        deliveryMethod: deliveryMethod,
         paymentMethod: selectedPaymentMethod,
         items: cartItems,
-        pricing: { subtotal, tax, delivery, total: grandTotal }
+        pricing: { subtotal, fee, delivery, total: grandTotal }
     };
+
+    // Lock the button so a second tap (or accidental double-tap) can't submit a duplicate order
+    isSubmittingOrder = true;
+    const payBtn = document.getElementById('place-order-btn');
+    let originalBtnText = '';
+    if (payBtn) {
+        originalBtnText = payBtn.innerText;
+        payBtn.disabled = true;
+        payBtn.style.opacity = '0.6';
+        payBtn.style.pointerEvents = 'none';
+        payBtn.innerText = 'Processing...';
+    }
 
     try {
         const res = await fetch(`${SERVER_URL}/api/order`, {
@@ -1188,12 +1206,22 @@ async function submitFinalOrder() {
             updateCartBadge();
             showToast("Order Placed Successfully!");
             setTimeout(() => tg?.close(), 1000);
+            return; // Leave the button locked/disabled — the mini app is closing anyway
         } else {
             alert('Order Submission Failed: ' + (result.error || 'Server error'));
         }
     } catch (e) {
         console.error(e);
         alert('Could not connect to server. Please ensure server is active.');
+    }
+
+    // Only re-enable on failure, so the user can retry
+    isSubmittingOrder = false;
+    if (payBtn) {
+        payBtn.disabled = false;
+        payBtn.style.opacity = '';
+        payBtn.style.pointerEvents = '';
+        payBtn.innerText = originalBtnText || 'Make Payment';
     }
 }
     const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7'; // local cache of the shared menu — server (see API_BASE) is now the real source of truth
@@ -1243,6 +1271,8 @@ async function submitFinalOrder() {
     let savedAddresses = JSON.parse(localStorage.getItem(STORAGE_KEY_ADDRESSES)) || [];
     let activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
     let selectedPaymentMethod = 'kbzpay'; // Default payment
+    let deliveryMethod = 'delivery'; // 'delivery' (default) or 'pickup'
+    let isSubmittingOrder = false; // guards "Make Payment" against multiple/rapid clicks
 
     /* ================= HISTORY API LOGIC ================= */
     let currentTabId = 'home';
@@ -1968,9 +1998,9 @@ async function submitFinalOrder() {
         
         let subtotal = 0;
         cartItems.forEach(item => subtotal += item.unitPrice * item.quantity);
-        const tax = Math.round(subtotal * 0.05);
-        const deliveryFee = 2000;
-        const grandTotal = subtotal + tax + deliveryFee;
+        const FEE = 500; // Flat app/service fee (tax-inclusive), not percentage-based
+        const deliveryFee = deliveryMethod === 'pickup' ? 0 : 2000;
+        const grandTotal = subtotal + FEE + deliveryFee;
 
         // Build Address Section
         let addressHtml = '';
@@ -2022,7 +2052,28 @@ async function submitFinalOrder() {
 
         container.innerHTML = `
             <div class="cart-section-title" style="margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
-            ${addressHtml}
+            ${deliveryMethod === 'pickup' ? `
+                <div class="checkout-card" style="cursor: default;">
+                    <div class="address-info">
+                        <div class="address-info-header"><span class="address-title">Store Pick-up</span></div>
+                        <div class="address-details"><p>No delivery address needed — pick up your order at our store.</p></div>
+                    </div>
+                </div>
+            ` : addressHtml}
+
+            <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Delivery Method</div>
+            <div class="checkout-card ${deliveryMethod === 'delivery' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('delivery')">
+                <div class="payment-label" style="flex: 1;">
+                    <span style="font-size: 20px;">🛵</span> Delivery
+                </div>
+                <div class="radio-custom"></div>
+            </div>
+            <div class="checkout-card ${deliveryMethod === 'pickup' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('pickup')">
+                <div class="payment-label" style="flex: 1;">
+                    <span style="font-size: 20px;">🏬</span> Self-pick up
+                </div>
+                <div class="radio-custom"></div>
+            </div>
 
             <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method</div>
             <div class="checkout-card ${selectedPaymentMethod === 'kbzpay' ? 'active-payment' : ''}" onclick="selectPayment('kbzpay')">
@@ -2040,12 +2091,13 @@ async function submitFinalOrder() {
 
             <div class="cart-section-card" style="margin-top: 24px; margin-bottom: 24px; border: none; background: white;">
                 <div class="summary-row"><span>Shipping fee:</span><span>${deliveryFee} MMK</span></div>
-                <div class="summary-row"><span>Tax (5%):</span><span>${tax} MMK</span></div>
+                <div class="summary-row"><span>Fee:</span><span>${FEE} MMK</span></div>
                 <div class="summary-row"><span>Subtotal:</span><span>${subtotal} MMK</span></div>
                 <div class="summary-row grand-total"><span>Total:</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
+                <div style="text-align: right; margin-top: 6px;"><span class="inline-hint">Tax-inclusive</span></div>
             </div>
 
-            <button class="btn-place-order" onclick="submitFinalOrder()">Make Payment</button>
+            <button class="btn-place-order" id="place-order-btn" onclick="submitFinalOrder()">Make Payment</button>
         `;
     }
 
@@ -2057,6 +2109,11 @@ async function submitFinalOrder() {
     function selectPayment(method) {
         selectedPaymentMethod = method;
         renderCheckoutPage();
+    }
+
+    function selectDeliveryMethod(method) {
+        deliveryMethod = method;
+        renderCheckoutPage(); // Re-render: toggles the address section and updates the shipping fee
     }
 
     const MAX_SAVED_ADDRESSES = 2;
