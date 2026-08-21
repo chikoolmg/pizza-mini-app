@@ -106,6 +106,55 @@
             letter-spacing: -0.3px;
         }
 
+        /* --- HOME PAGE RESTAURANT HERO (logo + name), replaces the plain title bar ---
+           name/logo/tagline are filled in by loadRestaurantInfo() from
+           GET /api/restaurant-info, so an admin.html panel can update them later
+           without touching this file again. */
+        .restaurant-hero {
+            background-color: var(--bg-card);
+            padding: 18px 20px 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .restaurant-hero-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            object-fit: cover;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .restaurant-hero-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            background: linear-gradient(135deg, var(--primary-tint), #ffffff);
+            border: 1px solid var(--border-light);
+        }
+        .restaurant-hero-text { flex: 1; min-width: 0; }
+        .restaurant-hero-text h1 {
+            color: var(--text-main);
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .restaurant-hero-tagline {
+            display: block;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .home-top-section {
             background: var(--bg-card);
             flex-shrink: 0;
@@ -823,6 +872,74 @@
             border: 1px solid var(--border-light);
         }
 
+        /* --- PROFILE PAGE: order stats + order history list --- */
+        .profile-stats-row {
+            display: flex;
+            justify-content: space-around;
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 16px 8px;
+            margin-top: 14px;
+            border: 1px solid var(--border-light);
+        }
+        .profile-stat-item { flex: 1; text-align: center; }
+        .profile-stat-value { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        .profile-stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+        .order-history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-light);
+        }
+        .order-history-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .order-history-icon.pending { background: #FFF7E0; }
+        .order-history-icon.confirmed { background: #E6F9F1; }
+        .order-history-icon.canceled { background: #FDECEC; }
+        .order-history-info { flex: 1; min-width: 0; }
+        .order-history-id { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .order-history-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .order-history-status {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .order-history-status.pending { background: #FFF7E0; color: #B8860B; }
+        .order-history-status.confirmed { background: #E6F9F1; color: var(--success-green); }
+        .order-history-status.canceled { background: #FDECEC; color: var(--danger-red); }
+        .order-history-empty {
+            text-align: center;
+            padding: 26px 20px;
+            color: var(--text-muted);
+            font-size: 12px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+        }
+
         /* EXPLORE RESTAURANTS TAB STYLES */
         .restaurant-card {
             background: var(--bg-card);
@@ -884,10 +1001,14 @@
     <!-- HOME VIEW -->
     <div id="home-view" class="page-view active-view">
         <div class="home-top-section">
-            <header>
-                <h1 id="active-restaurant-title">Bite & Slice Pizzeria</h1>
-                <span style="font-size: 20px;">🍕</span>
-            </header>
+            <div class="restaurant-hero" id="restaurant-hero">
+                <div class="restaurant-hero-logo restaurant-hero-fallback" id="restaurant-hero-fallback">🍕</div>
+                <img id="restaurant-logo-img" class="restaurant-hero-logo" src="" alt="Restaurant logo" style="display:none;">
+                <div class="restaurant-hero-text">
+                    <h1 id="active-restaurant-title">Bite & Slice Pizzeria</h1>
+                    <span class="restaurant-hero-tagline" id="restaurant-hero-tagline">Authentic Italian Pizzas, Crusts & Cheesy Sides</span>
+                </div>
+            </div>
             <div class="category-scroll" id="cat-scroll"></div>
         </div>
         <main class="grid-content" id="main-content-scroll"></main>
@@ -962,6 +1083,23 @@
                 <button class="btn-browse" style="width: 100%; margin-top: 14px; font-size: 12px;" onclick="switchNavTab('cart')">Edit Saved Profile Info</button>
             </div>
 
+            <div class="profile-stats-row" id="profile-stats-row">
+                <div class="profile-stat-item">
+                    <div class="profile-stat-value" id="stat-pending-orders">0</div>
+                    <div class="profile-stat-label">Pending</div>
+                </div>
+                <div class="profile-stat-item">
+                    <div class="profile-stat-value" id="stat-succeeded-orders">0</div>
+                    <div class="profile-stat-label">Succeeded</div>
+                </div>
+                <div class="profile-stat-item">
+                    <div class="profile-stat-value" id="stat-saved-addresses">0</div>
+                    <div class="profile-stat-label">Addresses</div>
+                </div>
+            </div>
+
+            <div class="cart-section-title" style="margin-top: 22px;">📦 Order History</div>
+            <div id="profile-order-history-list"></div>
         </div>
     </div>
 
@@ -1128,6 +1266,68 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     function getTelegramFullName() {
         if (!telegramUser) return '';
         return [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ');
+    }
+
+    // Populates the Profile page's Pending/Succeeded/Addresses stats and the
+    // Order History list from GET /api/orders/<telegramUser.id>. Called every
+    // time the Profile tab is opened so it reflects any admin confirm/cancel
+    // action taken in Telegram since the last visit.
+    async function renderProfileOrders() {
+        const listEl = document.getElementById('profile-order-history-list');
+        const pendingStat = document.getElementById('stat-pending-orders');
+        const succeededStat = document.getElementById('stat-succeeded-orders');
+        const addressesStat = document.getElementById('stat-saved-addresses');
+
+        if (addressesStat) addressesStat.innerText = savedAddresses.length;
+        if (!listEl) return;
+
+        if (!telegramUser || !telegramUser.id) {
+            listEl.innerHTML = `<div class="order-history-empty">Open this Mini App from Telegram to see your order history.</div>`;
+            if (pendingStat) pendingStat.innerText = '0';
+            if (succeededStat) succeededStat.innerText = '0';
+            return;
+        }
+
+        listEl.innerHTML = `<div class="order-history-empty">Loading your orders...</div>`;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/orders/${telegramUser.id}`);
+            const result = await res.json();
+            const userOrders = (result && result.orders) || [];
+
+            const pendingCount = userOrders.filter(o => o.status === 'pending').length;
+            const succeededCount = userOrders.filter(o => o.status === 'confirmed').length;
+            if (pendingStat) pendingStat.innerText = pendingCount;
+            if (succeededStat) succeededStat.innerText = succeededCount;
+
+            if (!userOrders.length) {
+                listEl.innerHTML = `<div class="order-history-empty">No orders yet — your placed orders will show up here.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = userOrders.map(order => {
+                const status = order.status || 'pending';
+                const icon = status === 'confirmed' ? '✅' : status === 'canceled' ? '❌' : '⏳';
+                const statusLabel = status === 'confirmed' ? 'Succeeded' : status === 'canceled' ? 'Canceled' : 'Pending';
+                const dateText = order.createdAt ? new Date(order.createdAt * 1000).toLocaleDateString() : '';
+                const metaParts = [`${order.itemCount || 0} item(s)`, `${order.total || 0} MMK`];
+                if (dateText) metaParts.push(dateText);
+
+                return `
+                    <div class="order-history-item">
+                        <div class="order-history-icon ${status}">${icon}</div>
+                        <div class="order-history-info">
+                            <div class="order-history-id">${order.orderId}</div>
+                            <div class="order-history-meta">${metaParts.join(' • ')}</div>
+                        </div>
+                        <div class="order-history-status ${status}">${statusLabel}</div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Could not load order history:', e);
+            listEl.innerHTML = `<div class="order-history-empty">Could not load order history. Check your connection and try again.</div>`;
+        }
     }
 
     // ================= TELEGRAM BACK BUTTON =================
@@ -1301,6 +1501,7 @@ async function submitFinalOrder() {
 
         if (tabName === 'cart') renderCartPage();
         if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
+        if (tabName === 'profile') renderProfileOrders(); // Refresh pending/succeeded orders + history each visit
 
         if (!fromHistory) {
             const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
@@ -1330,6 +1531,35 @@ async function submitFinalOrder() {
         document.getElementById('active-restaurant-title').innerText = name;
         switchNavTab('home');
         showToast(`Viewing ${name}`);
+    }
+
+    // Fills in the Home page logo/name/tagline from GET /api/restaurant-info,
+    // so a future admin.html can change branding without editing this file.
+    // If the server has nothing configured yet (or is unreachable), the
+    // defaults already sitting in the markup are left as-is.
+    async function loadRestaurantInfo() {
+        try {
+            const res = await fetch(`${API_BASE}/api/restaurant-info`);
+            if (!res.ok) return;
+            const info = await res.json();
+
+            const nameEl = document.getElementById('active-restaurant-title');
+            const taglineEl = document.getElementById('restaurant-hero-tagline');
+            const logoImg = document.getElementById('restaurant-logo-img');
+            const logoFallback = document.getElementById('restaurant-hero-fallback');
+
+            if (info.name && nameEl) nameEl.innerText = info.name;
+            if (info.tagline && taglineEl) taglineEl.innerText = info.tagline;
+
+            if (info.logoUrl && logoImg && logoFallback) {
+                logoImg.src = info.logoUrl;
+                logoImg.style.display = 'block';
+                logoFallback.style.display = 'none';
+                logoImg.onerror = () => { logoImg.style.display = 'none'; logoFallback.style.display = 'flex'; };
+            }
+        } catch (e) {
+            console.warn('Could not load restaurant branding, keeping defaults:', e);
+        }
     }
 
     window.addEventListener('popstate', (e) => {
@@ -2235,6 +2465,7 @@ async function submitFinalOrder() {
     // App Startup Entry Point
     document.addEventListener('DOMContentLoaded', async () => {
         await initData();
+        loadRestaurantInfo(); // Home page logo/name/tagline — doesn't block the menu from rendering
         displayTelegramUser();
         setupTelegramBackButton();
         renderTabs();
