@@ -911,6 +911,7 @@
         .order-history-icon.canceled { background: #FDECEC; }
         .order-history-info { flex: 1; min-width: 0; }
         .order-history-id { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .order-history-restaurant { font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 1px; }
         .order-history-meta {
             font-size: 11px;
             color: var(--text-muted);
@@ -988,6 +989,51 @@
             margin-top: 6px;
         }
 
+        /* Dynamic restaurant cards rendered in the Explore tab from GET /api/restaurants */
+        .restaurant-card-row { display: flex; align-items: center; gap: 12px; padding: 14px; }
+        .restaurant-card-logo {
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            object-fit: cover;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: linear-gradient(135deg, var(--primary-tint), #ffffff);
+            border: 1px solid var(--border-light);
+        }
+        .restaurant-card-info { flex: 1; min-width: 0; }
+        .restaurant-card-tagline {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 2px 0 4px;
+        }
+        .restaurant-card-address {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .restaurant-active-tag {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--success-green);
+            background: #E6F9F1;
+            padding: 2px 8px;
+            border-radius: 8px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .explore-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
         .option-item-row.option-hidden { display: none; }
         .inline-hint { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4; }
     </style>
@@ -1021,22 +1067,7 @@
         </header>
         <div class="scrollable-view-content" style="padding: 16px;">
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; font-weight: 500;">Select a restaurant to view their live menu:</p>
-            
-            <div class="restaurant-card" onclick="switchToRestaurant('Bite & Slice Pizzeria')">
-                <div style="position: relative;">
-                    <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop" class="restaurant-banner" alt="Pizza">
-                    <span class="restaurant-tag">Selected Main</span>
-                </div>
-                <div class="restaurant-details">
-                    <div class="restaurant-title">Bite & Slice Pizzeria 🍕</div>
-                    <p style="font-size: 12px; color: var(--text-muted);">Authentic Italian Pizzas, Crusts & Cheesy Sides</p>
-                    <div class="restaurant-meta">
-                        <span>⭐ 4.9 (120+)</span>
-                        <span>⏱ 20-25 min</span>
-                        <span>🛵 Free Delivery</span>
-                    </div>
-                </div>
-            </div>
+            <div id="explore-restaurant-list"></div>
         </div>
     </div>
 
@@ -1312,12 +1343,14 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
                 const dateText = order.createdAt ? new Date(order.createdAt * 1000).toLocaleDateString() : '';
                 const metaParts = [`${order.itemCount || 0} item(s)`, `${order.total || 0} MMK`];
                 if (dateText) metaParts.push(dateText);
+                const restaurantLine = order.restaurantName ? `<div class="order-history-restaurant">${order.restaurantName}</div>` : '';
 
                 return `
                     <div class="order-history-item">
                         <div class="order-history-icon ${status}">${icon}</div>
                         <div class="order-history-info">
                             <div class="order-history-id">${order.orderId}</div>
+                            ${restaurantLine}
                             <div class="order-history-meta">${metaParts.join(' • ')}</div>
                         </div>
                         <div class="order-history-status ${status}">${statusLabel}</div>
@@ -1378,7 +1411,8 @@ async function submitFinalOrder() {
         deliveryMethod: deliveryMethod,
         paymentMethod: selectedPaymentMethod,
         items: cartItems,
-        pricing: { subtotal, fee, delivery, total: grandTotal }
+        pricing: { subtotal, fee, delivery, total: grandTotal },
+        restaurantId: currentRestaurantId
     };
 
     // Lock the button so a second tap (or accidental double-tap) can't submit a duplicate order
@@ -1426,6 +1460,12 @@ async function submitFinalOrder() {
 }
     const STORAGE_KEY_MENU_DATA = 'bite_slice_custom_menu_v7'; // local cache of the shared menu — server (see API_BASE) is now the real source of truth
     const API_BASE = 'https://chitkool.pythonanywhere.com'; // your Flask backend on PythonAnywhere
+
+    // Which restaurant's storefront is currently active. Persists across visits
+    // in this browser so returning customers land back on whichever restaurant
+    // they were last viewing, rather than always resetting to 'default'.
+    const STORAGE_KEY_ACTIVE_RESTAURANT = 'active_restaurant_id';
+    let currentRestaurantId = localStorage.getItem(STORAGE_KEY_ACTIVE_RESTAURANT) || 'default';
     // Addresses are scoped PER Telegram account (by their numeric user id), not just per device —
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
@@ -1502,6 +1542,7 @@ async function submitFinalOrder() {
         if (tabName === 'cart') renderCartPage();
         if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
         if (tabName === 'profile') renderProfileOrders(); // Refresh pending/succeeded orders + history each visit
+        if (tabName === 'explore') renderExploreView(); // Refresh restaurant directory each visit
 
         if (!fromHistory) {
             const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
@@ -1527,38 +1568,110 @@ async function submitFinalOrder() {
         updateTelegramBackButton();
     }
 
-    function switchToRestaurant(name) {
-        document.getElementById('active-restaurant-title').innerText = name;
-        switchNavTab('home');
-        showToast(`Viewing ${name}`);
+    // Renders the Explore tab's restaurant list from the public directory.
+    // Called every time the Explore tab is opened so newly-approved
+    // restaurants show up without needing a full page reload.
+    async function renderExploreView() {
+        const listEl = document.getElementById('explore-restaurant-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = `<div class="explore-empty">Loading restaurants...</div>`;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/restaurants`);
+            const result = await res.json();
+            const restaurants = (result && result.restaurants) || [];
+
+            if (!restaurants.length) {
+                listEl.innerHTML = `<div class="explore-empty">No restaurants are listed yet.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = restaurants.map(r => {
+                const isActive = r.id === currentRestaurantId;
+                const logoBlock = r.logoUrl
+                    ? `<img class="restaurant-card-logo" src="${r.logoUrl}" alt="" onerror="this.outerHTML='<div class=&quot;restaurant-card-logo&quot;>🍽️</div>'">`
+                    : `<div class="restaurant-card-logo">🍽️</div>`;
+                const activeTag = isActive ? `<span class="restaurant-active-tag">Currently Viewing</span>` : '';
+                const taglineHtml = r.tagline ? `<p class="restaurant-card-tagline">${r.tagline}</p>` : '';
+                const addressHtml = r.address ? `<div class="restaurant-card-address">📍 ${r.address}</div>` : '';
+
+                return `
+                    <div class="restaurant-card" onclick="selectRestaurant('${r.id}')">
+                        <div class="restaurant-card-row">
+                            ${logoBlock}
+                            <div class="restaurant-card-info">
+                                <div class="restaurant-title">${r.name}${activeTag}</div>
+                                ${taglineHtml}
+                                ${addressHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Could not load restaurant list:', e);
+            listEl.innerHTML = `<div class="explore-empty">Could not load restaurants. Check your connection and try again.</div>`;
+        }
     }
 
-    // Fills in the Home page logo/name/tagline from GET /api/restaurant-info,
-    // so a future admin.html can change branding without editing this file.
-    // If the server has nothing configured yet (or is unreachable), the
-    // defaults already sitting in the markup are left as-is.
+    // Switches the active storefront to a different restaurant: re-fetches its
+    // menu and branding, and clears the cart first if it has items — an order
+    // can only belong to one restaurant, so carrying items over would be wrong.
+    async function selectRestaurant(restaurantId) {
+        if (restaurantId === currentRestaurantId) {
+            switchNavTab('home');
+            return;
+        }
+
+        if (cartItems.length > 0) {
+            const confirmed = confirm('Switching restaurants will clear your current cart, since an order can only include items from one restaurant. Continue?');
+            if (!confirmed) return;
+            cartItems = [];
+            updateCartBadge();
+        }
+
+        currentRestaurantId = restaurantId;
+        try { localStorage.setItem(STORAGE_KEY_ACTIVE_RESTAURANT, currentRestaurantId); } catch (e) {}
+
+        await initData();
+        await loadRestaurantInfo();
+        renderTabs();
+        renderAllCategorySections();
+        switchNavTab('home');
+        showToast('Now viewing this restaurant');
+    }
+
+    // Fills in the Home page logo/name/tagline for whichever restaurant is
+    // currently active from GET /api/restaurant-info. Always sets every field
+    // explicitly (falling back to generic text/emoji rather than leaving the
+    // previous value in place) — otherwise switching from a restaurant that
+    // has a tagline to one that doesn't would leave the old tagline showing.
     async function loadRestaurantInfo() {
+        const nameEl = document.getElementById('active-restaurant-title');
+        const taglineEl = document.getElementById('restaurant-hero-tagline');
+        const logoImg = document.getElementById('restaurant-logo-img');
+        const logoFallback = document.getElementById('restaurant-hero-fallback');
+
         try {
-            const res = await fetch(`${API_BASE}/api/restaurant-info`);
-            if (!res.ok) return;
+            const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
+            if (!res.ok) throw new Error(`Server returned ${res.status}`);
             const info = await res.json();
 
-            const nameEl = document.getElementById('active-restaurant-title');
-            const taglineEl = document.getElementById('restaurant-hero-tagline');
-            const logoImg = document.getElementById('restaurant-logo-img');
-            const logoFallback = document.getElementById('restaurant-hero-fallback');
-
-            if (info.name && nameEl) nameEl.innerText = info.name;
-            if (info.tagline && taglineEl) taglineEl.innerText = info.tagline;
+            if (nameEl) nameEl.innerText = info.name || 'Restaurant';
+            if (taglineEl) taglineEl.innerText = info.tagline || '';
 
             if (info.logoUrl && logoImg && logoFallback) {
                 logoImg.src = info.logoUrl;
                 logoImg.style.display = 'block';
                 logoFallback.style.display = 'none';
                 logoImg.onerror = () => { logoImg.style.display = 'none'; logoFallback.style.display = 'flex'; };
+            } else if (logoImg && logoFallback) {
+                logoImg.style.display = 'none';
+                logoFallback.style.display = 'flex';
             }
         } catch (e) {
-            console.warn('Could not load restaurant branding, keeping defaults:', e);
+            console.warn('Could not load restaurant branding:', e);
         }
     }
 
@@ -1585,15 +1698,17 @@ async function submitFinalOrder() {
     // fallback in case the server can't be reached when the app opens.
     async function initData() {
         try {
-            const res = await fetch(`${API_BASE}/api/menu`);
+            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(currentRestaurantId)}`);
             if (res.ok) {
                 const parsed = await res.json();
                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
                     menuCategories = parsed;
                     activeCategoryName = menuCategories[0].name;
                     // Keep a local copy so the app still has *something* to show
-                    // next time if the server is briefly unreachable.
-                    try { localStorage.setItem(STORAGE_KEY_MENU_DATA, JSON.stringify(menuCategories)); } catch(e) {}
+                    // next time if the server is briefly unreachable. Scoped per
+                    // restaurant so switching restaurants doesn't show stale data
+                    // from a different one while offline.
+                    try { localStorage.setItem(`${STORAGE_KEY_MENU_DATA}_${currentRestaurantId}`, JSON.stringify(menuCategories)); } catch(e) {}
                     return;
                 }
             }
@@ -1603,7 +1718,7 @@ async function submitFinalOrder() {
 
         // Server unreachable or returned nothing usable — try the last known copy.
         try {
-            const savedMenu = localStorage.getItem(STORAGE_KEY_MENU_DATA);
+            const savedMenu = localStorage.getItem(`${STORAGE_KEY_MENU_DATA}_${currentRestaurantId}`);
             if (savedMenu) {
                 const parsed = JSON.parse(savedMenu);
                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
@@ -1640,7 +1755,7 @@ async function submitFinalOrder() {
         // cache either (a brand new install). Cache it locally so this device has
         // something to fall back to next time — but don't push it to the server;
         // that's admin.html's job now, not the customer app's.
-        try { localStorage.setItem(STORAGE_KEY_MENU_DATA, JSON.stringify(menuCategories)); } catch(e) {}
+        try { localStorage.setItem(`${STORAGE_KEY_MENU_DATA}_${currentRestaurantId}`, JSON.stringify(menuCategories)); } catch(e) {}
     }
 
     /* ================= HOME RENDERING (Kept exactly identical) ================= */
