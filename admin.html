@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Manager — tgi pizza</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F6F5F0;
+    --card: #FFFFFF;
+    --ink: #1C1F1A;
+    --muted: #7C7768;
+    --line: #E4E1D6;
+    --basil: #2F6B4F;
+    --basil-dark: #1F4E39;
+    --basil-tint: #E7F0EA;
+    --brick: #B5482F;
+    --brick-tint: #FBEBE6;
+    --mustard: #C98A2C;
+    --mustard-tint: #FBF1DF;
+    --shadow: 0 1px 2px rgba(28,31,26,0.04), 0 8px 24px -12px rgba(28,31,26,0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  button { font-family: inherit; }
+  input, textarea, select { font-family: inherit; }
+
+  /* ============ PIN GATE ============ */
+  #pin-gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .pin-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 36px 32px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .pin-card .ticket-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 16px;
+    border-radius: 12px;
+    background: var(--basil);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .pin-card h1 { font-size: 21px; margin: 0 0 6px; font-weight: 600; }
+  .pin-card p { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; }
+  #pin-input {
+    width: 100%;
+    text-align: center;
+    letter-spacing: 2px;
+    font-size: 20px;
+    padding: 14px 10px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    margin-bottom: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  #pin-input:focus { outline: none; border-color: var(--basil); }
+  #pin-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+  .pin-note {
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--mustard-tint);
+    border-radius: 10px;
+    padding: 10px 12px;
+    line-height: 1.5;
+    text-align: left;
+  }
+
+  /* ============ RESTAURANT SETUP (first run for a brand-new restaurant) ============ */
+  #setup-gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .setup-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 32px 28px;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: var(--shadow);
+  }
+  .setup-card .ticket-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 16px;
+    border-radius: 12px;
+    background: var(--basil);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .setup-card h1 { font-size: 20px; margin: 0 0 6px; font-weight: 600; text-align: center; }
+  .setup-card p.intro { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; text-align: center; }
+  #setup-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+
+  /* ============ APP SHELL ============ */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  header.top-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--basil); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .brand h1 { font-size: 17px; margin: 0; font-weight: 600; line-height: 1.2; }
+  .brand span { font-size: 11px; color: var(--muted); }
+
+  #sync-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background 0.2s; }
+  #sync-indicator.saved #sync-dot { background: var(--basil); }
+  #sync-indicator.saving #sync-dot { background: var(--mustard); animation: pulse 0.9s infinite; }
+  #sync-indicator.error #sync-dot { background: var(--brick); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 0 16px;
+    position: sticky; top: 65px; z-index: 19;
+  }
+  .tab-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 13px 14px 11px;
+    font-size: 13.5px; font-weight: 600; color: var(--muted);
+    border-bottom: 2.5px solid transparent;
+  }
+  .tab-btn.active { color: var(--basil-dark); border-bottom-color: var(--basil); }
+
+  main { flex: 1; padding: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; gap: 10px; flex-wrap: wrap;
+  }
+  .section-head h2 { font-size: 18px; margin: 0; font-weight: 600; }
+  .section-head p.hint { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
+
+  .btn {
+    border: none; border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; padding: 10px 16px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.06s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--basil); color: #fff; }
+  .btn-primary:hover { background: var(--basil-dark); }
+  .btn-outline { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  .btn-outline:hover { background: var(--paper); }
+  .btn-danger-ghost { background: var(--brick-tint); color: var(--brick); }
+  .btn-danger-ghost:hover { background: #f6d9d1; }
+  .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 8px; }
+  .btn-icon { padding: 7px 9px; }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+
+  /* ---- ticket-style divider, the one signature motif ---- */
+  .ticket-divider {
+    height: 1px;
+    margin: 20px 0;
+    background-image: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px);
+  }
+
+  /* ---- category list ---- */
+  .cat-grid { display: flex; flex-direction: column; gap: 10px; }
+  .cat-row {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    cursor: grab;
+  }
+  .cat-row.dragging { opacity: 0.4; }
+  .cat-row .cat-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .cat-row .drag-handle { color: var(--muted); font-size: 15px; flex-shrink: 0; }
+  .cat-row .cat-icon { font-size: 22px; flex-shrink: 0; }
+  .cat-row .cat-text { min-width: 0; }
+  .cat-row .cat-name { font-size: 14.5px; font-weight: 600; }
+  .cat-row .cat-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .cat-row .cat-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .empty-state {
+    text-align: center; padding: 48px 20px;
+    color: var(--muted); font-size: 13.5px;
+    background: var(--card); border: 1px dashed var(--line); border-radius: 16px;
+  }
+  .empty-state .display { font-size: 17px; color: var(--ink); margin-bottom: 6px; }
+
+  /* ---- items view ---- */
+  .item-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  #item-cat-select {
+    flex: 1; min-width: 160px;
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    font-size: 13.5px; font-weight: 600; background: var(--card);
+  }
+  .item-grid { display: flex; flex-direction: column; gap: 10px; }
+  .item-row {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .item-row .item-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .item-thumb {
+    width: 52px; height: 52px; border-radius: 10px; object-fit: cover;
+    border: 1px solid var(--line); flex-shrink: 0; background: var(--paper);
+  }
+  .item-name { font-size: 14px; font-weight: 600; }
+  .item-price { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .item-badge {
+    display: inline-block; font-size: 10px; font-weight: 700; color: var(--mustard);
+    background: var(--mustard-tint); border-radius: 6px; padding: 1px 6px; margin-left: 6px;
+    vertical-align: middle;
+  }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* ---- settings view ---- */
+  .settings-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px; margin-bottom: 14px;
+  }
+  .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; font-weight: 600; }
+  .settings-card p { font-size: 12px; color: var(--muted); margin: 0 0 14px; line-height: 1.5; }
+  .settings-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ============ DRAWER (slide-over form) ============ */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(28,31,26,0.42);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 50;
+  }
+  .drawer-overlay.open { display: flex; }
+  .drawer {
+    background: var(--paper);
+    width: 100%; max-width: 560px;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    display: flex; flex-direction: column;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+  }
+  @media (min-width: 640px) {
+    .drawer-overlay { align-items: center; }
+    .drawer { border-radius: 20px; max-height: 88vh; }
+  }
+  .drawer-head {
+    padding: 18px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; background: var(--card); border-radius: 20px 20px 0 0;
+  }
+  .drawer-head h3 { font-size: 16.5px; margin: 0; font-weight: 600; }
+  .drawer-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; }
+  .drawer-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .drawer-foot {
+    padding: 14px 20px; border-top: 1px solid var(--line); background: var(--card);
+    display: flex; gap: 10px; flex-shrink: 0; border-radius: 0 0 20px 20px;
+  }
+  .drawer-foot .btn { flex: 1; justify-content: center; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+  .field .sub-hint { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 4px; line-height: 1.4; }
+  .field input[type="text"], .field input[type="number"], .field input[type="url"], .field textarea, .field select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    font-size: 13.5px; background: #fff;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--basil); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .thumb-preview {
+    width: 100%; height: 150px; border-radius: 12px; object-fit: cover;
+    border: 1px solid var(--line); background: var(--paper); margin-bottom: 10px;
+  }
+
+  .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    background: var(--basil-tint); color: var(--basil-dark); border-radius: 20px;
+    padding: 5px 8px 5px 12px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chip button { background: none; border: none; color: var(--basil-dark); font-weight: 800; cursor: pointer; font-size: 13px; padding: 0; }
+  .chip-add-row { display: flex; gap: 6px; }
+  .chip-add-row input { flex: 1; }
+
+  .subform-block {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; margin-bottom: 12px;
+  }
+  .subform-block > .field:last-child { margin-bottom: 0; }
+  .size-price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
+  .size-price-grid .size-price-cell label { font-size: 10.5px; }
+
+  .option-block-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .option-block-head h4 { font-size: 13px; margin: 0; font-weight: 600; }
+  .option-row {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px; margin-bottom: 8px;
+  }
+  .option-row-top { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .option-row-top input[type="text"] { flex: 1; }
+  .option-row-top button { flex-shrink: 0; }
+  .option-price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; margin-bottom: 6px; }
+  .option-price-grid input, .option-row select { padding: 7px 8px; font-size: 12px; }
+  .option-price-grid label { font-size: 10px; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 30px;
+    font-size: 13px; font-weight: 500; z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ DEVELOPER/TESTING LOGIN (fallback for outside Telegram) ============ -->
+<!-- Real restaurant owners never see this — they open admin.html from the bot's
+     "🏬 Open My Restaurant" button and are auto-detected (see autoLogin() below).
+     This screen only appears when admin.html is opened in a plain browser
+     (no Telegram Mini App context), so you can still test it yourself. -->
+<div id="pin-gate">
+  <div class="pin-card">
+    <div class="ticket-icon">🔐</div>
+    <h1 id="login-restaurant-name">Menu Manager</h1>
+    <p>Developer/testing login — not shown inside Telegram. Enter a Telegram numeric ID to preview that restaurant's admin panel.</p>
+    <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 123456789">
+    <div id="pin-error"></div>
+    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="tryLogin()">Log In</button>
+    <div class="pin-note">Real restaurant owners should open this page from the bot's "🏬 Open My Restaurant" button instead — they won't need to type anything.</div>
+  </div>
+</div>
+
+<!-- ============ NOT APPROVED (shown when Telegram auto-login finds no restaurant for this ID) ============ -->
+<div id="not-approved-gate" style="display:none;">
+  <div class="pin-card">
+    <div class="ticket-icon">🚫</div>
+    <h1>Not approved yet</h1>
+    <p id="not-approved-message">This Telegram account isn't linked to a restaurant yet. If you'd like to list your restaurant, open the bot and tap "List My Restaurant".</p>
+    <a href="https://t.me/assichit_bot" target="_blank" rel="noopener" style="text-decoration:none; display:block;">
+      <button class="btn btn-primary" style="width:100%; justify-content:center;">Open Bot</button>
+    </a>
+  </div>
+</div>
+
+<!-- ============ RESTAURANT SETUP (shown once, for a brand-new restaurant) ============ -->
+<div id="setup-gate" style="display:none;">
+  <div class="setup-card">
+    <div class="ticket-icon">🏬</div>
+    <h1>Welcome! Let's set up your restaurant</h1>
+    <p class="intro">Just a few details before you start building your menu. You can change any of this later from Settings.</p>
+
+    <div class="field">
+      <label>Restaurant name</label>
+      <input type="text" id="setup-name-input" placeholder="e.g. Bite & Slice Pizzeria">
+    </div>
+    <div class="field">
+      <label>Tagline / title <span style="font-weight:400;">(shown under your name to customers)</span></label>
+      <input type="text" id="setup-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
+    </div>
+    <div class="field">
+      <label>Logo</label>
+      <img class="thumb-preview" id="setup-logo-preview" src="" alt="" style="opacity:0.3;" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
+      <input type="url" id="setup-logo-input" placeholder="https://…" oninput="updateSetupLogoPreview()">
+      <div class="sub-hint">Paste a link to your logo image — you can leave this blank for now and add it later.</div>
+    </div>
+    <div class="field">
+      <label>Restaurant address</label>
+      <textarea id="setup-address-input" placeholder="Street, township, city — shown to customers at checkout"></textarea>
+    </div>
+
+    <div id="setup-error"></div>
+    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="completeSetup()">Save &amp; Continue to Menu</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header class="top-bar">
+    <div class="brand">
+      <img id="brand-logo-img" class="mark" src="" alt="" style="display:none; object-fit:cover;">
+      <div class="mark" id="brand-logo-fallback">🍕</div>
+      <div>
+        <h1>Menu Manager</h1>
+        <span id="brand-restaurant-name">tgi pizza</span>
+      </div>
+    </div>
+    <div id="sync-indicator"><div id="sync-dot"></div><span id="sync-text">Loading…</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" id="tab-btn-categories" onclick="switchView('categories')">📁 Categories</button>
+    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')">🍕 Items</button>
+    <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')">⚙️ Settings</button>
+  </nav>
+
+  <main>
+    <!-- CATEGORIES VIEW -->
+    <div class="view active" id="view-categories">
+      <div class="section-head">
+        <div>
+          <h2>Categories</h2>
+          <p class="hint">Drag ☰ to reorder. Sizes and shared options set here apply to every item inside.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCategoryDrawer()">+ New Category</button>
+      </div>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+
+    <!-- ITEMS VIEW -->
+    <div class="view" id="view-items">
+      <div class="section-head">
+        <div>
+          <h2>Items</h2>
+          <p class="hint">Pick a category, then add or edit its dishes.</p>
+        </div>
+        <button class="btn btn-primary" id="add-item-btn" onclick="openItemDrawer(null)">+ New Item</button>
+      </div>
+      <div class="item-toolbar">
+        <select id="item-cat-select" onchange="onItemCategoryChange()"></select>
+      </div>
+      <div class="item-grid" id="item-grid"></div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div class="view" id="view-settings">
+      <div class="section-head"><h2>Settings</h2></div>
+
+      <div class="settings-card">
+        <h3>🏬 Restaurant Profile</h3>
+        <p>Your restaurant's name, logo, tagline, and address as shown to customers in the app.</p>
+        <div class="field">
+          <label>Restaurant name</label>
+          <input type="text" id="settings-name-input" placeholder="e.g. Bite & Slice Pizzeria">
+        </div>
+        <div class="field">
+          <label>Tagline / title</label>
+          <input type="text" id="settings-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
+        </div>
+        <div class="field">
+          <label>Logo</label>
+          <img class="thumb-preview" id="settings-logo-preview" src="" alt="" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
+          <input type="url" id="settings-logo-input" placeholder="https://…" oninput="updateSettingsLogoPreview()">
+        </div>
+        <div class="field">
+          <label>Restaurant address</label>
+          <textarea id="settings-address-input" placeholder="Street, township, city"></textarea>
+        </div>
+        <div class="settings-row">
+          <button class="btn btn-primary btn-sm" onclick="saveSettingsProfile()">Save Profile</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>📥 Backup &amp; restore</h3>
+        <p>Export the full menu as a JSON file, or paste one back in to restore it. Useful before making big changes, or to copy a menu between restaurants later.</p>
+        <div class="settings-row">
+          <button class="btn btn-outline btn-sm" onclick="exportMenuBackup()">Export JSON</button>
+          <button class="btn btn-outline btn-sm" onclick="importMenuBackup()">Import JSON</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>🔄 Sync</h3>
+        <p>The menu is stored on your server, not in this browser — every device reads the same data. Use this if you suspect this tab is showing something stale.</p>
+        <div class="settings-row">
+          <button class="btn btn-outline btn-sm" onclick="loadMenu(true)">Reload from server</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>👤 Account</h3>
+        <p>You're logged in to this restaurant with your Telegram ID.</p>
+        <div class="settings-row">
+          <button class="btn btn-outline btn-sm" onclick="logOut()">Log out</button>
+        </div>
+      </div>
+
+      <div class="settings-card" style="border-color:#ecd5cb;">
+        <h3 style="color:var(--brick);">⚠️ Danger zone</h3>
+        <p>Permanently clears every category and item. There's no undo — export a backup first if you're not sure.</p>
+        <div class="settings-row">
+          <button class="btn btn-danger-ghost btn-sm" onclick="clearAllMenu()">Clear entire menu</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ CATEGORY DRAWER ============ -->
+<div class="drawer-overlay" id="cat-drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h3 id="cat-drawer-title">New Category</h3>
+      <button class="drawer-close" onclick="closeCategoryDrawer()">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="field-row">
+        <div class="field" style="flex:0 0 80px;">
+          <label>Icon</label>
+          <input type="text" id="cat-icon-input" placeholder="🍕" maxlength="4">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Category name</label>
+          <input type="text" id="cat-name-input" placeholder="e.g. Premium Pizza">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Sizes</label>
+        <div class="sub-hint" style="margin-bottom:8px;">Leave empty if every item in this category has one flat price (e.g. Sides, Drinks).</div>
+        <div class="chip-list" id="cat-size-chips"></div>
+        <div class="chip-add-row">
+          <input type="text" id="cat-new-size-input" placeholder="e.g. Small" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
+          <button class="btn btn-outline btn-sm" onclick="addSizeChip()">Add</button>
+        </div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <div class="option-block-head">
+        <h4>🔘 Shared single-choice options</h4>
+        <button class="btn btn-outline btn-sm" onclick="addCatOption('single')">+ Add</button>
+      </div>
+      <p class="sub-hint" style="margin:-4px 0 10px;">Applies to every item in this category — e.g. a crust type. Only one can be picked at a time.</p>
+      <div id="cat-single-options"></div>
+
+      <div class="ticket-divider"></div>
+
+      <div class="option-block-head">
+        <h4>☑️ Shared multi-choice add-ons</h4>
+        <button class="btn btn-outline btn-sm" onclick="addCatOption('multi')">+ Add</button>
+      </div>
+      <p class="sub-hint" style="margin:-4px 0 10px;">Applies to every item in this category — e.g. extra toppings. Any number can be picked.</p>
+      <div id="cat-multi-options"></div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-outline" onclick="closeCategoryDrawer()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategoryDrawer()">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ITEM DRAWER ============ -->
+<div class="drawer-overlay" id="item-drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h3 id="item-drawer-title">New Item</h3>
+      <button class="drawer-close" onclick="closeItemDrawer()">×</button>
+    </div>
+    <div class="drawer-body">
+      <img class="thumb-preview" id="item-image-preview" src="" alt="" onerror="this.style.opacity=0.3;">
+      <div class="field">
+        <label>Image URL</label>
+        <input type="url" id="item-image-input" placeholder="https://…" oninput="updateItemImagePreview()">
+      </div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="item-name-input" placeholder="e.g. Cheesy Margherita">
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Rating (shown to customers)</label>
+          <input type="text" id="item-rating-input" placeholder="4.8">
+        </div>
+        <div class="field">
+          <label>Prep time</label>
+          <input type="text" id="item-time-input" placeholder="15-20 Min">
+        </div>
+      </div>
+
+      <div class="field" id="item-price-field">
+        <label id="item-price-label">Price (MMK)</label>
+        <div id="item-price-inputs"></div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <div class="subform-block">
+        <div class="option-block-head">
+          <h4>🔘 Item-specific single-choice options</h4>
+          <button class="btn btn-outline btn-sm" onclick="addItemOption('single')">+ Add</button>
+        </div>
+        <p class="sub-hint" style="margin:-4px 0 10px;">On top of any shared options from the category — e.g. this item's own crust choices.</p>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Section title (shown to customers)</label>
+          <input type="text" id="item-single-title-input" placeholder="Select Crust Type (Optional)">
+        </div>
+        <div id="item-single-options"></div>
+      </div>
+
+      <div class="subform-block">
+        <div class="option-block-head">
+          <h4>☑️ Item-specific add-ons</h4>
+          <button class="btn btn-outline btn-sm" onclick="addItemOption('multi')">+ Add</button>
+        </div>
+        <p class="sub-hint" style="margin:-4px 0 10px;">e.g. toppings only available on this item.</p>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Section title (shown to customers)</label>
+          <input type="text" id="item-multi-title-input" placeholder="Add Toppings">
+        </div>
+        <div id="item-multi-options"></div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-outline" onclick="closeItemDrawer()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItemDrawer()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_BASE = 'https://chitkool.pythonanywhere.com';
+
+  // Present only when admin.html is opened inside Telegram (e.g. via the bot's
+  // "🏬 Open My Restaurant" button). Absent in a plain browser — that's how we
+  // tell the two contexts apart on load.
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // Which restaurant this admin.html instance manages. Inside Telegram this is
+  // determined automatically by autoLogin() from who the user verifiably is.
+  // Outside Telegram (dev/testing only), it comes from a ?r=<id> URL param,
+  // defaulting to 'default'.
+  let currentRestaurantId = new URLSearchParams(window.location.search).get('r') || 'default';
+
+  let menuCategories = [];
+  let currentView = 'categories';
+  let dragSrcIndex = null;
+
+  // The current restaurant's profile — name/tagline/logo/address shown to
+  // customers. Populated on login (or session restore) from the server's
+  // response, not fetched separately.
+  let restaurantProfile = { name: '', tagline: '', logoUrl: '', address: '' };
+
+  // Working state for the category drawer while it's open.
+  let catDraft = null; // { editIndex, name, icon, sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [] }
+
+  // Working state for the item drawer while it's open.
+  let itemDraft = null; // { catIndex, editIndex, ...item fields, sizeNames snapshot from category }
+
+  /* ================= LOGIN (per-restaurant, via Telegram ID) ================= */
+
+  // Shows "Log in to <Restaurant Name>" on the login screen before the owner
+  // even logs in — a nicety fetched from the public restaurant-info endpoint,
+  // not an auth check.
+  async function loadLoginPreview() {
+    try {
+      const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
+      if (!res.ok) return;
+      const info = await res.json();
+      const nameEl = document.getElementById('login-restaurant-name');
+      if (info.name && nameEl) nameEl.textContent = `Log in to ${info.name}`;
+    } catch (err) {
+      // Not critical — the generic "Menu Manager" heading is a fine fallback.
+    }
+  }
+
+  function applyLoginResult(restaurant) {
+    restaurantProfile = {
+      name: restaurant.name || '',
+      tagline: restaurant.tagline || '',
+      logoUrl: restaurant.logoUrl || '',
+      address: restaurant.address || ''
+    };
+  }
+
+  async function tryLogin() {
+    const telegramId = document.getElementById('pin-input').value.trim();
+    const errorEl = document.getElementById('pin-error');
+    errorEl.textContent = '';
+
+    if (!telegramId || !/^\d+$/.test(telegramId)) {
+      errorEl.textContent = 'Enter your numeric Telegram ID.';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: currentRestaurantId, telegramId })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        errorEl.textContent = result.error || 'That Telegram ID is not registered to this restaurant.';
+        return;
+      }
+      sessionStorage.setItem('admin_session', JSON.stringify({ restaurantId: currentRestaurantId, telegramId }));
+      applyLoginResult(result.restaurant);
+      showApp();
+    } catch (err) {
+      errorEl.textContent = 'Could not reach the server — check your connection and try again.';
+    }
+  }
+
+  // Re-validates a saved session against the server on page load (rather than
+  // trusting sessionStorage blindly), so access is revoked immediately if the
+  // platform owner unlinks a Telegram ID from this restaurant.
+  async function restoreSession() {
+    const saved = sessionStorage.getItem('admin_session');
+    if (!saved) return false;
+
+    let session;
+    try { session = JSON.parse(saved); } catch (e) { return false; }
+    if (!session || session.restaurantId !== currentRestaurantId) return false; // link points at a different restaurant now
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: session.restaurantId, telegramId: session.telegramId })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        sessionStorage.removeItem('admin_session');
+        return false;
+      }
+      applyLoginResult(result.restaurant);
+      return true;
+    } catch (err) {
+      return false; // offline — fall back to the login screen rather than guessing
+    }
+  }
+
+  function logOut() {
+    sessionStorage.removeItem('admin_session');
+    window.location.reload();
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('pin-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') tryLogin();
+    });
+
+    if (tg && tg.initData) {
+      // Opened inside Telegram — auto-detect who they are, no typing needed.
+      await autoLogin();
+    } else {
+      // Opened in a plain browser outside Telegram — no Telegram identity to
+      // detect, so fall back to the developer/testing login screen.
+      loadLoginPreview();
+      if (!(await restoreSession())) {
+        document.getElementById('pin-gate').style.display = 'flex';
+      }
+    }
+  });
+
+  // Verifies who opened this page via Telegram's Mini App identity data (see
+  // /api/admin/auto-login — the server cryptographically checks this, it
+  // isn't just taken on faith) and logs them straight into their restaurant.
+  async function autoLogin() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/auto-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        showNotApproved();
+        return;
+      }
+      currentRestaurantId = result.restaurant.id;
+      applyLoginResult(result.restaurant);
+      showApp();
+    } catch (err) {
+      showNotApproved('Could not reach the server. Check your connection and try again.');
+    }
+  }
+
+  function showNotApproved(customMessage) {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('setup-gate').style.display = 'none';
+    document.getElementById('pin-gate').style.display = 'none';
+    if (customMessage) document.getElementById('not-approved-message').textContent = customMessage;
+    document.getElementById('not-approved-gate').style.display = 'flex';
+  }
+
+  async function showApp() {
+    document.getElementById('pin-gate').style.display = 'none';
+    document.getElementById('not-approved-gate').style.display = 'none';
+    applyBrandHeader();
+    renderSettingsProfileFields(); // keep Settings tab in sync regardless of which screen shows first
+
+    if (isFreshRestaurant()) {
+      showSetupGate();
+    } else {
+      document.getElementById('setup-gate').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+    }
+    loadMenu();
+  }
+
+  /* ================= RESTAURANT PROFILE (name/logo/tagline/address) ================= */
+  function isFreshRestaurant() {
+    // Every restaurant is created with a name already set (by the platform
+    // owner, via POST /api/platform/restaurants), so an empty name no longer
+    // signals "hasn't set up yet" the way it did with a single restaurant.
+    // A missing address is a better proxy: it's the detail the owner has to
+    // fill in themselves, so its absence means they haven't been through
+    // setup yet.
+    return !restaurantProfile.address;
+  }
+
+  function applyBrandHeader() {
+    const nameEl = document.getElementById('brand-restaurant-name');
+    const logoImg = document.getElementById('brand-logo-img');
+    const logoFallback = document.getElementById('brand-logo-fallback');
+    if (nameEl) nameEl.textContent = restaurantProfile.name || 'tgi pizza';
+    if (restaurantProfile.logoUrl && logoImg && logoFallback) {
+      logoImg.src = restaurantProfile.logoUrl;
+      logoImg.style.display = 'block';
+      logoFallback.style.display = 'none';
+      logoImg.onerror = () => { logoImg.style.display = 'none'; logoFallback.style.display = 'flex'; };
+    } else if (logoImg && logoFallback) {
+      logoImg.style.display = 'none';
+      logoFallback.style.display = 'flex';
+    }
+  }
+
+  async function saveRestaurantProfile(profile) {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/restaurant-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: currentRestaurantId, ...profile })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
+      restaurantProfile = profile;
+      return true;
+    } catch (err) {
+      showToast('Could not save restaurant profile: ' + err.message);
+      return false;
+    }
+  }
+
+  function showSetupGate() {
+    document.getElementById('setup-name-input').value = restaurantProfile.name;
+    document.getElementById('setup-tagline-input').value = restaurantProfile.tagline;
+    document.getElementById('setup-logo-input').value = restaurantProfile.logoUrl;
+    document.getElementById('setup-address-input').value = restaurantProfile.address;
+    updateSetupLogoPreview();
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('setup-gate').style.display = 'flex';
+  }
+
+  function updateSetupLogoPreview() {
+    document.getElementById('setup-logo-preview').src = document.getElementById('setup-logo-input').value.trim();
+  }
+
+  async function completeSetup() {
+    const name = document.getElementById('setup-name-input').value.trim();
+    if (!name) {
+      document.getElementById('setup-error').textContent = 'Restaurant name is required.';
+      return;
+    }
+    const profile = {
+      name,
+      tagline: document.getElementById('setup-tagline-input').value.trim(),
+      logoUrl: document.getElementById('setup-logo-input').value.trim(),
+      address: document.getElementById('setup-address-input').value.trim()
+    };
+    const ok = await saveRestaurantProfile(profile);
+    if (!ok) {
+      document.getElementById('setup-error').textContent = 'Could not save — check your connection and try again.';
+      return;
+    }
+    renderSettingsProfileFields();
+    applyBrandHeader();
+    document.getElementById('setup-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    showToast('Restaurant profile saved — now add your categories and items!');
+  }
+
+  function renderSettingsProfileFields() {
+    document.getElementById('settings-name-input').value = restaurantProfile.name;
+    document.getElementById('settings-tagline-input').value = restaurantProfile.tagline;
+    document.getElementById('settings-logo-input').value = restaurantProfile.logoUrl;
+    document.getElementById('settings-address-input').value = restaurantProfile.address;
+    updateSettingsLogoPreview();
+  }
+
+  function updateSettingsLogoPreview() {
+    document.getElementById('settings-logo-preview').src = document.getElementById('settings-logo-input').value.trim();
+  }
+
+  async function saveSettingsProfile() {
+    const name = document.getElementById('settings-name-input').value.trim();
+    if (!name) { showToast('Restaurant name is required.'); return; }
+    const profile = {
+      name,
+      tagline: document.getElementById('settings-tagline-input').value.trim(),
+      logoUrl: document.getElementById('settings-logo-input').value.trim(),
+      address: document.getElementById('settings-address-input').value.trim()
+    };
+    const ok = await saveRestaurantProfile(profile);
+    if (ok) {
+      applyBrandHeader();
+      showToast('Restaurant profile updated.');
+    }
+  }
+
+  /* ================= SYNC (server load/save) ================= */
+  function setSyncStatus(state, text) {
+    const el = document.getElementById('sync-indicator');
+    el.className = state;
+    document.getElementById('sync-text').textContent = text;
+  }
+
+  async function loadMenu(manual = false) {
+    setSyncStatus('saving', 'Loading…');
+    try {
+      const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(currentRestaurantId)}`);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      menuCategories = Array.isArray(data) ? data : [];
+      setSyncStatus('saved', manual ? 'Reloaded' : 'Synced');
+      renderAll();
+    } catch (err) {
+      setSyncStatus('error', 'Offline');
+      showToast('Could not reach the server: ' + err.message);
+      menuCategories = menuCategories || [];
+      renderAll();
+    }
+  }
+
+  async function saveMenu() {
+    setSyncStatus('saving', 'Saving…');
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/menu-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: currentRestaurantId, menu: menuCategories })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
+      setSyncStatus('saved', 'Saved · live for everyone');
+    } catch (err) {
+      setSyncStatus('error', 'Save failed');
+      showToast('Could not save: ' + err.message);
+    }
+  }
+
+  /* ================= NAV ================= */
+  function switchView(view) {
+    currentView = view;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`view-${view}`).classList.add('active');
+    document.getElementById(`tab-btn-${view}`).classList.add('active');
+    if (view === 'items') renderItemsView();
+  }
+
+  function renderAll() {
+    renderCategoriesView();
+    renderItemsView();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  /* ================= CATEGORIES VIEW ================= */
+  function renderCategoriesView() {
+    const grid = document.getElementById('cat-grid');
+    if (menuCategories.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Add your first one — e.g. "Pizza" or "Drinks" — to start building the menu.</div>`;
+      return;
+    }
+    grid.innerHTML = menuCategories.map((cat, index) => `
+      <div class="cat-row" draggable="true"
+           ondragstart="handleDragStart(event, ${index})" ondragover="handleDragOver(event)"
+           ondrop="handleDrop(event, ${index})" ondragend="handleDragEnd(event)">
+        <div class="cat-info">
+          <span class="drag-handle">☰</span>
+          <span class="cat-icon">${cat.icon || '🍽️'}</span>
+          <div class="cat-text">
+            <div class="cat-name">${escapeHtml(cat.name)}</div>
+            <div class="cat-meta">${cat.items.length} item${cat.items.length === 1 ? '' : 's'}${(cat.sizeNames||[]).length ? ' · ' + cat.sizeNames.length + ' sizes' : ' · single price'}</div>
+          </div>
+        </div>
+        <div class="cat-actions">
+          <button class="btn btn-outline btn-icon btn-sm" onclick="openCategoryDrawer(${index})">✏️</button>
+          <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="deleteCategory(${index})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function handleDragStart(e, index) { dragSrcIndex = index; e.dataTransfer.effectAllowed = 'move'; e.target.classList.add('dragging'); }
+  function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+  function handleDrop(e, targetIndex) {
+    e.preventDefault();
+    if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+      const [moved] = menuCategories.splice(dragSrcIndex, 1);
+      menuCategories.splice(targetIndex, 0, moved);
+      saveMenu();
+      renderAll();
+    }
+    document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('dragging'));
+  }
+  function handleDragEnd(e) { e.target.classList.remove('dragging'); }
+
+  function deleteCategory(index) {
+    const cat = menuCategories[index];
+    if (!confirm(`Delete "${cat.name}" and all ${cat.items.length} item(s) inside it? This can't be undone.`)) return;
+    menuCategories.splice(index, 1);
+    saveMenu();
+    renderAll();
+  }
+
+  /* ---- Category drawer ---- */
+  function openCategoryDrawer(index = null) {
+    if (index === null) {
+      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [] };
+      document.getElementById('cat-drawer-title').textContent = 'New Category';
+    } else {
+      const cat = menuCategories[index];
+      catDraft = {
+        editIndex: index,
+        name: cat.name, icon: cat.icon || '🍽️',
+        sizeNames: [...(cat.sizeNames || [])],
+        categorySingleOptions: JSON.parse(JSON.stringify(cat.categorySingleOptions || [])),
+        categoryMultiOptions: JSON.parse(JSON.stringify(cat.categoryMultiOptions || []))
+      };
+      document.getElementById('cat-drawer-title').textContent = `Edit "${cat.name}"`;
+    }
+    document.getElementById('cat-name-input').value = catDraft.name;
+    document.getElementById('cat-icon-input').value = catDraft.icon;
+    document.getElementById('cat-new-size-input').value = '';
+    renderCatSizeChips();
+    renderCatOptionList('single');
+    renderCatOptionList('multi');
+    document.getElementById('cat-drawer-overlay').classList.add('open');
+  }
+  function closeCategoryDrawer() {
+    document.getElementById('cat-drawer-overlay').classList.remove('open');
+    catDraft = null;
+  }
+
+  function renderCatSizeChips() {
+    const box = document.getElementById('cat-size-chips');
+    if (catDraft.sizeNames.length === 0) {
+      box.innerHTML = `<span class="sub-hint">No sizes — items use one flat price.</span>`;
+      return;
+    }
+    box.innerHTML = catDraft.sizeNames.map((s, i) => `
+      <span class="chip">${escapeHtml(s)}<button onclick="removeSizeChip(${i})">×</button></span>
+    `).join('');
+  }
+  function addSizeChip() {
+    const input = document.getElementById('cat-new-size-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (catDraft.sizeNames.some(s => s.toLowerCase() === name.toLowerCase())) {
+      showToast('That size already exists.');
+      return;
+    }
+    catDraft.sizeNames.push(name);
+    input.value = '';
+    renderCatSizeChips();
+  }
+  function removeSizeChip(i) {
+    catDraft.sizeNames.splice(i, 1);
+    renderCatSizeChips();
+  }
+
+  function renderCatOptionList(kind) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    const container = document.getElementById(kind === 'single' ? 'cat-single-options' : 'cat-multi-options');
+    const options = catDraft[listKey];
+    if (options.length === 0) {
+      container.innerHTML = `<p class="sub-hint">None yet.</p>`;
+      return;
+    }
+    container.innerHTML = options.map((opt, i) => {
+      const scope = opt.forSize || '';
+      const sizeOptsHtml = ['<option value="">Applies to all sizes</option>']
+        .concat(catDraft.sizeNames.map(sz => `<option value="${escapeHtml(sz)}">Only on ${escapeHtml(sz)}</option>`))
+        .map(o => scope && o.includes(`value="${escapeHtml(scope)}"`) ? o.replace('<option', '<option selected') : o)
+        .join('');
+      return `
+        <div class="option-row">
+          <div class="option-row-top">
+            <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateCatOption('${kind}',${i},'name',this.value)">
+            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeCatOption('${kind}',${i})">🗑️</button>
+          </div>
+          <div class="option-price-grid">
+            <div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateCatOption('${kind}',${i},'price',this.value)"></div>
+            <div>
+              <label>Scope</label>
+              <select onchange="updateCatOption('${kind}',${i},'forSize',this.value)">${sizeOptsHtml}</select>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  function addCatOption(kind) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    catDraft[listKey].push({ name: '', price: 0 });
+    renderCatOptionList(kind);
+  }
+  function updateCatOption(kind, i, field, value) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    const opt = catDraft[listKey][i];
+    if (field === 'price') opt.price = parseFloat(value) || 0;
+    else if (field === 'forSize') { if (value) opt.forSize = value; else delete opt.forSize; }
+    else opt[field] = value;
+  }
+  function removeCatOption(kind, i) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    catDraft[listKey].splice(i, 1);
+    renderCatOptionList(kind);
+  }
+
+  function saveCategoryDrawer() {
+    const name = document.getElementById('cat-name-input').value.trim();
+    if (!name) { showToast('Category name is required.'); return; }
+    const icon = document.getElementById('cat-icon-input').value.trim() || '🍽️';
+
+    if (catDraft.editIndex === null) {
+      menuCategories.push({
+        id: 'cat-' + Date.now(),
+        name, icon,
+        sizeNames: catDraft.sizeNames,
+        categorySingleOptions: catDraft.categorySingleOptions,
+        categoryMultiOptions: catDraft.categoryMultiOptions,
+        items: []
+      });
+    } else {
+      const cat = menuCategories[catDraft.editIndex];
+      cat.name = name;
+      cat.icon = icon;
+      cat.sizeNames = catDraft.sizeNames;
+      cat.categorySingleOptions = catDraft.categorySingleOptions;
+      cat.categoryMultiOptions = catDraft.categoryMultiOptions;
+      // Keep every item's own `sizes` array in sync with the category's size names —
+      // preserving prices for sizes that still exist, defaulting new ones to 0.
+      cat.items.forEach(item => {
+        const oldSizes = item.sizes || [];
+        item.sizes = cat.sizeNames.map(n => {
+          const existing = oldSizes.find(s => s.name === n);
+          return { name: n, price: existing ? existing.price : 0 };
+        });
+        if (item.sizes.length > 0) item.price = item.sizes[0].price;
+      });
+    }
+
+    saveMenu();
+    closeCategoryDrawer();
+    renderAll();
+    showToast('Category saved.');
+  }
+
+  /* ================= ITEMS VIEW ================= */
+  function renderItemsView() {
+    const select = document.getElementById('item-cat-select');
+    const addBtn = document.getElementById('add-item-btn');
+    if (menuCategories.length === 0) {
+      select.innerHTML = `<option>No categories yet</option>`;
+      select.disabled = true;
+      addBtn.disabled = true;
+      document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Create a category first, then come back here to add items.</div>`;
+      return;
+    }
+    select.disabled = false;
+    addBtn.disabled = false;
+    const prevValue = select.value;
+    select.innerHTML = menuCategories.map(c => `<option value="${c.id}">${c.icon || ''} ${escapeHtml(c.name)}</option>`).join('');
+    if (menuCategories.some(c => c.id === prevValue)) select.value = prevValue;
+    renderItemGrid();
+  }
+  function onItemCategoryChange() { renderItemGrid(); }
+
+  function getSelectedCategory() {
+    const select = document.getElementById('item-cat-select');
+    return menuCategories.find(c => c.id === select.value) || menuCategories[0] || null;
+  }
+
+  function renderItemGrid() {
+    const cat = getSelectedCategory();
+    const grid = document.getElementById('item-grid');
+    if (!cat) { grid.innerHTML = ''; return; }
+    if (cat.items.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="display">No items in "${escapeHtml(cat.name)}"</div>Tap "+ New Item" above to add the first dish.</div>`;
+      return;
+    }
+    grid.innerHTML = cat.items.map((item, i) => {
+      let priceLabel;
+      if (item.sizes && item.sizes.length > 0) {
+        const prices = item.sizes.map(s => s.price);
+        priceLabel = `${Math.min(...prices)}–${Math.max(...prices)} MMK`;
+      } else {
+        priceLabel = `${item.price} MMK`;
+      }
+      const optCount = (item.singleChoices || []).length + (item.extras || []).length;
+      return `
+        <div class="item-row">
+          <div class="item-info">
+            <img class="item-thumb" src="${escapeHtml(item.image || '')}" onerror="this.style.opacity=0.25;">
+            <div>
+              <div class="item-name">${escapeHtml(item.name)}${optCount ? `<span class="item-badge">${optCount} option${optCount===1?'':'s'}</span>` : ''}</div>
+              <div class="item-price">${priceLabel}</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-outline btn-icon btn-sm" onclick="openItemDrawer(${i})">✏️</button>
+            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="deleteItem(${i})">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function deleteItem(itemIndex) {
+    const cat = getSelectedCategory();
+    if (!cat) return;
+    if (!confirm(`Delete "${cat.items[itemIndex].name}"?`)) return;
+    cat.items.splice(itemIndex, 1);
+    saveMenu();
+    renderItemGrid();
+    renderCategoriesView();
+  }
+
+  /* ---- Item drawer ---- */
+  function openItemDrawer(itemIndex) {
+    const cat = getSelectedCategory();
+    if (!cat) { showToast('Create a category first.'); return; }
+    const sizeNames = cat.sizeNames || [];
+
+    if (itemIndex === null) {
+      itemDraft = {
+        catId: cat.id, editIndex: null, sizeNames,
+        name: '', description: '', image: '', rating: '4.8', time: '15-20 Min',
+        price: 0, sizes: sizeNames.map(n => ({ name: n, price: 0 })),
+        singleChoiceTitle: 'Select Option', singleChoices: [],
+        extrasTitle: 'Add Extras', extras: []
+      };
+      document.getElementById('item-drawer-title').textContent = 'New Item';
+    } else {
+      const item = cat.items[itemIndex];
+      itemDraft = {
+        catId: cat.id, editIndex: itemIndex, sizeNames,
+        name: item.name, description: item.description || '', image: item.image || '',
+        rating: item.rating || '4.8', time: item.time || '15-20 Min',
+        price: item.price || 0,
+        sizes: sizeNames.map(n => {
+          const existing = (item.sizes || []).find(s => s.name === n);
+          return { name: n, price: existing ? existing.price : 0 };
+        }),
+        singleChoiceTitle: item.singleChoiceTitle || 'Select Option',
+        singleChoices: JSON.parse(JSON.stringify(item.singleChoices || [])),
+        extrasTitle: item.extrasTitle || 'Add Extras',
+        extras: JSON.parse(JSON.stringify(item.extras || []))
+      };
+      document.getElementById('item-drawer-title').textContent = `Edit "${item.name}"`;
+    }
+
+    document.getElementById('item-image-input').value = itemDraft.image;
+    document.getElementById('item-name-input').value = itemDraft.name;
+    document.getElementById('item-desc-input').value = itemDraft.description;
+    document.getElementById('item-rating-input').value = itemDraft.rating;
+    document.getElementById('item-time-input').value = itemDraft.time;
+    document.getElementById('item-single-title-input').value = itemDraft.singleChoiceTitle;
+    document.getElementById('item-multi-title-input').value = itemDraft.extrasTitle;
+    updateItemImagePreview();
+    renderItemPriceInputs();
+    renderItemOptionList('single');
+    renderItemOptionList('multi');
+    document.getElementById('item-drawer-overlay').classList.add('open');
+  }
+  function closeItemDrawer() {
+    document.getElementById('item-drawer-overlay').classList.remove('open');
+    itemDraft = null;
+  }
+  function updateItemImagePreview() {
+    const url = document.getElementById('item-image-input').value.trim();
+    const img = document.getElementById('item-image-preview');
+    img.style.opacity = 1;
+    img.src = url;
+  }
+
+  function renderItemPriceInputs() {
+    const label = document.getElementById('item-price-label');
+    const box = document.getElementById('item-price-inputs');
+    if (itemDraft.sizeNames.length === 0) {
+      label.textContent = 'Price (MMK)';
+      box.innerHTML = `<input type="number" id="item-flat-price" value="${itemDraft.price}">`;
+    } else {
+      label.textContent = 'Price per size (MMK)';
+      box.innerHTML = `<div class="size-price-grid">` + itemDraft.sizeNames.map((n, i) => `
+        <div class="size-price-cell">
+          <label>${escapeHtml(n)}</label>
+          <input type="number" data-size-index="${i}" class="item-size-price" value="${itemDraft.sizes[i].price}">
+        </div>
+      `).join('') + `</div>`;
+    }
+  }
+
+  function renderItemOptionList(kind) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    const container = document.getElementById(kind === 'single' ? 'item-single-options' : 'item-multi-options');
+    const options = itemDraft[listKey];
+    if (options.length === 0) {
+      container.innerHTML = `<p class="sub-hint">None yet.</p>`;
+      return;
+    }
+    const hasSizes = itemDraft.sizeNames.length > 0;
+    container.innerHTML = options.map((opt, i) => {
+      const priceInputs = hasSizes
+        ? `<div class="option-price-grid">` + itemDraft.sizeNames.map((n, si) => `
+            <div><label>${escapeHtml(n)}</label><input type="number" value="${(opt.prices && opt.prices[si]) || 0}" oninput="updateItemOptionPrice('${kind}',${i},${si},this.value)"></div>
+          `).join('') + `</div>`
+        : `<div class="option-price-grid"><div><label>Price</label><input type="number" value="${opt.price || 0}" oninput="updateItemOption('${kind}',${i},'price',this.value)"></div></div>`;
+      const minSizeSelect = hasSizes
+        ? `<select onchange="updateItemOption('${kind}',${i},'minSizeIndex',this.value)">
+             <option value="">Available on all sizes</option>
+             ${itemDraft.sizeNames.map((n, si) => `<option value="${si}" ${opt.minSizeIndex === si ? 'selected' : ''}>${escapeHtml(n)} and up</option>`).join('')}
+           </select>`
+        : '';
+      return `
+        <div class="option-row">
+          <div class="option-row-top">
+            <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateItemOption('${kind}',${i},'name',this.value)">
+            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeItemOption('${kind}',${i})">🗑️</button>
+          </div>
+          ${priceInputs}
+          ${minSizeSelect}
+        </div>
+      `;
+    }).join('');
+  }
+  function addItemOption(kind) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    const hasSizes = itemDraft.sizeNames.length > 0;
+    itemDraft[listKey].push(hasSizes ? { name: '', prices: itemDraft.sizeNames.map(() => 0) } : { name: '', price: 0 });
+    renderItemOptionList(kind);
+  }
+  function updateItemOption(kind, i, field, value) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    const opt = itemDraft[listKey][i];
+    if (field === 'price') opt.price = parseFloat(value) || 0;
+    else if (field === 'minSizeIndex') { if (value === '') delete opt.minSizeIndex; else opt.minSizeIndex = parseInt(value, 10); }
+    else opt[field] = value;
+  }
+  function updateItemOptionPrice(kind, i, sizeIndex, value) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    const opt = itemDraft[listKey][i];
+    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => 0);
+    opt.prices[sizeIndex] = parseFloat(value) || 0;
+  }
+  function removeItemOption(kind, i) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    itemDraft[listKey].splice(i, 1);
+    renderItemOptionList(kind);
+  }
+
+  function saveItemDrawer() {
+    const name = document.getElementById('item-name-input').value.trim();
+    if (!name) { showToast('Item name is required.'); return; }
+    const cat = menuCategories.find(c => c.id === itemDraft.catId);
+    if (!cat) return;
+
+    const item = {
+      id: itemDraft.editIndex === null ? Date.now() : cat.items[itemDraft.editIndex].id,
+      name,
+      description: document.getElementById('item-desc-input').value.trim(),
+      image: document.getElementById('item-image-input').value.trim(),
+      rating: document.getElementById('item-rating-input').value.trim() || '4.8',
+      time: document.getElementById('item-time-input').value.trim() || '15-20 Min',
+      singleChoiceTitle: document.getElementById('item-single-title-input').value.trim() || 'Select Option',
+      singleChoices: itemDraft.singleChoices,
+      extrasTitle: document.getElementById('item-multi-title-input').value.trim() || 'Add Extras',
+      extras: itemDraft.extras
+    };
+
+    if (itemDraft.sizeNames.length === 0) {
+      item.price = parseFloat(document.getElementById('item-flat-price').value) || 0;
+      item.sizes = [];
+    } else {
+      const sizeInputs = document.querySelectorAll('.item-size-price');
+      const sizes = itemDraft.sizeNames.map((n, i) => ({ name: n, price: parseFloat(sizeInputs[i].value) || 0 }));
+      item.sizes = sizes;
+      item.price = sizes[0].price;
+    }
+
+    if (itemDraft.editIndex === null) cat.items.push(item);
+    else cat.items[itemDraft.editIndex] = item;
+
+    saveMenu();
+    closeItemDrawer();
+    renderItemGrid();
+    renderCategoriesView();
+    showToast('Item saved.');
+  }
+
+  /* ================= SETTINGS ================= */
+  function exportMenuBackup() {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(menuCategories, null, 2));
+    const anchor = document.createElement('a');
+    anchor.setAttribute('href', dataStr);
+    anchor.setAttribute('download', 'menu_backup.json');
+    anchor.click();
+  }
+  function importMenuBackup() {
+    const jsonStr = prompt('Paste your exported JSON here:');
+    if (!jsonStr) return;
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!Array.isArray(parsed)) throw new Error('Expected a JSON array of categories.');
+      menuCategories = parsed;
+      saveMenu();
+      renderAll();
+      showToast('Menu imported.');
+    } catch (e) {
+      showToast('Invalid JSON: ' + e.message);
+    }
+  }
+  function clearAllMenu() {
+    if (!confirm('Delete every category and item? This cannot be undone.')) return;
+    menuCategories = [];
+    saveMenu();
+    renderAll();
+    showToast('Menu cleared.');
+  }
+</script>
+
+</body>
+</html>
