@@ -807,8 +807,15 @@
       // so there's nothing useful the pin-gate can do here.
       document.getElementById('pin-error').textContent = '';
       document.getElementById('login-restaurant-name').textContent = 'No restaurant specified';
+      // TEMPORARY DEBUG LINE — remove once auto-login is confirmed working.
+      // Tells us whether telegram-web-app.js even loaded and whether Telegram
+      // handed this page any launch data at all, which pinpoints whether the
+      // button tapped was a real web_app button or a stale plain one.
       document.getElementById('pin-gate-intro').textContent =
-        'Add ?r=<restaurant-id> to the URL to test a specific restaurant, or open this page from the bot\'s "🏬 Open My Restaurant" button.';
+        `DEBUG — tg loaded: ${!!tg}, initData present: ${!!(tg && tg.initData)}, ` +
+        `initData length: ${tg ? (tg.initData || '').length : 'n/a'}, ` +
+        `platform: ${tg && tg.platform ? tg.platform : 'n/a'}, ` +
+        `version: ${tg && tg.version ? tg.version : 'n/a'}`;
       document.getElementById('pin-input').style.display = 'none';
       document.querySelector('#pin-gate .btn-primary').style.display = 'none';
       document.getElementById('pin-gate').style.display = 'flex';
