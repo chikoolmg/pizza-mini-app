@@ -375,7 +375,7 @@
   <div class="pin-card">
     <div class="ticket-icon">🔐</div>
     <h1 id="login-restaurant-name">Menu Manager</h1>
-    <p>Developer/testing login — not shown inside Telegram. Enter a Telegram numeric ID to preview that restaurant's admin panel.</p>
+    <p id="pin-gate-intro">Developer/testing login — not shown inside Telegram. Enter a Telegram numeric ID to preview that restaurant's admin panel.</p>
     <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 123456789">
     <div id="pin-error"></div>
     <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="tryLogin()">Log In</button>
@@ -677,10 +677,12 @@
   if (tg) { tg.ready(); tg.expand(); }
 
   // Which restaurant this admin.html instance manages. Inside Telegram this is
-  // determined automatically by autoLogin() from who the user verifiably is.
-  // Outside Telegram (dev/testing only), it comes from a ?r=<id> URL param,
-  // defaulting to 'default'.
-  let currentRestaurantId = new URLSearchParams(window.location.search).get('r') || 'default';
+  // determined automatically by autoLogin() from who the user verifiably is —
+  // this stays null until that resolves. Outside Telegram (dev/testing only),
+  // it comes from a ?r=<id> URL param. There is no fallback restaurant id
+  // anymore — every real restaurant is created via the bot's approval flow,
+  // so a missing id just means "nothing to log into yet."
+  let currentRestaurantId = new URLSearchParams(window.location.search).get('r') || null;
 
   let menuCategories = [];
   let currentView = 'categories';
@@ -703,6 +705,7 @@
   // even logs in — a nicety fetched from the public restaurant-info endpoint,
   // not an auth check.
   async function loadLoginPreview() {
+    if (!currentRestaurantId) return;
     try {
       const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
       if (!res.ok) return;
@@ -728,6 +731,10 @@
     const errorEl = document.getElementById('pin-error');
     errorEl.textContent = '';
 
+    if (!currentRestaurantId) {
+      errorEl.textContent = 'No restaurant specified — add ?r=<restaurant-id> to the URL.';
+      return;
+    }
     if (!telegramId || !/^\d+$/.test(telegramId)) {
       errorEl.textContent = 'Enter your numeric Telegram ID.';
       return;
@@ -794,9 +801,21 @@
     if (tg && tg.initData) {
       // Opened inside Telegram — auto-detect who they are, no typing needed.
       await autoLogin();
+    } else if (!currentRestaurantId) {
+      // Opened in a plain browser with no ?r=<id> in the URL — there's no
+      // restaurant to test against and no Telegram identity to auto-detect,
+      // so there's nothing useful the pin-gate can do here.
+      document.getElementById('pin-error').textContent = '';
+      document.getElementById('login-restaurant-name').textContent = 'No restaurant specified';
+      document.getElementById('pin-gate-intro').textContent =
+        'Add ?r=<restaurant-id> to the URL to test a specific restaurant, or open this page from the bot\'s "🏬 Open My Restaurant" button.';
+      document.getElementById('pin-input').style.display = 'none';
+      document.querySelector('#pin-gate .btn-primary').style.display = 'none';
+      document.getElementById('pin-gate').style.display = 'flex';
     } else {
-      // Opened in a plain browser outside Telegram — no Telegram identity to
-      // detect, so fall back to the developer/testing login screen.
+      // Opened in a plain browser outside Telegram with a ?r=<id> — no
+      // Telegram identity to detect, so fall back to the developer/testing
+      // login screen for that specific restaurant.
       loadLoginPreview();
       if (!(await restoreSession())) {
         document.getElementById('pin-gate').style.display = 'flex';
