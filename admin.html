@@ -125,7 +125,7 @@
   header.top-bar {
     background: var(--card);
     border-bottom: 1px solid var(--line);
-    padding: 16px 20px;
+    padding: 14px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -156,22 +156,28 @@
   #sync-indicator.error #sync-dot { background: var(--brick); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
+  /* Bottom tab bar — fixed to the viewport, thumb-reachable on a phone.
+     #app gets bottom padding (below) so content never sits under it. */
   .tabs {
-    display: flex; gap: 4px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: flex; justify-content: space-around;
     background: var(--card);
-    border-bottom: 1px solid var(--line);
-    padding: 0 16px;
-    position: sticky; top: 65px; z-index: 19;
+    border-top: 1px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 20px -12px rgba(28,31,26,0.18);
   }
   .tab-btn {
+    flex: 1; max-width: 140px;
     background: none; border: none; cursor: pointer;
-    padding: 13px 14px 11px;
-    font-size: 13.5px; font-weight: 600; color: var(--muted);
-    border-bottom: 2.5px solid transparent;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 6px 7px;
+    border-radius: 12px;
+    font-size: 10.5px; font-weight: 600; color: var(--muted);
   }
-  .tab-btn.active { color: var(--basil-dark); border-bottom-color: var(--basil); }
+  .tab-btn .tab-icon { font-size: 19px; line-height: 1; }
+  .tab-btn.active { color: var(--basil-dark); background: var(--basil-tint); }
 
-  main { flex: 1; padding: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+  main { flex: 1; padding: 20px 20px calc(84px + env(safe-area-inset-bottom, 0px)); max-width: 900px; width: 100%; margin: 0 auto; }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -234,12 +240,18 @@
   .empty-state .display { font-size: 17px; color: var(--ink); margin-bottom: 6px; }
 
   /* ---- items view ---- */
-  .item-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-  #item-cat-select {
-    flex: 1; min-width: 160px;
-    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
-    font-size: 13.5px; font-weight: 600; background: var(--card);
+  .cat-chip-bar {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px;
+    scrollbar-width: none;
   }
+  .cat-chip-bar::-webkit-scrollbar { display: none; }
+  .cat-chip-tab {
+    flex-shrink: 0; cursor: pointer; white-space: nowrap;
+    padding: 8px 14px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--card);
+    font-size: 13px; font-weight: 600; color: var(--muted);
+  }
+  .cat-chip-tab.active { background: var(--basil); color: #fff; border-color: var(--basil); }
   .item-grid { display: flex; flex-direction: column; gap: 10px; }
   .item-row {
     background: var(--card); border: 1px solid var(--line); border-radius: 14px;
@@ -423,8 +435,12 @@
     <div class="field">
       <label>Logo</label>
       <img class="thumb-preview" id="setup-logo-preview" src="" alt="" style="opacity:0.3;" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
-      <input type="url" id="setup-logo-input" placeholder="https://…" oninput="updateSetupLogoPreview()">
-      <div class="sub-hint">Paste a link to your logo image — you can leave this blank for now and add it later.</div>
+      <div class="upload-row">
+        <button type="button" class="btn-upload" id="setup-logo-upload-btn" onclick="document.getElementById('setup-logo-file-input').click()">📷 Upload Logo</button>
+        <span class="upload-status" id="setup-logo-upload-status"></span>
+      </div>
+      <input type="file" id="setup-logo-file-input" accept="image/*" style="display:none" onchange="handleSetupLogoFileSelect(event)">
+      <input type="url" id="setup-logo-input" placeholder="or paste an image link…" oninput="updateSetupLogoPreview()">
     </div>
     <div class="field">
       <label>Restaurant address</label>
@@ -451,9 +467,9 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" id="tab-btn-categories" onclick="switchView('categories')">📁 Categories</button>
-    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')">🍕 Items</button>
-    <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')">⚙️ Settings</button>
+    <button class="tab-btn active" id="tab-btn-categories" onclick="switchView('categories')"><span class="tab-icon">📁</span><span>Categories</span></button>
+    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Items</span></button>
+    <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon">⚙️</span><span>Settings</span></button>
   </nav>
 
   <main>
@@ -478,9 +494,7 @@
         </div>
         <button class="btn btn-primary" id="add-item-btn" onclick="openItemDrawer(null)">+ New Item</button>
       </div>
-      <div class="item-toolbar">
-        <select id="item-cat-select" onchange="onItemCategoryChange()"></select>
-      </div>
+      <div class="cat-chip-bar" id="item-cat-tabs"></div>
       <div class="item-grid" id="item-grid"></div>
     </div>
 
@@ -502,7 +516,12 @@
         <div class="field">
           <label>Logo</label>
           <img class="thumb-preview" id="settings-logo-preview" src="" alt="" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
-          <input type="url" id="settings-logo-input" placeholder="https://…" oninput="updateSettingsLogoPreview()">
+          <div class="upload-row">
+            <button type="button" class="btn-upload" id="settings-logo-upload-btn" onclick="document.getElementById('settings-logo-file-input').click()">📷 Upload Logo</button>
+            <span class="upload-status" id="settings-logo-upload-status"></span>
+          </div>
+          <input type="file" id="settings-logo-file-input" accept="image/*" style="display:none" onchange="handleSettingsLogoFileSelect(event)">
+          <input type="url" id="settings-logo-input" placeholder="or paste an image link…" oninput="updateSettingsLogoPreview()">
         </div>
         <div class="field">
           <label>Restaurant address</label>
@@ -617,10 +636,9 @@
         <span class="upload-status" id="upload-status"></span>
       </div>
       <input type="file" id="item-image-file-input" accept="image/*" style="display:none" onchange="handleItemImageFileSelect(event)">
-      <div class="field">
+      <div class="field" style="display:none;">
         <label>Image URL</label>
         <input type="url" id="item-image-input" placeholder="https://…" oninput="updateItemImagePreview()">
-        <div class="sub-hint">Uploading a photo above fills this in automatically — or paste a link here instead.</div>
       </div>
       <div class="field">
         <label>Name</label>
@@ -639,6 +657,17 @@
           <label>Prep time</label>
           <input type="text" id="item-time-input" placeholder="15-20 Min">
         </div>
+      </div>
+
+      <div class="field">
+        <label>Sizes for this item</label>
+        <div class="sub-hint" id="item-size-inherit-hint" style="margin-bottom:8px;"></div>
+        <div class="chip-list" id="item-size-chips"></div>
+        <div class="chip-add-row">
+          <input type="text" id="item-new-size-input" placeholder="e.g. Small" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItemSizeChip();}">
+          <button class="btn btn-outline btn-sm" onclick="addItemSizeChip()">Add</button>
+        </div>
+        <button class="btn btn-outline btn-sm" id="item-reset-sizes-btn" style="margin-top:8px; display:none;" onclick="resetItemSizesToCategory()">↺ Use category's sizes instead</button>
       </div>
 
       <div class="field" id="item-price-field">
@@ -703,6 +732,10 @@
   let menuCategories = [];
   let currentView = 'categories';
   let dragSrcIndex = null;
+
+  // Which category's items are shown on the Items tab — replaces the old
+  // dropdown's selected value now that category selection is a chip bar.
+  let activeItemCategoryId = null;
 
   // The current restaurant's profile — name/tagline/logo/address shown to
   // customers. Populated on login (or session restore) from the server's
@@ -934,6 +967,8 @@
     document.getElementById('setup-tagline-input').value = restaurantProfile.tagline;
     document.getElementById('setup-logo-input').value = restaurantProfile.logoUrl;
     document.getElementById('setup-address-input').value = restaurantProfile.address;
+    document.getElementById('setup-logo-upload-status').textContent = '';
+    document.getElementById('setup-logo-upload-status').classList.remove('error');
     updateSetupLogoPreview();
     document.getElementById('app').style.display = 'none';
     document.getElementById('setup-gate').style.display = 'flex';
@@ -972,6 +1007,8 @@
     document.getElementById('settings-tagline-input').value = restaurantProfile.tagline;
     document.getElementById('settings-logo-input').value = restaurantProfile.logoUrl;
     document.getElementById('settings-address-input').value = restaurantProfile.address;
+    document.getElementById('settings-logo-upload-status').textContent = '';
+    document.getElementById('settings-logo-upload-status').classList.remove('error');
     updateSettingsLogoPreview();
   }
 
@@ -1242,7 +1279,10 @@
       cat.categoryMultiOptions = catDraft.categoryMultiOptions;
       // Keep every item's own `sizes` array in sync with the category's size names —
       // preserving prices for sizes that still exist, defaulting new ones to 0.
+      // Items with their own customSizeNames override are left alone — that's
+      // the whole point of the override, so a category edit doesn't clobber it.
       cat.items.forEach(item => {
+        if (item.customSizeNames && item.customSizeNames.length) return;
         const oldSizes = item.sizes || [];
         item.sizes = cat.sizeNames.map(n => {
           const existing = oldSizes.find(s => s.name === n);
@@ -1260,27 +1300,32 @@
 
   /* ================= ITEMS VIEW ================= */
   function renderItemsView() {
-    const select = document.getElementById('item-cat-select');
+    const tabsEl = document.getElementById('item-cat-tabs');
     const addBtn = document.getElementById('add-item-btn');
     if (menuCategories.length === 0) {
-      select.innerHTML = `<option>No categories yet</option>`;
-      select.disabled = true;
+      tabsEl.innerHTML = '';
       addBtn.disabled = true;
       document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Create a category first, then come back here to add items.</div>`;
       return;
     }
-    select.disabled = false;
     addBtn.disabled = false;
-    const prevValue = select.value;
-    select.innerHTML = menuCategories.map(c => `<option value="${c.id}">${c.icon || ''} ${escapeHtml(c.name)}</option>`).join('');
-    if (menuCategories.some(c => c.id === prevValue)) select.value = prevValue;
+    // Keep whichever category was already active if it still exists; otherwise
+    // default to the first one (covers first load and a deleted category).
+    if (!activeItemCategoryId || !menuCategories.some(c => c.id === activeItemCategoryId)) {
+      activeItemCategoryId = menuCategories[0].id;
+    }
+    tabsEl.innerHTML = menuCategories.map(c => `
+      <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" onclick="selectItemCategory('${c.id}')">${c.icon || ''} ${escapeHtml(c.name)}</button>
+    `).join('');
     renderItemGrid();
   }
-  function onItemCategoryChange() { renderItemGrid(); }
+  function selectItemCategory(catId) {
+    activeItemCategoryId = catId;
+    renderItemsView();
+  }
 
   function getSelectedCategory() {
-    const select = document.getElementById('item-cat-select');
-    return menuCategories.find(c => c.id === select.value) || menuCategories[0] || null;
+    return menuCategories.find(c => c.id === activeItemCategoryId) || menuCategories[0] || null;
   }
 
   function renderItemGrid() {
@@ -1332,25 +1377,27 @@
   function openItemDrawer(itemIndex) {
     const cat = getSelectedCategory();
     if (!cat) { showToast('Create a category first.'); return; }
-    const sizeNames = cat.sizeNames || [];
+    const catSizeNames = cat.sizeNames || [];
 
     if (itemIndex === null) {
       itemDraft = {
-        catId: cat.id, editIndex: null, sizeNames,
+        catId: cat.id, editIndex: null, usingCustomSizes: false, sizeNames: [...catSizeNames],
         name: '', description: '', image: '', rating: '4.8', time: '15-20 Min',
-        price: 0, sizes: sizeNames.map(n => ({ name: n, price: 0 })),
+        price: 0, sizes: catSizeNames.map(n => ({ name: n, price: 0 })),
         singleChoiceTitle: 'Select Option', singleChoices: [],
         extrasTitle: 'Add Extras', extras: []
       };
       document.getElementById('item-drawer-title').textContent = 'New Item';
     } else {
       const item = cat.items[itemIndex];
+      const usingCustomSizes = !!(item.customSizeNames && item.customSizeNames.length);
+      const effectiveSizeNames = usingCustomSizes ? item.customSizeNames : catSizeNames;
       itemDraft = {
-        catId: cat.id, editIndex: itemIndex, sizeNames,
+        catId: cat.id, editIndex: itemIndex, usingCustomSizes, sizeNames: [...effectiveSizeNames],
         name: item.name, description: item.description || '', image: item.image || '',
         rating: item.rating || '4.8', time: item.time || '15-20 Min',
         price: item.price || 0,
-        sizes: sizeNames.map(n => {
+        sizes: effectiveSizeNames.map(n => {
           const existing = (item.sizes || []).find(s => s.name === n);
           return { name: n, price: existing ? existing.price : 0 };
         }),
@@ -1372,6 +1419,7 @@
     document.getElementById('upload-status').textContent = '';
     document.getElementById('upload-status').classList.remove('error');
     updateItemImagePreview();
+    renderItemSizeChips();
     renderItemPriceInputs();
     renderItemOptionList('single');
     renderItemOptionList('multi');
@@ -1388,38 +1436,134 @@
     img.src = url;
   }
 
+  /* ---- Item-level size override (overwrites the category's sizes for just this item) ---- */
+  function renderItemSizeChips() {
+    const box = document.getElementById('item-size-chips');
+    const hintEl = document.getElementById('item-size-inherit-hint');
+    const resetBtn = document.getElementById('item-reset-sizes-btn');
+    const cat = menuCategories.find(c => c.id === itemDraft.catId);
+    const catSizeNames = (cat && cat.sizeNames) || [];
+
+    box.innerHTML = itemDraft.sizeNames.length === 0
+      ? `<span class="sub-hint">No sizes — flat price.</span>`
+      : itemDraft.sizeNames.map((s, i) => `<span class="chip">${escapeHtml(s)}<button onclick="removeItemSizeChip(${i})">×</button></span>`).join('');
+
+    if (itemDraft.usingCustomSizes) {
+      hintEl.textContent = catSizeNames.length
+        ? `Using this item's own sizes instead of the category's (${catSizeNames.join(', ') || 'none'}).`
+        : `Using this item's own sizes.`;
+      resetBtn.style.display = catSizeNames.length ? 'inline-flex' : 'none';
+    } else {
+      hintEl.textContent = catSizeNames.length
+        ? `Currently using this category's sizes. Add a size below to override it just for this item.`
+        : `This category has no sizes — add one below to give just this item its own sizes.`;
+      resetBtn.style.display = 'none';
+    }
+  }
+
+  // Reads whatever is currently typed in the price/option inputs into itemDraft
+  // before the size list changes and those inputs get rebuilt — otherwise any
+  // unsaved prices the admin just typed would be lost the moment they add or
+  // remove a size chip.
+  function captureItemPricingFromDom() {
+    if (itemDraft.sizeNames.length === 0) {
+      const flat = document.getElementById('item-flat-price');
+      if (flat) itemDraft.price = parseFloat(flat.value) || 0;
+    } else {
+      document.querySelectorAll('.item-size-price').forEach((inp, i) => {
+        if (itemDraft.sizes[i]) itemDraft.sizes[i].price = parseFloat(inp.value) || 0;
+      });
+    }
+  }
+
+  function syncItemSizesArray() {
+    itemDraft.sizes = itemDraft.sizeNames.map(n => {
+      const existing = itemDraft.sizes.find(s => s.name === n);
+      return { name: n, price: existing ? existing.price : 0 };
+    });
+    // Item-level option prices are stored positionally (one price per size,
+    // by index) — if the size list itself changed shape, reset those arrays
+    // to the new length rather than risk a price silently applying to the
+    // wrong size. Index 0 carries over as a reasonable starting point.
+    const n = itemDraft.sizeNames.length;
+    ['singleChoices', 'extras'].forEach(key => {
+      itemDraft[key].forEach(opt => {
+        if (n > 0) {
+          const old = opt.prices || [];
+          opt.prices = itemDraft.sizeNames.map((_, i) => old[i] || 0);
+          delete opt.price;
+        } else {
+          opt.price = (opt.prices && opt.prices[0]) || opt.price || 0;
+          delete opt.prices;
+        }
+      });
+    });
+  }
+
+  function refreshItemSizeDependentUI() {
+    renderItemSizeChips();
+    renderItemPriceInputs();
+    renderItemOptionList('single');
+    renderItemOptionList('multi');
+  }
+
+  function addItemSizeChip() {
+    const input = document.getElementById('item-new-size-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (itemDraft.sizeNames.some(s => s.toLowerCase() === name.toLowerCase())) {
+      showToast('That size already exists.');
+      return;
+    }
+    captureItemPricingFromDom();
+    itemDraft.usingCustomSizes = true;
+    itemDraft.sizeNames.push(name);
+    syncItemSizesArray();
+    input.value = '';
+    refreshItemSizeDependentUI();
+  }
+  function removeItemSizeChip(i) {
+    captureItemPricingFromDom();
+    itemDraft.usingCustomSizes = true;
+    itemDraft.sizeNames.splice(i, 1);
+    syncItemSizesArray();
+    refreshItemSizeDependentUI();
+  }
+  function resetItemSizesToCategory() {
+    const cat = menuCategories.find(c => c.id === itemDraft.catId);
+    itemDraft.usingCustomSizes = false;
+    itemDraft.sizeNames = [...((cat && cat.sizeNames) || [])];
+    syncItemSizesArray();
+    refreshItemSizeDependentUI();
+  }
+
   // ---------------------------------------------------------------------
-  // Direct photo upload for menu items, via Cloudinary's unsigned upload
-  // API. CLOUD_NAME and UPLOAD_PRESET are not secret — they're meant to be
-  // used from client-side code like this; Cloudinary enforces what an
-  // unsigned preset is allowed to do (file size/type limits, target folder)
-  // on their end, not via a hidden key here.
+  // Direct photo upload (menu items AND restaurant logo), via Cloudinary's
+  // unsigned upload API. CLOUD_NAME and UPLOAD_PRESET are not secret —
+  // they're meant to be used from client-side code like this; Cloudinary
+  // enforces what an unsigned preset is allowed to do (file size/type
+  // limits, target folder) on their end, not via a hidden key here.
   //
-  // On success, the returned secure_url is written straight into the same
-  // #item-image-input field the manual "Image URL" box uses, so saving the
-  // item (saveItemDraft) doesn't need to know or care whether the photo was
-  // uploaded or pasted in — it's just a URL string either way, exactly like
-  // before.
+  // On success, the returned secure_url is written straight into whichever
+  // URL field this upload is for, so saving (saveItemDrawer,
+  // saveRestaurantProfile) doesn't need to know or care whether the image
+  // was uploaded or pasted in — it's just a URL string either way.
   // ---------------------------------------------------------------------
   const CLOUDINARY_CLOUD_NAME = 'kskw3szk';
   const CLOUDINARY_UPLOAD_PRESET = 'menu_item_upload';
 
-  async function handleItemImageFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const img = document.getElementById('item-image-preview');
-    const statusEl = document.getElementById('upload-status');
-    const uploadBtn = document.getElementById('upload-photo-btn');
+  async function uploadImageFile(file, { previewElId, urlInputElId, statusElId, btnElId }) {
+    const img = document.getElementById(previewElId);
+    const statusEl = statusElId ? document.getElementById(statusElId) : null;
+    const btn = btnElId ? document.getElementById(btnElId) : null;
 
     // Show the picked photo immediately via a local object URL, so there's
     // no blank/stale thumbnail while the upload is in flight.
     img.style.opacity = 1;
     img.src = URL.createObjectURL(file);
 
-    statusEl.textContent = 'Uploading…';
-    statusEl.classList.remove('error');
-    uploadBtn.disabled = true;
+    if (statusEl) { statusEl.textContent = 'Uploading…'; statusEl.classList.remove('error'); }
+    if (btn) btn.disabled = true;
 
     try {
       const formData = new FormData();
@@ -1436,17 +1580,36 @@
         throw new Error((data.error && data.error.message) || 'Upload failed');
       }
 
-      document.getElementById('item-image-input').value = data.secure_url;
+      document.getElementById(urlInputElId).value = data.secure_url;
       img.src = data.secure_url;
-      statusEl.textContent = '✓ Uploaded';
+      if (statusEl) statusEl.textContent = '✓ Uploaded';
     } catch (err) {
       console.error('Cloudinary upload failed:', err);
-      statusEl.textContent = 'Upload failed — try again, or paste a URL below.';
-      statusEl.classList.add('error');
+      if (statusEl) { statusEl.textContent = 'Upload failed — try again.'; statusEl.classList.add('error'); }
     } finally {
-      uploadBtn.disabled = false;
-      event.target.value = ''; // allows re-selecting the same file if retrying
+      if (btn) btn.disabled = false;
     }
+  }
+
+  function handleItemImageFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    uploadImageFile(file, { previewElId: 'item-image-preview', urlInputElId: 'item-image-input', statusElId: 'upload-status', btnElId: 'upload-photo-btn' });
+    event.target.value = ''; // allows re-selecting the same file if retrying
+  }
+
+  function handleSetupLogoFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    uploadImageFile(file, { previewElId: 'setup-logo-preview', urlInputElId: 'setup-logo-input', statusElId: 'setup-logo-upload-status', btnElId: 'setup-logo-upload-btn' });
+    event.target.value = '';
+  }
+
+  function handleSettingsLogoFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    uploadImageFile(file, { previewElId: 'settings-logo-preview', urlInputElId: 'settings-logo-input', statusElId: 'settings-logo-upload-status', btnElId: 'settings-logo-upload-btn' });
+    event.target.value = '';
   }
 
   function renderItemPriceInputs() {
@@ -1542,6 +1705,13 @@
       extrasTitle: document.getElementById('item-multi-title-input').value.trim() || 'Add Extras',
       extras: itemDraft.extras
     };
+
+    // Only stamp customSizeNames when this item actually overrides the
+    // category's sizes — its absence is what lets the item keep inheriting
+    // the category's sizes automatically in the future (see saveCategoryDrawer).
+    if (itemDraft.usingCustomSizes) {
+      item.customSizeNames = [...itemDraft.sizeNames];
+    }
 
     if (itemDraft.sizeNames.length === 0) {
       item.price = parseFloat(document.getElementById('item-flat-price').value) || 0;
