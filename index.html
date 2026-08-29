@@ -1189,7 +1189,7 @@
         <div class="cart-header">
             <h2 id="restaurant-cart-title">Restaurant</h2>
         </div>
-        <div id="restaurant-cart-content" class="scrollable-view-content cart-page-body"></div>
+        <div id="restaurant-cart-content" class="scrollable-view-content" style="padding: 16px;"></div>
     </div>
 
     <!-- CHECKOUT VIEW (NEWLY ADDED) -->
@@ -1555,18 +1555,24 @@ async function submitFinalOrder() {
             cartItems = cartItems.filter(i => i.restaurantId !== activeCartRestaurantId);
             orderComment = '';
             activeCartRestaurantId = null;
-            updateCartBadge();
+
+            // BUG FIX: this flag was only ever reset back to false in the
+            // failure branch below. On a successful order it stayed true
+            // forever, which meant every submitFinalOrder() call after the
+            // very first successful one hit the "if (isSubmittingOrder)
+            // return;" guard at the top of this function and silently did
+            // nothing — this was why tapping "Make Payment" for a second
+            // restaurant's order appeared to do nothing at all.
+            isSubmittingOrder = false;
+
+            updateCartBadge(); // also persists any remaining cart items to localStorage — see cartItems load/save near STORAGE_KEY_CART
             showToast("Order Placed Successfully!");
-            if (cartItems.length === 0) {
-                // Nothing left in any restaurant's cart — close the Mini App
-                // and let the bot confirm the order via chat, as before.
-                setTimeout(() => tg?.close(), 1000);
-            } else {
-                // Other restaurants still have items waiting — keep the app
-                // open so they can check those out too, instead of closing
-                // mid-flow on them.
-                setTimeout(() => switchNavTab('cart'), 1000);
-            }
+            // Always close the Mini App after a successful order, same as
+            // before — the bot confirms it via chat. Any other restaurant's
+            // items are safe: they're saved to localStorage (see
+            // STORAGE_KEY_CART) and will still be there next time this Mini
+            // App is opened, so nothing is lost by closing.
+            setTimeout(() => tg?.close(), 1000);
             return; // Leave the button locked/disabled while we transition away
         } else {
             alert('Order Submission Failed: ' + (result.error || 'Server error'));
@@ -1598,6 +1604,12 @@ async function submitFinalOrder() {
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
     const STORAGE_KEY_ADDRESSES = telegramUser ? `bite_slice_user_addresses_${telegramUser.id}` : 'bite_slice_user_addresses_guest';
+    // Cart is scoped per Telegram account the same way addresses are, and for
+    // the same reason — this is what makes it safe to close the Mini App
+    // right after an order (see submitFinalOrder()) without losing whatever
+    // other restaurants' items are still sitting in the cart: they're saved
+    // here and reloaded the next time this Mini App is opened.
+    const STORAGE_KEY_CART = telegramUser ? `bite_slice_user_cart_${telegramUser.id}` : 'bite_slice_user_cart_guest';
     const PIZZA_CATEGORY_ID = 'cat-1'; // The original "Premium Pizza" category. New items added inside THIS
                                         // category automatically get the standard crust/topping options below.
                                         // Any other category — including newly created ones — starts blank.
@@ -1634,6 +1646,10 @@ async function submitFinalOrder() {
     let selectedExtras = []; 
 
     let cartItems = [];
+    try {
+        const savedCart = localStorage.getItem(STORAGE_KEY_CART);
+        if (savedCart) cartItems = JSON.parse(savedCart);
+    } catch (e) { cartItems = []; }
 
     // Which restaurant's items the Cart flow is currently drilled into — set
     // by openRestaurantCart() when tapping a restaurant group on the Cart
@@ -2476,6 +2492,11 @@ async function submitFinalOrder() {
     /* ================= CART RENDERING ================= */
     function updateCartBadge() {
         document.getElementById('cart-badge-count').innerText = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+        // Persisted here since every cart mutation (add/remove/qty change/
+        // successful order) already calls this function — one choke point,
+        // so the cart survives the Mini App closing and reopening instead of
+        // resetting to empty every time.
+        try { localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cartItems)); } catch (e) {}
     }
     function showToast(msg) {
         const toast = document.getElementById('toast');
@@ -2540,107 +2561,42 @@ async function submitFinalOrder() {
     function openRestaurantCart(restaurantId) {
         activeCartRestaurantId = restaurantId;
         switchNavTab('restaurant-cart');
+
+        // First time checking out with no saved address yet — prompt for one
+        // right away, same as before (this used to fire when moving on to
+        // Checkout; it now happens here since address selection lives on
+        // this page instead).
+        if (savedAddresses.length === 0) {
+            openAddressModal();
+        }
     }
 
-    // Drill-in screen for a single restaurant's cart lines — its own items,
-    // summary (Subtotal + the same flat Fee used at Checkout, so the two
-    // screens always agree — see renderCheckoutPage()), and the button that
-    // moves on to Checkout for just this restaurant.
+    // "Cart summary" screen for a single restaurant — this is now where the
+    // delivery address, delivery method, payment method, and order note are
+    // all chosen (moved here from the old Checkout page). It intentionally
+    // does NOT show the items list or a fee total anymore — that "order
+    // summary" now lives only on the read-only final Checkout screen (see
+    // renderCheckoutPage()), so there's exactly one place showing totals
+    // instead of two screens that could drift out of sync.
+    //
+    // Quantities can still be changed by going back to this restaurant's
+    // menu (Explore tab) — the qty steppers there read/write the same
+    // cartItems array — there just isn't a second set of steppers here too.
     function renderRestaurantCartPage() {
         const container = document.getElementById('restaurant-cart-content');
         const titleEl = document.getElementById('restaurant-cart-title');
         const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
 
         if (!items.length) {
-            // Everything for this restaurant was removed via the qty stepper
-            // — nothing left to show, bounce back to the Cart tab.
+            // Everything for this restaurant was removed (e.g. via the menu's
+            // qty steppers) — nothing left to show, bounce back to the Cart tab.
             switchNavTab('cart');
             return;
         }
 
         titleEl.textContent = items[0].restaurantName || 'Restaurant';
 
-        let itemsHtml = '';
-        let subtotal = 0;
-        cartItems.forEach((item, index) => {
-            if (item.restaurantId !== activeCartRestaurantId) return;
-            const itemTotal = item.unitPrice * item.quantity;
-            subtotal += itemTotal;
-            itemsHtml += `
-                <div class="cart-item-row" data-dish-id="${item.dishId !== undefined ? item.dishId : ''}">
-                    <img src="${item.image}" class="cart-item-img" alt="food" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
-                    <div class="cart-item-info">
-                        <div class="cart-item-title">${item.name}</div>
-                        <div class="cart-item-options">${item.options}</div>
-                        <div class="cart-item-price">${itemTotal} MMK</div>
-                    </div>
-                    <div class="qty-control" style="transform: scale(0.85);">
-                        <button class="qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button>
-                        <span class="qty-val">${item.quantity}</span>
-                        <button class="qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        const FEE = 500; // Flat app/service fee — same figure Checkout uses, so the two screens always agree
-        const grandTotal = subtotal + FEE;
-
-        container.innerHTML = `
-            <div class="cart-section-card">
-                <div class="cart-section-title"><span>📋</span> Order Items</div>
-                <div class="cart-items-list">${itemsHtml}</div>
-            </div>
-            <div class="cart-section-card">
-                <div class="cart-section-title"><span>💵</span> Summary</div>
-                <div class="summary-row"><span>Subtotal</span><span>${subtotal} MMK</span></div>
-                <div class="summary-row"><span>Fee</span><span>${FEE} MMK</span></div>
-                <div class="summary-row grand-total"><span>Total Amount</span><span style="color: var(--primary);">${grandTotal} MMK</span></div>
-                <div style="text-align: right; margin-top: 6px;"><span class="inline-hint">Delivery fee is added at Checkout, once you pick Delivery or Self-pick up</span></div>
-            </div>
-            <div style="margin-top: 12px; margin-bottom: 30px;">
-                <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Continue Checkout</button>
-            </div>
-        `;
-    }
-
-    function updateCartItemQty(index, delta) {
-        const dishId = cartItems[index].dishId;
-        cartItems[index].quantity += delta;
-        if (cartItems[index].quantity <= 0) cartItems.splice(index, 1);
-        updateCartBadge();
-        if (currentTabId === 'restaurant-cart') {
-            renderRestaurantCartPage();
-        } else {
-            renderCartPage();
-        }
-        if (dishId !== undefined) refreshCardQtyZone(dishId, delta > 0);
-    }
-
-    /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
-
-    function goToCheckout() {
-        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
-        if (!items.length) return;
-        switchNavTab('checkout');
-
-        // If it's the users first time and they have no addresses, automatically ask for one
-        if (savedAddresses.length === 0) {
-            openAddressModal();
-        }
-    }
-
-    function renderCheckoutPage() {
-        const container = document.getElementById('checkout-page-content');
-
-        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
-        let subtotal = 0;
-        items.forEach(item => subtotal += item.unitPrice * item.quantity);
-        const FEE = 500; // Flat app/service fee (tax-inclusive), not percentage-based — same figure the restaurant-cart summary uses, so the two screens always agree
-        const deliveryFee = deliveryMethod === 'pickup' ? 0 : 2000;
-        const grandTotal = subtotal + FEE + deliveryFee;
-
-        // Build Address Section
+        // Build Address Section (moved here from the old Checkout page)
         let addressHtml = '';
         const MAX_ADDRESSES = 2;
         if (savedAddresses.length === 0) {
@@ -2728,31 +2684,104 @@ async function submitFinalOrder() {
                 <textarea id="order-comment-input" class="form-control" placeholder="e.g. Extra spicy, no onions, leave at the door…" oninput="orderComment = this.value">${orderComment || ''}</textarea>
             </div>
 
-            <div class="cart-section-card" style="margin-top: 24px; margin-bottom: 24px; border: none; background: white;">
-                <div class="summary-row"><span>Shipping fee:</span><span>${deliveryFee} MMK</span></div>
-                <div class="summary-row"><span>Fee:</span><span>${FEE} MMK</span></div>
-                <div class="summary-row"><span>Subtotal:</span><span>${subtotal} MMK</span></div>
-                <div class="summary-row grand-total"><span>Total:</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
-                <div style="text-align: right; margin-top: 6px;"><span class="inline-hint">Tax-inclusive</span></div>
+            <div style="margin-top: 20px; margin-bottom: 30px;">
+                <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Continue to Checkout</button>
+            </div>
+        `;
+    }
+
+    /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
+
+    function goToCheckout() {
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+        if (!items.length) return;
+
+        // Catch a missing address before landing on the (now read-only)
+        // Checkout screen — better to send them back here to fix it than to
+        // show them a confirmation page that will just fail on Make Payment.
+        if (deliveryMethod === 'delivery' && !savedAddresses.find(a => a.id === activeAddressId)) {
+            alert('Please select or add a delivery address first.');
+            if (savedAddresses.length === 0) openAddressModal();
+            return;
+        }
+
+        switchNavTab('checkout');
+    }
+
+    // Final Checkout screen — a read-only order summary/confirmation. All the
+    // inputs (address, delivery method, payment method, note) were moved to
+    // the restaurant-cart "Cart summary" screen above; this page just
+    // restates what was chosen there plus the itemized bill, ending in the
+    // Make Payment button. Nothing here is clickable/editable — to change
+    // anything, the Telegram back button returns to the cart summary screen.
+    function renderCheckoutPage() {
+        const container = document.getElementById('checkout-page-content');
+
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+        if (!items.length) {
+            switchNavTab('cart');
+            return;
+        }
+
+        const restaurantName = items[0].restaurantName || 'Restaurant';
+        const SYSTEM_FEE = 0; // Placeholder — not wired up to anything yet, updating later
+        const deliveryFee = deliveryMethod === 'pickup' ? 0 : 2000;
+
+        let itemsHtml = '';
+        let itemsTotal = 0;
+        items.forEach(item => {
+            const lineTotal = item.unitPrice * item.quantity;
+            itemsTotal += lineTotal;
+            itemsHtml += `<div class="summary-row"><span>${item.name} × ${item.quantity}</span><span>${lineTotal} MMK</span></div>`;
+        });
+
+        const grandTotal = itemsTotal + SYSTEM_FEE + deliveryFee;
+
+        const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
+        const addressText = deliveryMethod === 'pickup'
+            ? 'Store Pick-up (no delivery address needed)'
+            : (activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected');
+
+        const deliveryLabel = deliveryMethod === 'pickup' ? 'Self-pick up' : 'Delivery';
+        const paymentLabel = selectedPaymentMethod === 'kbzpay' ? 'KBZ PAY' : 'Cash On Delivery';
+        const noteText = orderComment && orderComment.trim() ? orderComment.trim() : 'No note added';
+
+        container.innerHTML = `
+            <div class="cart-section-card" style="margin-bottom: 16px;">
+                <div class="cart-section-title" style="margin-bottom: 14px;">${restaurantName}</div>
+                <div class="summary-row"><span>Delivery Method</span><span>${deliveryLabel}</span></div>
+                <div class="summary-row"><span>Payment Method</span><span>${paymentLabel}</span></div>
+                <div class="summary-row" style="align-items: flex-start;"><span>Address</span><span style="text-align:right; max-width: 62%;">${addressText}</span></div>
+                <div class="summary-row" style="align-items: flex-start; margin-bottom: 0;"><span>Order Note</span><span style="text-align:right; max-width: 62%;">${noteText}</span></div>
             </div>
 
-            <button class="btn-place-order" id="place-order-btn" onclick="submitFinalOrder()">Make Payment</button>
+            <div class="cart-section-card">
+                <div class="cart-section-title"><span>📋</span> Ordered Items</div>
+                <div style="margin-bottom: 8px;">${itemsHtml}</div>
+                <div class="summary-row" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>System fee</span><span>${SYSTEM_FEE} MMK</span></div>
+                <div class="summary-row"><span>Delivery fee</span><span>${deliveryFee === 0 ? 'Free' : deliveryFee + ' MMK'}</span></div>
+                <div class="summary-row grand-total"><span>Subtotal</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
+            </div>
+
+            <div style="margin-top: 20px; margin-bottom: 24px;">
+                <button class="btn-place-order" id="place-order-btn" onclick="submitFinalOrder()">Make Payment</button>
+            </div>
         `;
     }
 
     function selectAddress(id) {
         activeAddressId = id;
-        renderCheckoutPage(); // Re-render to update selected UI state
+        renderRestaurantCartPage(); // Re-render — these controls now live on the cart summary page
     }
 
     function selectPayment(method) {
         selectedPaymentMethod = method;
-        renderCheckoutPage();
+        renderRestaurantCartPage();
     }
 
     function selectDeliveryMethod(method) {
         deliveryMethod = method;
-        renderCheckoutPage(); // Re-render: toggles the address section and updates the shipping fee
+        renderRestaurantCartPage(); // Re-render: toggles the address section and updates the shipping fee
     }
 
     const MAX_SAVED_ADDRESSES = 2;
@@ -2830,7 +2859,7 @@ async function submitFinalOrder() {
             activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
         }
         localStorage.setItem(STORAGE_KEY_ADDRESSES, JSON.stringify(savedAddresses));
-        renderCheckoutPage();
+        renderRestaurantCartPage();
         showToast("Address removed.");
     }
 
@@ -2868,7 +2897,7 @@ async function submitFinalOrder() {
         localStorage.setItem(STORAGE_KEY_ADDRESSES, JSON.stringify(savedAddresses));
         
         closeAddressModal();
-        renderCheckoutPage();
+        renderRestaurantCartPage();
     }
 
     // App Startup Entry Point
