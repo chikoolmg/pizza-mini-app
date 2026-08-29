@@ -455,6 +455,53 @@
             margin-bottom: 0;
         }
 
+        /* Cart tab: one card per restaurant that has items in the cart —
+           tapping it drills into that restaurant's own items/summary/checkout. */
+        .cart-restaurant-group {
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .cart-restaurant-group:active { transform: scale(0.98); }
+        .cart-restaurant-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .cart-restaurant-group-header h3 { font-size: 15px; font-weight: 800; color: var(--text-main); }
+        .cart-restaurant-group-arrow { font-size: 18px; font-weight: 700; color: var(--text-muted); }
+        .cart-restaurant-group-preview {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cart-restaurant-group-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-light);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .cart-restaurant-group-subtotal { font-weight: 800; color: var(--primary); font-size: 13px; }
+
+        /* Checkout: Delivery Method and Payment Method intentionally look
+           different from each other so they're not confused as the same
+           kind of control — Delivery Method has no icon and puts the radio
+           BEFORE the label; Payment Method keeps its icon and the radio
+           stays AFTER the label (unchanged). */
+        .delivery-method-card { gap: 12px; }
+        .delivery-method-card .payment-label { font-weight: 600; }
+
         .form-group { margin-bottom: 12px; }
         .form-group label {
             display: block;
@@ -1135,10 +1182,19 @@
         <div id="cart-page-content" class="scrollable-view-content cart-page-body"></div>
     </div>
 
+    <!-- RESTAURANT CART VIEW — drill-in from the Cart tab, one restaurant's
+         items/summary/"Continue Checkout" at a time. No back arrow here
+         either — same reasoning as Checkout below. -->
+    <div id="restaurant-cart-view" class="page-view">
+        <div class="cart-header">
+            <h2 id="restaurant-cart-title">Restaurant</h2>
+        </div>
+        <div id="restaurant-cart-content" class="scrollable-view-content cart-page-body"></div>
+    </div>
+
     <!-- CHECKOUT VIEW (NEWLY ADDED) -->
     <div id="checkout-view" class="page-view">
-        <header style="justify-content: flex-start; gap: 20px;">
-            <button style="background:none; border:none; font-size: 20px; font-weight: bold; color: #118B80; cursor:pointer;" onclick="switchNavTab('cart')">❮</button>
+        <header style="justify-content: flex-start;">
             <h1 style="flex:1; text-align: left; font-size: 18px;">Checkout</h1>
         </header>
         <div id="checkout-page-content" class="scrollable-view-content" style="padding: 16px;">
@@ -1446,7 +1502,8 @@ const SERVER_URL = 'https://chitkool.pythonanywhere.com';
 
 async function submitFinalOrder() {
     if (isSubmittingOrder) return; // Prevent double/rapid taps from firing multiple orders
-    if (!cartItems.length) return alert('Your cart is empty');
+    const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+    if (!items.length) return alert('This restaurant\'s cart is empty');
 
     let activeAddr = null;
     if (deliveryMethod === 'delivery') {
@@ -1454,7 +1511,7 @@ async function submitFinalOrder() {
         if (!activeAddr) return alert('Please select a valid delivery address');
     }
 
-    let subtotal = cartItems.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
+    let subtotal = items.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
     let fee = 500; // Flat app/service fee (tax-inclusive), not percentage-based
     let delivery = deliveryMethod === 'pickup' ? 0 : 2000;
     let grandTotal = subtotal + fee + delivery;
@@ -1465,9 +1522,10 @@ async function submitFinalOrder() {
         address: activeAddr,
         deliveryMethod: deliveryMethod,
         paymentMethod: selectedPaymentMethod,
-        items: cartItems,
+        comment: orderComment || '',
+        items: items,
         pricing: { subtotal, fee, delivery, total: grandTotal },
-        restaurantId: currentRestaurantId
+        restaurantId: activeCartRestaurantId
     };
 
     // Lock the button so a second tap (or accidental double-tap) can't submit a duplicate order
@@ -1491,11 +1549,25 @@ async function submitFinalOrder() {
 
         const result = await res.json();
         if (result.success) {
-            cartItems = [];
+            // Only remove THIS restaurant's items — any other restaurant's
+            // cart lines stay put, since an order only ever covers one
+            // restaurant at a time.
+            cartItems = cartItems.filter(i => i.restaurantId !== activeCartRestaurantId);
+            orderComment = '';
+            activeCartRestaurantId = null;
             updateCartBadge();
             showToast("Order Placed Successfully!");
-            setTimeout(() => tg?.close(), 1000);
-            return; // Leave the button locked/disabled — the mini app is closing anyway
+            if (cartItems.length === 0) {
+                // Nothing left in any restaurant's cart — close the Mini App
+                // and let the bot confirm the order via chat, as before.
+                setTimeout(() => tg?.close(), 1000);
+            } else {
+                // Other restaurants still have items waiting — keep the app
+                // open so they can check those out too, instead of closing
+                // mid-flow on them.
+                setTimeout(() => switchNavTab('cart'), 1000);
+            }
+            return; // Leave the button locked/disabled while we transition away
         } else {
             alert('Order Submission Failed: ' + (result.error || 'Server error'));
         }
@@ -1521,6 +1593,7 @@ async function submitFinalOrder() {
     // they were last viewing, rather than always resetting to 'default'.
     const STORAGE_KEY_ACTIVE_RESTAURANT = 'active_restaurant_id';
     let currentRestaurantId = localStorage.getItem(STORAGE_KEY_ACTIVE_RESTAURANT) || 'default';
+    let currentRestaurantName = 'Restaurant'; // Kept in sync by loadRestaurantInfo() — tagged onto cart items as they're added, so the (now multi-restaurant) cart can group and label them without a lookup later.
     // Addresses are scoped PER Telegram account (by their numeric user id), not just per device —
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
@@ -1562,6 +1635,13 @@ async function submitFinalOrder() {
 
     let cartItems = [];
 
+    // Which restaurant's items the Cart flow is currently drilled into — set
+    // by openRestaurantCart() when tapping a restaurant group on the Cart
+    // tab, and used by the restaurant-cart and checkout screens to filter
+    // cartItems down to just that restaurant's lines.
+    let activeCartRestaurantId = null;
+    let orderComment = ''; // Optional note typed at checkout, reset after each successful order
+
     // --- CHECKOUT DATA STATE ---
     let savedAddresses = JSON.parse(localStorage.getItem(STORAGE_KEY_ADDRESSES)) || [];
     let activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
@@ -1589,12 +1669,13 @@ async function submitFinalOrder() {
         const targetView = document.getElementById(`${tabName}-view`);
         if(targetView) targetView.classList.add('active-view');
 
-        const tabIcons = { 'home': 0, 'explore': 1, 'cart': 2, 'profile': 3 };
+        const tabIcons = { 'home': 0, 'explore': 1, 'cart': 2, 'profile': 3, 'restaurant-cart': 2 }; // restaurant-cart keeps the Cart icon highlighted — it's still part of the cart flow
         if (tabIcons[tabName] !== undefined) {
             document.querySelectorAll('.bottom-nav .nav-item')[tabIcons[tabName]].classList.add('active');
         }
 
         if (tabName === 'cart') renderCartPage();
+        if (tabName === 'restaurant-cart') renderRestaurantCartPage();
         if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
         if (tabName === 'profile') renderProfileOrders(); // Refresh pending/succeeded orders + history each visit
         if (tabName === 'home') renderHomeBrowseView(); // Refresh restaurant directory + previews each visit
@@ -1628,21 +1709,44 @@ async function submitFinalOrder() {
     // markup above for why the tab names didn't move but the content did).
     // For each restaurant in the public directory, this also fetches its menu
     // so we can show a live preview of its first 5 dishes, not just its name
-    // and logo. Called every time the Home tab is opened so newly-approved
-    // restaurants (and menu changes) show up without a full page reload.
+    // and logo.
+    //
+    // Cached in homeBrowseCache after the first successful load: once data
+    // exists, revisiting the Home tab renders instantly from it — no loading
+    // flicker, no wait — the same way switching back to the Explore/menu tab
+    // doesn't reload either. A fresh copy is still fetched quietly in the
+    // background on every visit so newly-approved restaurants/menu edits
+    // eventually show up, but it only touches the screen once that fetch
+    // resolves, and only if the Home tab is still the one open.
+    let homeBrowseCache = null;
+
     async function renderHomeBrowseView() {
         const container = document.getElementById('home-restaurant-rows');
         if (!container) return;
 
-        container.innerHTML = `<div class="explore-empty">Loading restaurants...</div>`;
+        if (homeBrowseCache) {
+            container.innerHTML = homeBrowseCache.map(({ restaurant, menu }) => renderRestaurantPreviewRow(restaurant, menu)).join('');
+            fetchHomeBrowseData(false);
+            return;
+        }
 
+        container.innerHTML = `<div class="explore-empty">Loading restaurants...</div>`;
+        await fetchHomeBrowseData(true);
+    }
+
+    // showLoadingUi is true only for the very first load (no cache yet) — on a
+    // silent background refresh we'd rather keep showing the last good data
+    // than replace it with a loading/error state the user didn't ask to see.
+    async function fetchHomeBrowseData(showLoadingUi) {
+        const container = document.getElementById('home-restaurant-rows');
         try {
             const res = await fetch(`${API_BASE}/api/restaurants`);
             const result = await res.json();
             const restaurants = (result && result.restaurants) || [];
 
             if (!restaurants.length) {
-                container.innerHTML = `<div class="explore-empty">No restaurants are listed yet.</div>`;
+                homeBrowseCache = [];
+                if (showLoadingUi) container.innerHTML = `<div class="explore-empty">No restaurants are listed yet.</div>`;
                 return;
             }
 
@@ -1654,10 +1758,17 @@ async function submitFinalOrder() {
                     .catch(() => [])
             ));
 
-            container.innerHTML = restaurants.map((r, i) => renderRestaurantPreviewRow(r, menus[i] || [])).join('');
+            homeBrowseCache = restaurants.map((r, i) => ({ restaurant: r, menu: menus[i] || [] }));
+
+            // Only paint the refreshed data in if the Home tab is still the one
+            // on screen — avoids clobbering whatever the user has since
+            // navigated to with a late-arriving background update.
+            if (document.getElementById('home-view').classList.contains('active-view')) {
+                container.innerHTML = homeBrowseCache.map(({ restaurant, menu }) => renderRestaurantPreviewRow(restaurant, menu)).join('');
+            }
         } catch (e) {
             console.error('Could not load restaurant list:', e);
-            container.innerHTML = `<div class="explore-empty">Could not load restaurants. Check your connection and try again.</div>`;
+            if (showLoadingUi) container.innerHTML = `<div class="explore-empty">Could not load restaurants. Check your connection and try again.</div>`;
         }
     }
 
@@ -1715,19 +1826,13 @@ async function submitFinalOrder() {
     }
 
     // Switches the active storefront to a different restaurant: re-fetches its
-    // menu and branding, and clears the cart first if it has items — an order
-    // can only belong to one restaurant, so carrying items over would be wrong.
+    // menu and branding. The cart is no longer cleared on switch — it now
+    // holds items per-restaurant (see cartItems' restaurantId/restaurantName
+    // tags), grouped on the Cart tab and checked out one restaurant at a time.
     async function selectRestaurant(restaurantId) {
         if (restaurantId === currentRestaurantId) {
             switchNavTab('explore');
             return;
-        }
-
-        if (cartItems.length > 0) {
-            const confirmed = confirm('Switching restaurants will clear your current cart, since an order can only include items from one restaurant. Continue?');
-            if (!confirmed) return;
-            cartItems = [];
-            updateCartBadge();
         }
 
         currentRestaurantId = restaurantId;
@@ -1758,6 +1863,7 @@ async function submitFinalOrder() {
             const info = await res.json();
 
             if (nameEl) nameEl.innerText = info.name || 'Restaurant';
+            currentRestaurantName = info.name || 'Restaurant';
             if (taglineEl) taglineEl.innerText = info.tagline || '';
 
             if (info.logoUrl && logoImg && logoFallback) {
@@ -2182,7 +2288,9 @@ async function submitFinalOrder() {
             image: currentModalDish.image,
             unitPrice: singleUnitPrice + scPrice + extrasTotal,
             quantity: modalQuantityValue,
-            options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard'
+            options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard',
+            restaurantId: currentRestaurantId,
+            restaurantName: currentRestaurantName
         });
 
         updateCartBadge();
@@ -2236,10 +2344,13 @@ async function submitFinalOrder() {
         return true;
     }
 
-    // Total quantity of a given dish currently in the cart, across all its cart lines
-    // (regardless of size/crust/topping customization) — shown on its Home card and in the modal.
+    // Total quantity of a given dish currently in the cart FOR THE RESTAURANT
+    // being browsed right now, across all its cart lines (regardless of
+    // size/crust/topping customization) — shown on its Home card and in the
+    // modal. Scoped to currentRestaurantId now that the cart can hold items
+    // from more than one restaurant at once.
     function getCartQuantityForDish(dishId) {
-        return cartItems.reduce((sum, ci) => sum + (ci.dishId === dishId ? ci.quantity : 0), 0);
+        return cartItems.reduce((sum, ci) => sum + (ci.dishId === dishId && ci.restaurantId === currentRestaurantId ? ci.quantity : 0), 0);
     }
 
     // Returns the markup for a Home card's quantity control: a lone "+" while the item isn't
@@ -2272,7 +2383,7 @@ async function submitFinalOrder() {
     function cardPlusClicked(event, dish) {
         event.stopPropagation();
         const hasSizes = dish.sizes && dish.sizes.length > 0;
-        const existingLine = [...cartItems].reverse().find(ci => ci.dishId === dish.id);
+        const existingLine = [...cartItems].reverse().find(ci => ci.dishId === dish.id && ci.restaurantId === currentRestaurantId);
 
         if (hasSizes && !existingLine) {
             openModal(dish);
@@ -2282,7 +2393,7 @@ async function submitFinalOrder() {
         if (existingLine) {
             existingLine.quantity += 1;
         } else {
-            cartItems.push({ id: Date.now(), dishId: dish.id, name: dish.name, image: dish.image, unitPrice: Math.round(dish.price), quantity: 1, options: 'Standard' });
+            cartItems.push({ id: Date.now(), dishId: dish.id, name: dish.name, image: dish.image, unitPrice: Math.round(dish.price), quantity: 1, options: 'Standard', restaurantId: currentRestaurantId, restaurantName: currentRestaurantName });
         }
 
         updateCartBadge();
@@ -2294,7 +2405,7 @@ async function submitFinalOrder() {
     function cardMinusClicked(event, dish) {
         event.stopPropagation();
         for (let i = cartItems.length - 1; i >= 0; i--) {
-            if (cartItems[i].dishId === dish.id) {
+            if (cartItems[i].dishId === dish.id && cartItems[i].restaurantId === currentRestaurantId) {
                 cartItems[i].quantity -= 1;
                 if (cartItems[i].quantity <= 0) cartItems.splice(i, 1);
                 break;
@@ -2373,6 +2484,11 @@ async function submitFinalOrder() {
         setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
+    // Cart tab: one card per restaurant that currently has items in the cart,
+    // rather than a single flat list — the cart now persists across restaurant
+    // switches (see selectRestaurant()), so it can hold lines from more than
+    // one restaurant at a time. Tapping a card drills into that restaurant's
+    // own items/summary/"Continue Checkout" via openRestaurantCart().
     function renderCartPage() {
         const container = document.getElementById('cart-page-content');
         if (cartItems.length === 0) {
@@ -2386,9 +2502,68 @@ async function submitFinalOrder() {
             return;
         }
 
+        // Group by restaurantId, preserving first-added order rather than
+        // sorting alphabetically.
+        const groups = [];
+        const groupsById = {};
+        cartItems.forEach(item => {
+            if (!groupsById[item.restaurantId]) {
+                const group = { restaurantId: item.restaurantId, restaurantName: item.restaurantName || 'Restaurant', items: [] };
+                groupsById[item.restaurantId] = group;
+                groups.push(group);
+            }
+            groupsById[item.restaurantId].items.push(item);
+        });
+
+        container.innerHTML = groups.map(group => {
+            const itemCount = group.items.reduce((sum, i) => sum + i.quantity, 0);
+            const previewNames = group.items.slice(0, 3).map(i => i.name).join(', ');
+            const moreCount = group.items.length > 3 ? ` +${group.items.length - 3} more` : '';
+            const subtotal = group.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+
+            return `
+                <div class="cart-restaurant-group" onclick="openRestaurantCart('${group.restaurantId}')">
+                    <div class="cart-restaurant-group-header">
+                        <h3>${group.restaurantName}</h3>
+                        <span class="cart-restaurant-group-arrow">›</span>
+                    </div>
+                    <p class="cart-restaurant-group-preview">${previewNames}${moreCount}</p>
+                    <div class="cart-restaurant-group-footer">
+                        <span>${itemCount} item${itemCount === 1 ? '' : 's'}</span>
+                        <span class="cart-restaurant-group-subtotal">${subtotal} MMK</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openRestaurantCart(restaurantId) {
+        activeCartRestaurantId = restaurantId;
+        switchNavTab('restaurant-cart');
+    }
+
+    // Drill-in screen for a single restaurant's cart lines — its own items,
+    // summary (Subtotal + the same flat Fee used at Checkout, so the two
+    // screens always agree — see renderCheckoutPage()), and the button that
+    // moves on to Checkout for just this restaurant.
+    function renderRestaurantCartPage() {
+        const container = document.getElementById('restaurant-cart-content');
+        const titleEl = document.getElementById('restaurant-cart-title');
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+
+        if (!items.length) {
+            // Everything for this restaurant was removed via the qty stepper
+            // — nothing left to show, bounce back to the Cart tab.
+            switchNavTab('cart');
+            return;
+        }
+
+        titleEl.textContent = items[0].restaurantName || 'Restaurant';
+
         let itemsHtml = '';
         let subtotal = 0;
         cartItems.forEach((item, index) => {
+            if (item.restaurantId !== activeCartRestaurantId) return;
             const itemTotal = item.unitPrice * item.quantity;
             subtotal += itemTotal;
             itemsHtml += `
@@ -2408,9 +2583,8 @@ async function submitFinalOrder() {
             `;
         });
 
-        const tax = Math.round(subtotal * 0.05); // 5% commercial tax
-        const delivery = 2000; // Fixed delivery fee
-        const grandTotal = subtotal + tax + delivery;
+        const FEE = 500; // Flat app/service fee — same figure Checkout uses, so the two screens always agree
+        const grandTotal = subtotal + FEE;
 
         container.innerHTML = `
             <div class="cart-section-card">
@@ -2420,13 +2594,12 @@ async function submitFinalOrder() {
             <div class="cart-section-card">
                 <div class="cart-section-title"><span>💵</span> Summary</div>
                 <div class="summary-row"><span>Subtotal</span><span>${subtotal} MMK</span></div>
-                <div class="summary-row"><span>Tax (5%)</span><span>${tax} MMK</span></div>
-                <div class="summary-row"><span>Delivery Fee</span><span>${delivery} MMK</span></div>
+                <div class="summary-row"><span>Fee</span><span>${FEE} MMK</span></div>
                 <div class="summary-row grand-total"><span>Total Amount</span><span style="color: var(--primary);">${grandTotal} MMK</span></div>
+                <div style="text-align: right; margin-top: 6px;"><span class="inline-hint">Delivery fee is added at Checkout, once you pick Delivery or Self-pick up</span></div>
             </div>
             <div style="margin-top: 12px; margin-bottom: 30px;">
-                <!-- Updated this button to route to the new Checkout view instead of finalizing order immediately -->
-                <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Place the order</button>
+                <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Continue Checkout</button>
             </div>
         `;
     }
@@ -2436,16 +2609,21 @@ async function submitFinalOrder() {
         cartItems[index].quantity += delta;
         if (cartItems[index].quantity <= 0) cartItems.splice(index, 1);
         updateCartBadge();
-        renderCartPage();
+        if (currentTabId === 'restaurant-cart') {
+            renderRestaurantCartPage();
+        } else {
+            renderCartPage();
+        }
         if (dishId !== undefined) refreshCardQtyZone(dishId, delta > 0);
     }
 
     /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
-    
+
     function goToCheckout() {
-        if(cartItems.length === 0) return;
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+        if (!items.length) return;
         switchNavTab('checkout');
-        
+
         // If it's the users first time and they have no addresses, automatically ask for one
         if (savedAddresses.length === 0) {
             openAddressModal();
@@ -2454,10 +2632,11 @@ async function submitFinalOrder() {
 
     function renderCheckoutPage() {
         const container = document.getElementById('checkout-page-content');
-        
+
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
         let subtotal = 0;
-        cartItems.forEach(item => subtotal += item.unitPrice * item.quantity);
-        const FEE = 500; // Flat app/service fee (tax-inclusive), not percentage-based
+        items.forEach(item => subtotal += item.unitPrice * item.quantity);
+        const FEE = 500; // Flat app/service fee (tax-inclusive), not percentage-based — same figure the restaurant-cart summary uses, so the two screens always agree
         const deliveryFee = deliveryMethod === 'pickup' ? 0 : 2000;
         const grandTotal = subtotal + FEE + deliveryFee;
 
@@ -2521,17 +2700,13 @@ async function submitFinalOrder() {
             ` : addressHtml}
 
             <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Delivery Method</div>
-            <div class="checkout-card ${deliveryMethod === 'delivery' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('delivery')">
-                <div class="payment-label" style="flex: 1;">
-                    <span style="font-size: 20px;">🛵</span> Delivery
-                </div>
+            <div class="checkout-card delivery-method-card ${deliveryMethod === 'delivery' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('delivery')">
                 <div class="radio-custom"></div>
+                <div class="payment-label" style="flex: 1;">Delivery</div>
             </div>
-            <div class="checkout-card ${deliveryMethod === 'pickup' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('pickup')">
-                <div class="payment-label" style="flex: 1;">
-                    <span style="font-size: 20px;">🏬</span> Self-pick up
-                </div>
+            <div class="checkout-card delivery-method-card ${deliveryMethod === 'pickup' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('pickup')">
                 <div class="radio-custom"></div>
+                <div class="payment-label" style="flex: 1;">Self-pick up</div>
             </div>
 
             <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method</div>
@@ -2546,6 +2721,11 @@ async function submitFinalOrder() {
                     <span style="font-size: 20px;">💵</span> Cash On Delivery
                 </div>
                 <div class="radio-custom"></div>
+            </div>
+
+            <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Order Note (optional)</div>
+            <div class="form-group">
+                <textarea id="order-comment-input" class="form-control" placeholder="e.g. Extra spicy, no onions, leave at the door…" oninput="orderComment = this.value">${orderComment || ''}</textarea>
             </div>
 
             <div class="cart-section-card" style="margin-top: 24px; margin-bottom: 24px; border: none; background: white;">
