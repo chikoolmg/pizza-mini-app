@@ -79,9 +79,29 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .page-view.active-view { display: flex; }
+        .page-view.active-view { display: flex; z-index: 2; }
+
+        /* "Push"/"pop" navigation feel for drill-in screens (tapping a
+           restaurant on the Cart tab, moving on to Checkout, going back).
+           Only the incoming view animates — it slides in over the app
+           background from the right (going deeper) or left (backing out).
+           forwards keeps the final translateX(0) state so it doesn't snap
+           back after the animation completes. */
+        .page-view.slide-in-right { animation: slideInRight 0.28s ease forwards; }
+        .page-view.slide-in-left { animation: slideInLeft 0.28s ease forwards; }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
 
         .scrollable-view-content {
             flex: 1;
@@ -1669,12 +1689,32 @@ async function submitFinalOrder() {
     let currentTabId = 'home';
     
     function switchNavTab(tabName, fromHistory = false) {
+        const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
+        const wasDrillIn = !PRIMARY_TABS.includes(currentTabId);
+        const isDrillIn = !PRIMARY_TABS.includes(tabName);
+
+        // Which way to slide the incoming page: deeper (right-to-left, like
+        // iOS "push") when moving from a main tab or another drill-in screen
+        // into a new drill-in screen; back out (left-to-right, "pop") when
+        // returning from a drill-in screen to a main tab. Switching directly
+        // between main tabs (Home/Explore/Cart/Profile) stays a plain instant
+        // switch — sliding those felt like the wrong metaphor for peer tabs.
+        let direction = null;
+        if (isDrillIn) {
+            direction = 'forward';
+        } else if (wasDrillIn) {
+            direction = 'backward';
+        }
+
         document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active-view'));
         document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
 
         const bottomNav = document.getElementById('main-bottom-nav');
-        // Hide nav bar for the Checkout page
-        if (tabName === 'checkout') {
+        // Hide the nav bar for ANY drill-in screen (Checkout, the restaurant
+        // cart-summary screen, and any future ones) — not just Checkout —
+        // since none of them are meant to be reachable mid-flow via the tab
+        // bar anyway.
+        if (isDrillIn) {
             bottomNav.style.display = 'none';
             document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = '20px');
         } else {
@@ -1683,7 +1723,22 @@ async function submitFinalOrder() {
         }
 
         const targetView = document.getElementById(`${tabName}-view`);
-        if(targetView) targetView.classList.add('active-view');
+        if (targetView) {
+            // Reset scroll position so this page never appears to open already
+            // part-way down, left over from a previous visit (e.g. Checkout
+            // remembering a scroll position from a different restaurant's order).
+            targetView.querySelectorAll('.scrollable-view-content, #restaurant-menu-scroll').forEach(el => el.scrollTop = 0);
+
+            targetView.classList.add('active-view');
+
+            if (direction) {
+                // Remove-then-reflow-then-add so the animation restarts even if
+                // this same view played the same slide class last time.
+                targetView.classList.remove('slide-in-right', 'slide-in-left');
+                void targetView.offsetWidth;
+                targetView.classList.add(direction === 'forward' ? 'slide-in-right' : 'slide-in-left');
+            }
+        }
 
         const tabIcons = { 'home': 0, 'explore': 1, 'cart': 2, 'profile': 3, 'restaurant-cart': 2 }; // restaurant-cart keeps the Cart icon highlighted — it's still part of the cart flow
         if (tabIcons[tabName] !== undefined) {
@@ -1697,7 +1752,6 @@ async function submitFinalOrder() {
         if (tabName === 'home') renderHomeBrowseView(); // Refresh restaurant directory + previews each visit
 
         if (!fromHistory) {
-            const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
             if (tabName === 'home' && currentTabId !== 'home') {
                 history.back();
                 return;
@@ -2596,6 +2650,29 @@ async function submitFinalOrder() {
 
         titleEl.textContent = items[0].restaurantName || 'Restaurant';
 
+        // Order Items — with quantity steppers, so items can still be adjusted
+        // right here instead of only from the restaurant's menu.
+        let itemsHtml = '';
+        cartItems.forEach((item, index) => {
+            if (item.restaurantId !== activeCartRestaurantId) return;
+            const itemTotal = item.unitPrice * item.quantity;
+            itemsHtml += `
+                <div class="cart-item-row" data-dish-id="${item.dishId !== undefined ? item.dishId : ''}">
+                    <img src="${item.image}" class="cart-item-img" alt="food" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-options">${item.options}</div>
+                        <div class="cart-item-price">${itemTotal} MMK</div>
+                    </div>
+                    <div class="qty-control" style="transform: scale(0.85);">
+                        <button class="qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button>
+                        <span class="qty-val">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button>
+                    </div>
+                </div>
+            `;
+        });
+
         // Build Address Section (moved here from the old Checkout page)
         let addressHtml = '';
         const MAX_ADDRESSES = 2;
@@ -2645,7 +2722,12 @@ async function submitFinalOrder() {
         }
 
         container.innerHTML = `
-            <div class="cart-section-title" style="margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
+            <div class="cart-section-card">
+                <div class="cart-section-title"><span>📋</span> Order Items</div>
+                <div class="cart-items-list">${itemsHtml}</div>
+            </div>
+
+            <div class="cart-section-title" style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
             ${deliveryMethod === 'pickup' ? `
                 <div class="checkout-card" style="cursor: default;">
                     <div class="address-info">
@@ -2688,6 +2770,17 @@ async function submitFinalOrder() {
                 <button class="btn-place-order btn-primary-orange" onclick="goToCheckout()">Continue to Checkout</button>
             </div>
         `;
+    }
+
+    // Quantity stepper on the cart-summary screen — only place items can be
+    // adjusted now besides going back to the restaurant's menu itself.
+    function updateCartItemQty(index, delta) {
+        const dishId = cartItems[index].dishId;
+        cartItems[index].quantity += delta;
+        if (cartItems[index].quantity <= 0) cartItems.splice(index, 1);
+        updateCartBadge();
+        renderRestaurantCartPage();
+        if (dishId !== undefined) refreshCardQtyZone(dishId, delta > 0);
     }
 
     /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
