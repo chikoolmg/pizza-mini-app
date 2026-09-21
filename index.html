@@ -1457,8 +1457,29 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             const result = await res.json();
             const userOrders = (result && result.orders) || [];
 
-            const pendingCount = userOrders.filter(o => o.status === 'pending').length;
-            const succeededCount = userOrders.filter(o => o.status === 'confirmed').length;
+            // Every stage the bot's order flow can put an order in — Transaction,
+            // Restaurant, then Delivery — mapped to an icon/label and one of the
+            // three existing status colors (pending=amber, confirmed=green,
+            // canceled=red). The last three keys are legacy statuses from before
+            // the multi-stage flow, kept so older orders still render correctly.
+            const STATUS_META = {
+                payment_pending:    { icon: '⏳', label: 'Verifying Payment',     css: 'pending' },
+                payment_failed:     { icon: '❌', label: 'Payment Failed',        css: 'canceled' },
+                restaurant_pending: { icon: '👨‍🍳', label: 'Waiting for Restaurant', css: 'pending' },
+                order_rejected:     { icon: '❌', label: 'Rejected',              css: 'canceled' },
+                awaiting_rider:     { icon: '🍳', label: 'Preparing',             css: 'pending' },
+                rider_assigned:     { icon: '🚴', label: 'Out for Delivery',      css: 'pending' },
+                delivered:          { icon: '✅', label: 'Delivered',             css: 'confirmed' },
+                user_canceled:      { icon: '❌', label: 'Canceled',              css: 'canceled' },
+                pending:            { icon: '⏳', label: 'Pending',               css: 'pending' },
+                confirmed:          { icon: '✅', label: 'Succeeded',             css: 'confirmed' },
+                canceled:           { icon: '❌', label: 'Canceled',              css: 'canceled' },
+            };
+            const TERMINAL_SUCCESS = new Set(['delivered', 'confirmed']);
+            const TERMINAL_END = new Set(['delivered', 'confirmed', 'payment_failed', 'order_rejected', 'user_canceled', 'canceled']);
+
+            const pendingCount = userOrders.filter(o => !TERMINAL_END.has(o.status || 'pending')).length;
+            const succeededCount = userOrders.filter(o => TERMINAL_SUCCESS.has(o.status)).length;
             if (pendingStat) pendingStat.innerText = pendingCount;
             if (succeededStat) succeededStat.innerText = succeededCount;
 
@@ -1469,8 +1490,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 
             listEl.innerHTML = userOrders.map(order => {
                 const status = order.status || 'pending';
-                const icon = status === 'confirmed' ? '✅' : status === 'canceled' ? '❌' : '⏳';
-                const statusLabel = status === 'confirmed' ? 'Succeeded' : status === 'canceled' ? 'Canceled' : 'Pending';
+                const meta = STATUS_META[status] || STATUS_META.pending;
                 const dateText = order.createdAt ? new Date(order.createdAt * 1000).toLocaleDateString() : '';
                 const metaParts = [`${order.itemCount || 0} item(s)`, `${order.total || 0} MMK`];
                 if (dateText) metaParts.push(dateText);
@@ -1478,13 +1498,13 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
 
                 return `
                     <div class="order-history-item">
-                        <div class="order-history-icon ${status}">${icon}</div>
+                        <div class="order-history-icon ${meta.css}">${meta.icon}</div>
                         <div class="order-history-info">
                             <div class="order-history-id">${order.orderId}</div>
                             ${restaurantLine}
                             <div class="order-history-meta">${metaParts.join(' • ')}</div>
                         </div>
-                        <div class="order-history-status ${status}">${statusLabel}</div>
+                        <div class="order-history-status ${meta.css}">${meta.label}</div>
                     </div>
                 `;
             }).join('');
