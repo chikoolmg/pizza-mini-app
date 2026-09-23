@@ -381,6 +381,28 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
 
+  .cat-chip-tab{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  .cat-chip-tab.add{border-style:dashed;color:var(--basil-dark);background:transparent}
+  .ctx-overlay{position:fixed;inset:0;z-index:90;display:none}
+  .ctx-overlay.open{display:block}
+  .ctx-menu{position:absolute;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);min-width:200px;padding:6px}
+  .ctx-menu button{display:flex;gap:10px;width:100%;background:none;border:none;padding:11px 12px;font-size:14px;border-radius:9px;cursor:pointer;text-align:left;color:var(--ink)}
+  .ctx-menu button:active{background:var(--paper)}
+  .ctx-menu button:disabled{opacity:.35}
+  .ctx-menu .danger{color:var(--brick)}
+  .more{margin-top:8px}
+  .more>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--basil-dark);padding:12px 14px;background:var(--basil-tint);border-radius:12px}
+  .more[open]>summary{margin-bottom:14px}
+  #item-drawer-overlay{align-items:stretch}
+  #item-drawer-overlay .drawer{max-width:none;max-height:none;height:100%;border-radius:0}
+  #item-drawer-overlay .drawer-head,#item-drawer-overlay .drawer-foot{border-radius:0}
+  #item-drawer-overlay .drawer-body{width:100%;max-width:560px;margin:0 auto}
+  .hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding:12px 0 24px}
+  .hero-logo{width:150px;height:150px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden}
+  .hero-logo img{width:100%;height:100%;object-fit:cover}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn-ghost:active{background:var(--basil-tint)}
+  .item-row.sold{opacity:.55}
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -467,30 +489,17 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" id="tab-btn-categories" onclick="switchView('categories')"><span class="tab-icon">📁</span><span>Categories</span></button>
-    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Items</span></button>
+    <button class="tab-btn active" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Items</span></button>
     <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon">⚙️</span><span>Settings</span></button>
   </nav>
 
   <main>
-    <!-- CATEGORIES VIEW -->
-    <div class="view active" id="view-categories">
-      <div class="section-head">
-        <div>
-          <h2>Categories</h2>
-          <p class="hint">Drag ☰ to reorder. Sizes and shared options set here apply to every item inside.</p>
-        </div>
-        <button class="btn btn-primary" onclick="openCategoryDrawer()">+ New Category</button>
-      </div>
-      <div class="cat-grid" id="cat-grid"></div>
-    </div>
-
     <!-- ITEMS VIEW -->
-    <div class="view" id="view-items">
+    <div class="view active" id="view-items">
       <div class="section-head">
         <div>
           <h2>Items</h2>
-          <p class="hint">Pick a category, then add or edit its dishes.</p>
+          <p class="hint">Long-press a category for more options.</p>
         </div>
         <button class="btn btn-primary" id="add-item-btn" onclick="openItemDrawer(null)">+ New Item</button>
       </div>
@@ -502,9 +511,13 @@
     <div class="view" id="view-settings">
       <div class="section-head"><h2>Settings</h2></div>
 
-      <div class="settings-card">
-        <h3>🏬 Restaurant Profile</h3>
-        <p>Your restaurant's name, logo, tagline, and address as shown to customers in the app.</p>
+      <div class="hero" id="profile-hero">
+        <div class="hero-logo"><img id="hero-logo-img" alt="" style="display:none"><span id="hero-logo-fallback">🍕</span></div>
+        <button class="btn-ghost" onclick="toggleProfileEdit(true)">✏️ Edit profile</button>
+      </div>
+      <div class="settings-card" id="profile-edit-card" style="display:none;">
+        <h3>Edit profile</h3>
+        <p>Shown to customers in the app.</p>
         <div class="field">
           <label>Restaurant name</label>
           <input type="text" id="settings-name-input" placeholder="e.g. Bite & Slice Pizzeria">
@@ -528,7 +541,8 @@
           <textarea id="settings-address-input" placeholder="Street, township, city"></textarea>
         </div>
         <div class="settings-row">
-          <button class="btn btn-primary btn-sm" onclick="saveSettingsProfile()">Save Profile</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettingsProfile()">Save</button>
+          <button class="btn btn-outline btn-sm" onclick="renderSettingsProfileFields();toggleProfileEdit(false)">Cancel</button>
         </div>
       </div>
 
@@ -549,21 +563,6 @@
         </div>
       </div>
 
-      <div class="settings-card">
-        <h3>👤 Account</h3>
-        <p>You're logged in to this restaurant with your Telegram ID.</p>
-        <div class="settings-row">
-          <button class="btn btn-outline btn-sm" onclick="logOut()">Log out</button>
-        </div>
-      </div>
-
-      <div class="settings-card" style="border-color:#ecd5cb;">
-        <h3 style="color:var(--brick);">⚠️ Danger zone</h3>
-        <p>Permanently clears every category and item. There's no undo — export a backup first if you're not sure.</p>
-        <div class="settings-row">
-          <button class="btn btn-danger-ghost btn-sm" onclick="clearAllMenu()">Clear entire menu</button>
-        </div>
-      </div>
     </div>
   </main>
 </div>
@@ -597,6 +596,7 @@
         </div>
       </div>
 
+<details class="more"><summary>Shared options &amp; bulk price</summary>
       <div class="ticket-divider"></div>
 
       <div class="option-block-head">
@@ -625,6 +625,7 @@
         <div id="cat-bulk-price-inputs"></div>
         <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="applyBulkPriceToCategory()">Apply to all items</button>
       </div>
+</details>
     </div>
     <div class="drawer-foot">
       <button class="btn btn-outline" onclick="closeCategoryDrawer()">Cancel</button>
@@ -641,7 +642,7 @@
       <button class="drawer-close" onclick="closeItemDrawer()">×</button>
     </div>
     <div class="drawer-body">
-      <img class="thumb-preview" id="item-image-preview" src="" alt="" onerror="this.style.opacity=0.3;">
+      <img class="thumb-preview" id="item-image-preview" src="" alt="" style="cursor:pointer" onclick="document.getElementById('item-image-file-input').click()" onerror="this.style.opacity=0.3;">
       <div class="upload-row">
         <button type="button" class="btn-upload" id="upload-photo-btn" onclick="document.getElementById('item-image-file-input').click()">📷 Upload Photo</button>
         <span class="upload-status" id="upload-status"></span>
@@ -655,23 +656,13 @@
         <label>Name</label>
         <input type="text" id="item-name-input" placeholder="e.g. Cheesy Margherita">
       </div>
-      <div class="field">
-        <label>Description</label>
-        <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Rating (shown to customers)</label>
-          <input type="text" id="item-rating-input" placeholder="4.8">
-        </div>
-        <div class="field">
-          <label>Prep time</label>
-          <input type="text" id="item-time-input" placeholder="15-20 Min">
-        </div>
+      <div class="field" id="item-price-field">
+        <label id="item-price-label">Price (MMK)</label>
+        <div id="item-price-inputs"></div>
       </div>
 
       <div class="field">
-        <label>Sizes for this item</label>
+        <label>Sizes <span style="font-weight:400">(optional)</span></label>
         <div class="sub-hint" id="item-size-inherit-hint" style="margin-bottom:8px;"></div>
         <div class="chip-list" id="item-size-chips"></div>
         <div class="chip-add-row">
@@ -681,12 +672,20 @@
         <button class="btn btn-outline btn-sm" id="item-reset-sizes-btn" style="margin-top:8px; display:none;" onclick="resetItemSizesToCategory()">↺ Use category's sizes instead</button>
       </div>
 
-      <div class="field" id="item-price-field">
-        <label id="item-price-label">Price (MMK)</label>
-        <div id="item-price-inputs"></div>
+      <div class="field">
+        <label>Description</label>
+        <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
       </div>
-
-      <div class="ticket-divider"></div>
+<details class="more"><summary>More options — rating, prep time, choices &amp; add-ons</summary>      <div class="field-row">
+        <div class="field">
+          <label>Rating (shown to customers)</label>
+          <input type="text" id="item-rating-input" placeholder="4.8">
+        </div>
+        <div class="field">
+          <label>Prep time</label>
+          <input type="text" id="item-time-input" placeholder="15-20 Min">
+        </div>
+      </div>
 
       <div class="subform-block">
         <div class="option-block-head">
@@ -713,6 +712,7 @@
         </div>
         <div id="item-multi-options"></div>
       </div>
+</details>
     </div>
     <div class="drawer-foot">
       <button class="btn btn-outline" onclick="closeItemDrawer()">Cancel</button>
@@ -721,6 +721,14 @@
   </div>
 </div>
 
+<div class="ctx-overlay" id="ctx-overlay" onclick="closeCatMenu()">
+  <div class="ctx-menu" id="ctx-menu" onclick="event.stopPropagation()">
+    <button onclick="ctxAction('edit')">✏️ Edit category</button>
+    <button id="ctx-left" onclick="ctxAction('left')">⬅️ Move left</button>
+    <button id="ctx-right" onclick="ctxAction('right')">➡️ Move right</button>
+    <button class="danger" onclick="ctxAction('delete')">🗑️ Delete category</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -741,7 +749,7 @@
   let currentRestaurantId = new URLSearchParams(window.location.search).get('r') || null;
 
   let menuCategories = [];
-  let currentView = 'categories';
+  let currentView = 'items';
   let dragSrcIndex = null;
 
   // Which category's items are shown on the Items tab — replaces the old
@@ -848,11 +856,6 @@
     }
   }
 
-  function logOut() {
-    sessionStorage.removeItem('admin_session');
-    window.location.reload();
-  }
-
   document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('pin-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') tryLogin();
@@ -941,6 +944,7 @@
   }
 
   function applyBrandHeader() {
+    renderHero();
     const nameEl = document.getElementById('brand-restaurant-name');
     const logoImg = document.getElementById('brand-logo-img');
     const logoFallback = document.getElementById('brand-logo-fallback');
@@ -1038,6 +1042,7 @@
     };
     const ok = await saveRestaurantProfile(profile);
     if (ok) {
+      toggleProfileEdit(false);
       applyBrandHeader();
       showToast('Restaurant profile updated.');
     }
@@ -1095,7 +1100,6 @@
   }
 
   function renderAll() {
-    renderCategoriesView();
     renderItemsView();
   }
 
@@ -1112,47 +1116,6 @@
     div.textContent = str ?? '';
     return div.innerHTML;
   }
-
-  /* ================= CATEGORIES VIEW ================= */
-  function renderCategoriesView() {
-    const grid = document.getElementById('cat-grid');
-    if (menuCategories.length === 0) {
-      grid.innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Add your first one — e.g. "Pizza" or "Drinks" — to start building the menu.</div>`;
-      return;
-    }
-    grid.innerHTML = menuCategories.map((cat, index) => `
-      <div class="cat-row" draggable="true"
-           ondragstart="handleDragStart(event, ${index})" ondragover="handleDragOver(event)"
-           ondrop="handleDrop(event, ${index})" ondragend="handleDragEnd(event)">
-        <div class="cat-info">
-          <span class="drag-handle">☰</span>
-          <span class="cat-icon">${cat.icon || '🍽️'}</span>
-          <div class="cat-text">
-            <div class="cat-name">${escapeHtml(cat.name)}</div>
-            <div class="cat-meta">${cat.items.length} item${cat.items.length === 1 ? '' : 's'}${(cat.sizeNames||[]).length ? ' · ' + cat.sizeNames.length + ' sizes' : ' · single price'}</div>
-          </div>
-        </div>
-        <div class="cat-actions">
-          <button class="btn btn-outline btn-icon btn-sm" onclick="openCategoryDrawer(${index})">✏️</button>
-          <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="deleteCategory(${index})">🗑️</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  function handleDragStart(e, index) { dragSrcIndex = index; e.dataTransfer.effectAllowed = 'move'; e.target.classList.add('dragging'); }
-  function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
-  function handleDrop(e, targetIndex) {
-    e.preventDefault();
-    if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
-      const [moved] = menuCategories.splice(dragSrcIndex, 1);
-      menuCategories.splice(targetIndex, 0, moved);
-      saveMenu();
-      renderAll();
-    }
-    document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('dragging'));
-  }
-  function handleDragEnd(e) { e.target.classList.remove('dragging'); }
 
   function deleteCategory(index) {
     const cat = menuCategories[index];
@@ -1302,6 +1265,7 @@
         items: []
       };
       menuCategories.push(cat);
+      activeItemCategoryId = cat.id;
       catDraft.editIndex = menuCategories.length - 1; // so a follow-up bulk-price call knows where to find it
     } else {
       cat = menuCategories[catDraft.editIndex];
@@ -1395,9 +1359,9 @@
     const tabsEl = document.getElementById('item-cat-tabs');
     const addBtn = document.getElementById('add-item-btn');
     if (menuCategories.length === 0) {
-      tabsEl.innerHTML = '';
+      tabsEl.innerHTML = ADD_CHIP;
       addBtn.disabled = true;
-      document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Create a category first, then come back here to add items.</div>`;
+      document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Tap “＋ Category” above to create your first one.</div>`;
       return;
     }
     addBtn.disabled = false;
@@ -1407,11 +1371,12 @@
       activeItemCategoryId = menuCategories[0].id;
     }
     tabsEl.innerHTML = menuCategories.map(c => `
-      <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" onclick="selectItemCategory('${c.id}')">${c.icon || ''} ${escapeHtml(c.name)}</button>
-    `).join('');
+      <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" data-id="${c.id}" onclick="selectItemCategory('${c.id}')">${c.icon || ''} ${escapeHtml(c.name)}</button>
+    `).join('') + ADD_CHIP;
     renderItemGrid();
   }
   function selectItemCategory(catId) {
+    if (longPressed) { longPressed = false; return; }
     activeItemCategoryId = catId;
     renderItemsView();
   }
@@ -1438,7 +1403,7 @@
       }
       const optCount = (item.singleChoices || []).length + (item.extras || []).length;
       return `
-        <div class="item-row">
+        <div class="item-row ${item.soldOut ? 'sold' : ''}">
           <div class="item-info">
             <img class="item-thumb" src="${escapeHtml(item.image || '')}" onerror="this.style.opacity=0.25;">
             <div>
@@ -1447,6 +1412,7 @@
             </div>
           </div>
           <div class="item-actions">
+            <button class="btn btn-outline btn-icon btn-sm" title="Stock" onclick="toggleSoldOut(${i})">${item.soldOut ? '⛔' : '✅'}</button>
             <button class="btn btn-outline btn-icon btn-sm" onclick="openItemDrawer(${i})">✏️</button>
             <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="deleteItem(${i})">🗑️</button>
           </div>
@@ -1462,7 +1428,6 @@
     cat.items.splice(itemIndex, 1);
     saveMenu();
     renderItemGrid();
-    renderCategoriesView();
   }
 
   /* ---- Item drawer ---- */
@@ -1788,6 +1753,7 @@
     const item = {
       id: itemDraft.editIndex === null ? Date.now() : cat.items[itemDraft.editIndex].id,
       name,
+      soldOut: itemDraft.editIndex === null ? false : !!cat.items[itemDraft.editIndex].soldOut,
       description: document.getElementById('item-desc-input').value.trim(),
       image: document.getElementById('item-image-input').value.trim(),
       rating: document.getElementById('item-rating-input').value.trim() || '4.8',
@@ -1821,7 +1787,6 @@
     saveMenu();
     closeItemDrawer();
     renderItemGrid();
-    renderCategoriesView();
     showToast('Item saved.');
   }
 
@@ -1847,12 +1812,69 @@
       showToast('Invalid JSON: ' + e.message);
     }
   }
-  function clearAllMenu() {
-    if (!confirm('Delete every category and item? This cannot be undone.')) return;
-    menuCategories = [];
-    saveMenu();
-    renderAll();
-    showToast('Menu cleared.');
+  const ADD_CHIP = '<button class="cat-chip-tab add" onclick="openCategoryDrawer()">＋ Category</button>';
+
+  function toggleSoldOut(i) {
+    const cat = getSelectedCategory(); if (!cat) return;
+    cat.items[i].soldOut = !cat.items[i].soldOut;
+    saveMenu(); renderItemGrid();
+    showToast(cat.items[i].soldOut ? 'Marked sold out.' : 'Back in stock.');
+  }
+
+  /* ---- profile hero ---- */
+  function renderHero() {
+    const img = document.getElementById('hero-logo-img'), fb = document.getElementById('hero-logo-fallback');
+    if (!img) return;
+    if (restaurantProfile.logoUrl) {
+      img.src = restaurantProfile.logoUrl; img.style.display = 'block'; fb.style.display = 'none';
+      img.onerror = () => { img.style.display = 'none'; fb.style.display = 'block'; };
+    } else { img.style.display = 'none'; fb.style.display = 'block'; }
+  }
+  function toggleProfileEdit(on) {
+    document.getElementById('profile-edit-card').style.display = on ? 'block' : 'none';
+    document.querySelector('#profile-hero .btn-ghost').style.display = on ? 'none' : '';
+    if (on) document.getElementById('profile-edit-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ---- long-press category menu (Telegram-style) ---- */
+  let longPressed = false, pressTimer = null, ctxCatId = null;
+  document.addEventListener('DOMContentLoaded', () => {
+    const bar = document.getElementById('item-cat-tabs');
+    const chipOf = e => e.target.closest('.cat-chip-tab[data-id]');
+    const stop = () => clearTimeout(pressTimer);
+    bar.addEventListener('pointerdown', e => {
+      const chip = chipOf(e); if (!chip) return;
+      longPressed = false; stop();
+      pressTimer = setTimeout(() => { longPressed = true; tg?.HapticFeedback?.impactOccurred('medium'); openCatMenu(chip); }, 480);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel', 'scroll'].forEach(t => bar.addEventListener(t, stop));
+    bar.addEventListener('contextmenu', e => {
+      const chip = chipOf(e); if (!chip) return;
+      e.preventDefault();
+      if (!longPressed) { longPressed = true; openCatMenu(chip); }
+    });
+  });
+  function openCatMenu(chip) {
+    ctxCatId = chip.dataset.id;
+    const i = menuCategories.findIndex(c => c.id === ctxCatId); if (i < 0) return;
+    document.getElementById('ctx-left').disabled = i === 0;
+    document.getElementById('ctx-right').disabled = i === menuCategories.length - 1;
+    document.getElementById('ctx-overlay').classList.add('open');
+    const m = document.getElementById('ctx-menu'), r = chip.getBoundingClientRect();
+    m.style.top = (r.bottom + 8) + 'px';
+    m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+  }
+  function closeCatMenu() { document.getElementById('ctx-overlay').classList.remove('open'); }
+  function ctxAction(a) {
+    const i = menuCategories.findIndex(c => c.id === ctxCatId);
+    closeCatMenu(); if (i < 0) return;
+    if (a === 'edit') openCategoryDrawer(i);
+    else if (a === 'delete') deleteCategory(i);
+    else {
+      const j = a === 'left' ? i - 1 : i + 1;
+      [menuCategories[i], menuCategories[j]] = [menuCategories[j], menuCategories[i]];
+      saveMenu(); renderAll();
+    }
   }
 </script>
 
