@@ -92,16 +92,25 @@
            background from the right (going deeper) or left (backing out).
            forwards keeps the final translateX(0) state so it doesn't snap
            back after the animation completes. */
-        .page-view.slide-in-right { animation: slideInRight 0.28s ease forwards; }
-        .page-view.slide-in-left { animation: slideInLeft 0.28s ease forwards; }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-        @keyframes slideInLeft {
-            from { transform: translateX(-100%); }
-            to { transform: translateX(0); }
-        }
+        .page-view.slide-in-right { animation: pageForward .34s cubic-bezier(.22,.9,.3,1) both; }
+        .page-view.slide-in-left { animation: pageBack .34s cubic-bezier(.22,.9,.3,1) both; }
+        @keyframes pageForward { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+        @keyframes pageBack { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .page-view.slide-in-right, .page-view.slide-in-left { animation: none; } }
+
+        /* Payment method tiles + sold-out dishes */
+        .pay-row { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+        .pay-row::-webkit-scrollbar { display: none; }
+        .pay-tile { flex: 0 0 92px; background: var(--bg-card); border: 1.5px solid var(--border-light); border-radius: 16px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; position: relative; font-family: inherit; transition: border-color .2s, background .2s, transform .1s; }
+        .pay-tile:active { transform: scale(.96); }
+        .pay-tile.selected { border-color: #118B80; background: #F2FAF9; }
+        .pay-tile.selected::after { content: '✓'; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: #118B80; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+        .pay-img { width: 60px; height: 60px; border-radius: 14px; overflow: hidden; background: #f4f4f4; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .pay-img img { width: 100%; height: 100%; object-fit: cover; }
+        .pay-name { font-size: 11.5px; font-weight: 600; color: var(--text-main); text-align: center; line-height: 1.25; }
+        .req { color: #D64545; font-size: 12px; font-weight: 600; margin-left: 8px; }
+        .food-card.sold-out { opacity: .55; }
+        .food-card.sold-out img { filter: grayscale(1); }
 
         .scrollable-view-content {
             flex: 1;
@@ -1545,6 +1554,7 @@ async function submitFinalOrder() {
     const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
     if (!items.length) return alert('This restaurant\'s cart is empty');
 
+    if (!deliveryMethod || !selectedPaymentMethod) return alert('Please choose a delivery and payment method');
     let activeAddr = null;
     if (deliveryMethod === 'delivery') {
         activeAddr = savedAddresses.find(a => a.id === activeAddressId);
@@ -1562,7 +1572,7 @@ async function submitFinalOrder() {
         address: activeAddr,
         deliveryMethod: deliveryMethod,
         paymentMethod: selectedPaymentMethod,
-        comment: orderComment || '',
+        comment: (orderComment || '').trim().slice(0, 300),
         items: items,
         pricing: { subtotal, fee, delivery, total: grandTotal },
         restaurantId: activeCartRestaurantId
@@ -1594,6 +1604,7 @@ async function submitFinalOrder() {
             // restaurant at a time.
             cartItems = cartItems.filter(i => i.restaurantId !== activeCartRestaurantId);
             orderComment = '';
+            deliveryMethod = null; selectedPaymentMethod = null; checkoutTried = false;
             activeCartRestaurantId = null;
 
             // BUG FIX: this flag was only ever reset back to false in the
@@ -1701,8 +1712,30 @@ async function submitFinalOrder() {
     // --- CHECKOUT DATA STATE ---
     let savedAddresses = JSON.parse(localStorage.getItem(STORAGE_KEY_ADDRESSES)) || [];
     let activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
-    let selectedPaymentMethod = 'kbzpay'; // Default payment
-    let deliveryMethod = 'delivery'; // 'delivery' (default) or 'pickup'
+    let selectedPaymentMethod = null; // nothing pre-selected — customer must choose
+    let deliveryMethod = null;        // 'delivery' | 'pickup' — nothing pre-selected
+    let checkoutTried = false;        // true after a failed "Continue" so missing sections show "Choose one"
+
+    // Payment methods come from GET /api/payment-methods (managed from the developer
+    // dashboard). This built-in list is only a fallback if the server can't be reached.
+    let paymentMethods = [
+        { id: 'kbzpay', name: 'KBZ Pay', logoUrl: '' },
+        { id: 'cod', name: 'Cash on Delivery', logoUrl: '' }
+    ];
+    const PAY_EMOJI = { kbzpay: '📱', cod: '💵' };
+    const escPay = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    async function loadPaymentMethods() {
+        try {
+            const res = await fetch(`${API_BASE}/api/payment-methods`);
+            const d = await res.json();
+            if (d.success && Array.isArray(d.methods) && d.methods.length) {
+                paymentMethods = d.methods;
+                if (selectedPaymentMethod && !paymentMethods.some(p => p.id === selectedPaymentMethod)) selectedPaymentMethod = null;
+                if (currentTabId === 'restaurant-cart') renderRestaurantCartPage();
+            }
+        } catch (e) { /* keep fallback list */ }
+    }
+    loadPaymentMethods();
     let isSubmittingOrder = false; // guards "Make Payment" against multiple/rapid clicks
 
     /* ================= HISTORY API LOGIC ================= */
@@ -1719,12 +1752,13 @@ async function submitFinalOrder() {
         // returning from a drill-in screen to a main tab. Switching directly
         // between main tabs (Home/Explore/Cart/Profile) stays a plain instant
         // switch — sliding those felt like the wrong metaphor for peer tabs.
+        // Direction comes from screen DEPTH, so Checkout -> back to the cart
+        // summary now plays the "back" transition instead of "forward" again.
+        const DEPTH = { home: 0, explore: 0, cart: 0, profile: 0, 'restaurant-cart': 1, checkout: 2 };
+        const depthOf = t => (DEPTH[t] !== undefined ? DEPTH[t] : 1);
         let direction = null;
-        if (isDrillIn) {
-            direction = 'forward';
-        } else if (wasDrillIn) {
-            direction = 'backward';
-        }
+        if (depthOf(tabName) > depthOf(currentTabId)) direction = 'forward';
+        else if (depthOf(tabName) < depthOf(currentTabId)) direction = 'backward';
 
         document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active-view'));
         document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
@@ -2080,7 +2114,7 @@ async function submitFinalOrder() {
             const grid = document.getElementById(`grid-${cat.id}`);
             cat.items.forEach(dish => {
                 const card = document.createElement('div');
-                card.className = 'food-card';
+                card.className = 'food-card' + (dish.soldOut ? ' sold-out' : '');
                 card.onclick = () => openModal(dish);
                 let displayPrice = Math.round(dish.price);
                 if(dish.sizes && dish.sizes.length > 0) displayPrice = Math.min(...dish.sizes.map(s => Math.round(s.price))) + '+';
@@ -2090,13 +2124,13 @@ async function submitFinalOrder() {
                     <img src="${dish.image}" loading="lazy" alt="${dish.name}" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
                     <div class="food-info">
                         <div class="food-title-row">
-                            <h3>${dish.name}</h3><span class="price-bubble">${displayPrice} MMK</span>
+                            <h3>${dish.name}</h3><span class="price-bubble">${dish.soldOut ? 'Sold out' : displayPrice + ' MMK'}</span>
                         </div>
                         <p class="food-desc">${dish.description}</p>
                         <div class="food-meta">
                             <div class="meta-group"><span class="rating-star">★</span>${dish.rating || '4.8'}</div>
                             <div class="meta-group"><span>⏱</span>${dish.time || '15 Min'}</div>
-                            <div class="card-qty-zone" id="qty-zone-${dish.id}">${buildCardQtyControlHTML(dishQty)}</div>
+                            <div class="card-qty-zone" id="qty-zone-${dish.id}">${dish.soldOut ? '' : buildCardQtyControlHTML(dishQty)}</div>
                         </div>
                     </div>`;
                 wireCardQtyControls(card, dish);
@@ -2165,6 +2199,7 @@ async function submitFinalOrder() {
 
     /* ================= MODAL LOGIC (Kept exactly identical) ================= */
     function openModal(dish) {
+        if (dish.soldOut) { showToast('Sorry, this item is sold out.'); return; }
         currentModalDish = dish;
         // Combine this item's own options with its category's Option Manager defaults —
         // computed once per modal-open so every selection/price function below reads a
@@ -2472,6 +2507,7 @@ async function submitFinalOrder() {
     // dish has no sizes at all, just bump the existing/default line directly.
     function cardPlusClicked(event, dish) {
         event.stopPropagation();
+        if (dish.soldOut) { showToast('Sorry, this item is sold out.'); return; }
         const hasSizes = dish.sizes && dish.sizes.length > 0;
         const existingLine = [...cartItems].reverse().find(ci => ci.dishId === dish.id && ci.restaurantId === currentRestaurantId);
 
@@ -2747,17 +2783,7 @@ async function submitFinalOrder() {
                 <div class="cart-items-list">${itemsHtml}</div>
             </div>
 
-            <div class="cart-section-title" style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
-            ${deliveryMethod === 'pickup' ? `
-                <div class="checkout-card" style="cursor: default;">
-                    <div class="address-info">
-                        <div class="address-info-header"><span class="address-title">Store Pick-up</span></div>
-                        <div class="address-details"><p>No delivery address needed — pick up your order at our store.</p></div>
-                    </div>
-                </div>
-            ` : addressHtml}
-
-            <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Delivery Method</div>
+            <div class="cart-section-title" id="sec-delivery" style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Delivery Method${checkoutTried && !deliveryMethod ? '<span class="req">Choose one</span>' : ''}</div>
             <div class="checkout-card delivery-method-card ${deliveryMethod === 'delivery' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('delivery')">
                 <div class="radio-custom"></div>
                 <div class="payment-label" style="flex: 1;">Delivery</div>
@@ -2767,23 +2793,27 @@ async function submitFinalOrder() {
                 <div class="payment-label" style="flex: 1;">Self-pick up</div>
             </div>
 
-            <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method</div>
-            <div class="checkout-card ${selectedPaymentMethod === 'kbzpay' ? 'active-payment' : ''}" onclick="selectPayment('kbzpay')">
-                <div class="payment-label" style="flex: 1;">
-                    <span style="font-size: 20px;">📱</span> KBZ PAY
-                </div>
-                <div class="radio-custom"></div>
-            </div>
-            <div class="checkout-card ${selectedPaymentMethod === 'cod' ? 'active-payment' : ''}" onclick="selectPayment('cod')">
-                <div class="payment-label" style="flex: 1;">
-                    <span style="font-size: 20px;">💵</span> Cash On Delivery
-                </div>
-                <div class="radio-custom"></div>
+            ${deliveryMethod === 'delivery' ? `<div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Shipping Address</div>${addressHtml}` : ''}
+            ${deliveryMethod === 'pickup' ? `
+                <div class="checkout-card" style="cursor: default; margin-top: 12px;">
+                    <div class="address-info">
+                        <div class="address-info-header"><span class="address-title">Store Pick-up</span></div>
+                        <div class="address-details"><p>No delivery address needed — pick up your order at the restaurant.</p></div>
+                    </div>
+                </div>` : ''}
+
+            <div class="cart-section-title" id="sec-payment" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method${checkoutTried && !selectedPaymentMethod ? '<span class="req">Choose one</span>' : ''}</div>
+            <div class="pay-row">
+                ${paymentMethods.map(p => `
+                    <button class="pay-tile ${selectedPaymentMethod === p.id ? 'selected' : ''}" onclick="selectPayment('${escPay(p.id)}')">
+                        <span class="pay-img">${p.logoUrl ? `<img src="${escPay(p.logoUrl)}" alt="" onerror="this.replaceWith(document.createTextNode('💳'))">` : (PAY_EMOJI[p.id] || '💳')}</span>
+                        <span class="pay-name">${escPay(p.name)}</span>
+                    </button>`).join('')}
             </div>
 
             <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Order Note (optional)</div>
             <div class="form-group">
-                <textarea id="order-comment-input" class="form-control" placeholder="e.g. Extra spicy, no onions, leave at the door…" oninput="orderComment = this.value">${orderComment || ''}</textarea>
+                <textarea id="order-comment-input" class="form-control" placeholder="Sent to the restaurant — e.g. extra spicy, no onions, leave at the door" maxlength="300" oninput="orderComment = this.value">${orderComment || ''}</textarea>
             </div>
 
             <div style="margin-top: 20px; margin-bottom: 30px;">
@@ -2812,6 +2842,13 @@ async function submitFinalOrder() {
         // Catch a missing address before landing on the (now read-only)
         // Checkout screen — better to send them back here to fix it than to
         // show them a confirmation page that will just fail on Make Payment.
+        if (!deliveryMethod || !selectedPaymentMethod) {
+            checkoutTried = true;
+            renderRestaurantCartPage();
+            document.getElementById(!deliveryMethod ? 'sec-delivery' : 'sec-payment')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showToast(!deliveryMethod ? 'Please choose a delivery method.' : 'Please choose a payment method.');
+            return;
+        }
         if (deliveryMethod === 'delivery' && !savedAddresses.find(a => a.id === activeAddressId)) {
             alert('Please select or add a delivery address first.');
             if (savedAddresses.length === 0) openAddressModal();
@@ -2856,8 +2893,8 @@ async function submitFinalOrder() {
             : (activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected');
 
         const deliveryLabel = deliveryMethod === 'pickup' ? 'Self-pick up' : 'Delivery';
-        const paymentLabel = selectedPaymentMethod === 'kbzpay' ? 'KBZ PAY' : 'Cash On Delivery';
-        const noteText = orderComment && orderComment.trim() ? orderComment.trim() : 'No note added';
+        const paymentLabel = (paymentMethods.find(p => p.id === selectedPaymentMethod) || {}).name || selectedPaymentMethod;
+        const noteText = orderComment && orderComment.trim() ? escPay(orderComment.trim()) : 'No note added';
 
         container.innerHTML = `
             <div class="cart-section-card" style="margin-bottom: 16px;">
