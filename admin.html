@@ -403,6 +403,35 @@
   .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
   .btn-ghost:active{background:var(--basil-tint)}
   .item-row.sold{opacity:.55}
+  .tab-btn{position:relative}
+  .tab-badge{display:none;position:absolute;top:2px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--brick);color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center}
+  .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:14px}
+  .seg button{flex:1;border:none;background:none;padding:9px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg button.active{background:var(--basil);color:#fff}
+  .stats{display:flex;gap:10px;margin-bottom:14px}
+  .stats div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .stats b{display:block;font-size:20px;font-family:'Fraunces',serif}
+  .stats span{font-size:11px;color:var(--muted)}
+  .o-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+  .o-card.new{border-color:var(--brick);box-shadow:0 0 0 3px var(--brick-tint)}
+  details.o-card>summary{list-style:none;cursor:pointer}
+  .o-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .o-id{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600}
+  .o-time{font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
+  .pill{font-size:10.5px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap}
+  .pill.new{background:var(--brick-tint);color:var(--brick)}
+  .pill.wait{background:var(--mustard-tint);color:var(--mustard)}
+  .pill.ok{background:var(--basil-tint);color:var(--basil-dark)}
+  .pill.bad{background:var(--paper);color:var(--muted)}
+  .o-who{font-size:13.5px;font-weight:600;margin:10px 0 2px}
+  .o-who a{color:var(--basil-dark);text-decoration:none;font-weight:500;margin-left:6px}
+  .o-addr{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .o-item{font-size:13px;padding:5px 0;border-top:1px dashed var(--line)}
+  .o-opt{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .o-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+  .o-foot b{color:var(--ink);font-size:14px}
+  .o-actions{display:flex;gap:8px;margin-top:12px}
+  .o-actions .btn{flex:1;justify-content:center;padding:12px}
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -489,13 +518,31 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Items</span></button>
+    <button class="tab-btn active" id="tab-btn-orders" onclick="switchView('orders')"><span class="tab-icon">🔔</span><span>Orders</span><span class="tab-badge" id="orders-badge"></span></button>
+    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Menu</span></button>
     <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon">⚙️</span><span>Settings</span></button>
   </nav>
 
   <main>
     <!-- ITEMS VIEW -->
-    <div class="view active" id="view-items">
+    <div class="view active" id="view-orders">
+      <div class="seg">
+        <button class="active" id="seg-current" onclick="setOrdersScope('current')">Current</button>
+        <button id="seg-history" onclick="setOrdersScope('history')">History</button>
+      </div>
+      <div id="history-summary" style="display:none">
+        <div class="cat-chip-bar">
+          <button class="cat-chip-tab active" data-r="1" onclick="setHistoryRange(1)">Today</button>
+          <button class="cat-chip-tab" data-r="7" onclick="setHistoryRange(7)">7 days</button>
+          <button class="cat-chip-tab" data-r="30" onclick="setHistoryRange(30)">30 days</button>
+        </div>
+        <div class="stats"><div><b id="st-count">0</b><span>Delivered</span></div><div><b id="st-rev">0</b><span>Revenue (MMK)</span></div></div>
+      </div>
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- ITEMS VIEW -->
+    <div class="view" id="view-items">
       <div class="section-head">
         <div>
           <h2>Items</h2>
@@ -749,7 +796,7 @@
   let currentRestaurantId = new URLSearchParams(window.location.search).get('r') || null;
 
   let menuCategories = [];
-  let currentView = 'items';
+  let currentView = 'orders';
   let dragSrcIndex = null;
 
   // Which category's items are shown on the Items tab — replaces the old
@@ -930,6 +977,7 @@
       document.getElementById('app').style.display = 'flex';
     }
     loadMenu();
+    startOrders();
   }
 
   /* ================= RESTAURANT PROFILE (name/logo/tagline/address) ================= */
@@ -1097,6 +1145,7 @@
     document.getElementById(`view-${view}`).classList.add('active');
     document.getElementById(`tab-btn-${view}`).classList.add('active');
     if (view === 'items') renderItemsView();
+    if (view === 'orders') loadOrders();
   }
 
   function renderAll() {
@@ -1812,6 +1861,103 @@
       showToast('Invalid JSON: ' + e.message);
     }
   }
+  /* ================= ORDERS ================= */
+  let ordersData = [], ordersScope = 'current', historyRange = 1, seenOrders = new Set(), ordersFirst = true, ordersTimer = null;
+  const CURRENT = ['restaurant_pending', 'awaiting_rider', 'rider_assigned'];
+  const STATUS = { restaurant_pending: ['New', 'new'], awaiting_rider: ['Finding rider', 'wait'], rider_assigned: ['Rider assigned', 'wait'],
+                   delivered: ['Delivered', 'ok'], order_rejected: ['Rejected', 'bad'], user_canceled: ['Canceled', 'bad'] };
+  const money = n => (Number(n) || 0).toLocaleString();
+
+  function adminHeaders() {
+    const h = { 'Content-Type': 'application/json' };
+    if (tg && tg.initData) h['X-Telegram-Init-Data'] = tg.initData;
+    else { try { const ss = JSON.parse(sessionStorage.getItem('admin_session') || '{}'); if (ss.telegramId) h['X-Admin-Telegram-Id'] = ss.telegramId; } catch (e) {} }
+    return h;
+  }
+  function startOrders() {
+    loadOrders(); clearInterval(ordersTimer);
+    ordersTimer = setInterval(() => { if (!document.hidden) loadOrders(); }, 10000);
+  }
+  async function loadOrders() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/orders?days=30`, { headers: adminHeaders() });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      ordersData = d.orders;
+      const fresh = ordersData.filter(o => o.status === 'restaurant_pending' && !seenOrders.has(o.orderId));
+      fresh.forEach(o => seenOrders.add(o.orderId));
+      if (fresh.length && !ordersFirst) { beep(); tg?.HapticFeedback?.notificationOccurred('success'); showToast('🔔 New order ' + fresh[0].orderId); }
+      ordersFirst = false;
+      const n = ordersData.filter(o => o.status === 'restaurant_pending').length, b = document.getElementById('orders-badge');
+      b.textContent = n; b.style.display = n ? 'block' : 'none';
+      renderOrders();
+    } catch (e) {
+      if (ordersFirst) document.getElementById('orders-list').innerHTML = `<div class="empty-state"><div class="display">Can't load orders</div>${escapeHtml(String(e.message || e))}</div>`;
+    }
+  }
+  function beep() {
+    try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start(); o.stop(c.currentTime + 0.25); } catch (e) {}
+  }
+  function setOrdersScope(sc) {
+    ordersScope = sc;
+    document.getElementById('seg-current').classList.toggle('active', sc === 'current');
+    document.getElementById('seg-history').classList.toggle('active', sc === 'history');
+    document.getElementById('history-summary').style.display = sc === 'history' ? 'block' : 'none';
+    renderOrders();
+  }
+  function setHistoryRange(r) {
+    historyRange = r;
+    document.querySelectorAll('#history-summary .cat-chip-tab').forEach(b => b.classList.toggle('active', +b.dataset.r === r));
+    renderOrders();
+  }
+  function ago(ts) {
+    const m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60));
+    if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; if (m < 1440) return Math.floor(m / 60) + ' h ago';
+    return new Date(ts * 1000).toLocaleDateString();
+  }
+  function orderBody(o) {
+    const items = o.items.map(i => `<div class="o-item"><b>${i.quantity}×</b> ${escapeHtml(i.name)}${i.options && i.options !== 'Standard' ? `<div class="o-opt">${escapeHtml(i.options).replace(/ \| /g, ' · ')}</div>` : ''}</div>`).join('');
+    const phone = o.customerPhone ? `<a href="tel:${escapeHtml(o.customerPhone)}">📞 ${escapeHtml(o.customerPhone)}</a>` : '';
+    return `<div class="o-who">${escapeHtml(o.customerName)}${phone}</div>
+      <div class="o-addr">${o.address ? '📍 ' + escapeHtml(o.address) : '🏃 Pickup'}</div>${items}
+      <div class="o-foot"><span>${escapeHtml((o.paymentMethod || '').toUpperCase())}${o.riderName ? ' · 🚴 ' + escapeHtml(o.riderName) : ''}</span><b>${money(o.total)} MMK</b></div>`;
+  }
+  function orderHead(o) {
+    const [label, cls] = STATUS[o.status] || [o.status, 'wait'];
+    return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span></span><span class="pill ${cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
+  }
+  function renderOrders() {
+    const box = document.getElementById('orders-list');
+    if (ordersScope === 'current') {
+      const list = ordersData.filter(o => CURRENT.includes(o.status)).sort((a, b) => (a.status === 'restaurant_pending' ? 0 : 1) - (b.status === 'restaurant_pending' ? 0 : 1));
+      box.innerHTML = list.length ? list.map(o => `<div class="o-card ${o.status === 'restaurant_pending' ? 'new' : ''}">${orderHead(o)}${orderBody(o)}${
+        o.status === 'restaurant_pending'
+          ? `<div class="o-actions"><button class="btn btn-danger-ghost" onclick="orderAction('${o.orderId}','reject')">Reject</button><button class="btn btn-primary" onclick="orderAction('${o.orderId}','accept')">Accept</button></div>`
+          : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">🍽️ Mark ready</button></div>`)}</div>`).join('')
+        : `<div class="empty-state"><div class="display">No active orders</div>New orders appear here with a sound alert.</div>`;
+      return;
+    }
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    const since = historyRange === 1 ? d0.getTime() / 1000 : Date.now() / 1000 - historyRange * 86400;
+    const list = ordersData.filter(o => !CURRENT.includes(o.status) && o.createdAt >= since);
+    const done = list.filter(o => o.status === 'delivered');
+    document.getElementById('st-count').textContent = done.length;
+    document.getElementById('st-rev').textContent = money(done.reduce((t, o) => t + (Number(o.total) || 0), 0));
+    box.innerHTML = list.length ? list.map(o => `<details class="o-card"><summary>${orderHead(o)}</summary>${orderBody(o)}</details>`).join('')
+      : `<div class="empty-state"><div class="display">No orders in this period</div></div>`;
+  }
+  async function orderAction(id, action) {
+    if (action === 'reject' && !confirm('Reject this order?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ orderId: id, action }) });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      showToast(action === 'accept' ? 'Order accepted.' : action === 'reject' ? 'Order rejected.' : 'Marked ready.');
+    } catch (e) { showToast('Could not update: ' + e.message); }
+    loadOrders();
+  }
+
   const ADD_CHIP = '<button class="cat-chip-tab add" onclick="openCategoryDrawer()">＋ Category</button>';
 
   function toggleSoldOut(i) {
