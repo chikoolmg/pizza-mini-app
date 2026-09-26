@@ -400,8 +400,11 @@
   .ctx-menu button:disabled{opacity:.35}
   .ctx-menu .danger{color:var(--brick)}
   .more{margin-top:8px}
-  .more>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--basil-dark);padding:12px 14px;background:var(--basil-tint);border-radius:12px}
+  .more>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--basil-dark);padding:12px 14px;background:var(--basil-tint);border-radius:12px;display:flex;align-items:center;justify-content:space-between}
+  .more>summary .chevron{transition:transform .2s;font-size:11px}
+  .more[open]>summary .chevron{transform:rotate(180deg)}
   .more[open]>summary{margin-bottom:14px}
+  .cat-options-hint{font-size:12px;color:var(--muted);margin:2px 2px 12px;min-height:1px}
   #item-drawer-overlay{align-items:stretch}
   #item-drawer-overlay .drawer{max-width:none;max-height:none;height:100%;border-radius:0}
   #item-drawer-overlay .drawer-head,#item-drawer-overlay .drawer-foot{border-radius:0}
@@ -515,18 +518,6 @@
 
 <!-- ============ APP ============ -->
 <div id="app">
-  <header class="top-bar">
-    <div class="brand">
-      <img id="brand-logo-img" class="mark" src="" alt="" style="display:none; object-fit:cover;">
-      <div class="mark" id="brand-logo-fallback">🍕</div>
-      <div>
-        <h1>Menu Manager</h1>
-        <span id="brand-restaurant-name">tgi pizza</span>
-      </div>
-    </div>
-    <div id="sync-indicator"><div id="sync-dot"></div><span id="sync-text">Loading…</span></div>
-  </header>
-
   <nav class="tabs">
     <button class="tab-btn active" id="tab-btn-orders" onclick="switchView('orders')"><span class="tab-icon">🔔</span><span>Orders</span><span class="tab-badge" id="orders-badge"></span></button>
     <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Menu</span></button>
@@ -553,14 +544,9 @@
 
     <!-- ITEMS VIEW -->
     <div class="view" id="view-items">
-      <div class="section-head">
-        <div>
-          <h2>Items</h2>
-          <p class="hint">Long-press a category for more options.</p>
-        </div>
-        <button class="btn btn-primary" id="add-item-btn" onclick="openItemDrawer(null)">+ New Item</button>
-      </div>
       <div class="cat-chip-bar" id="item-cat-tabs"></div>
+      <div class="cat-options-hint" id="cat-options-hint"></div>
+      <button class="btn btn-primary" id="add-item-btn" style="width:100%; padding:13px; font-size:14px; margin-bottom:14px;" onclick="openItemDrawer(null)">+ New Item</button>
       <div class="item-grid" id="item-grid"></div>
     </div>
 
@@ -659,22 +645,18 @@
         <div id="cat-bulk-price-inputs"></div>
       </div>
 
-<details class="more"><summary>Shared options</summary>
+<details class="more" id="cat-more-details" ontoggle="if(this.open) this.scrollIntoView({behavior:'smooth', block:'start'})"><summary>More options <span class="chevron">🔻</span></summary>
       <div class="ticket-divider"></div>
 
-      <div class="option-block-head">
-        <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('single')">➕ Add single option</button>
-      </div>
-      <p class="sub-hint" style="margin:-4px 0 10px;">Shared by every item in this category — e.g. a crust type. Only one can be picked at a time.</p>
+      <p class="sub-hint" style="margin:0 0 10px;">Shared single-choice option — e.g. a crust type. Only one can be picked at a time.</p>
       <div id="cat-single-options"></div>
+      <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('single')">➕ Add single option</button>
 
       <div class="ticket-divider"></div>
 
-      <div class="option-block-head">
-        <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('multi')">➕ Add add-on option</button>
-      </div>
-      <p class="sub-hint" style="margin:-4px 0 10px;">Shared by every item in this category — e.g. extra toppings. Any number can be picked.</p>
+      <p class="sub-hint" style="margin:0 0 10px;">Shared add-on option — e.g. extra toppings. Any number can be picked.</p>
       <div id="cat-multi-options"></div>
+      <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('multi')">➕ Add add-on option</button>
 </details>
     </div>
     <div class="drawer-foot">
@@ -726,7 +708,7 @@
         <label>Description</label>
         <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
       </div>
-<details class="more"><summary>More options — rating, prep time, choices &amp; add-ons</summary>      <div class="field-row">
+<details class="more" id="item-more-details" ontoggle="if(this.open) this.scrollIntoView({behavior:'smooth', block:'start'})"><summary>More options — rating, prep time, choices &amp; add-ons <span class="chevron">🔻</span></summary>      <div class="field-row">
         <div class="field">
           <label>Rating (shown to customers)</label>
           <input type="text" id="item-rating-input" placeholder="4.8">
@@ -807,6 +789,7 @@
 
   // Working state for the category drawer while it's open.
   let catDraft = null; // { editIndex, name, icon, sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [] }
+  let catDraftSnapshot = null; // JSON string of the form's state right after opening — compared on close to warn about unsaved edits
 
   // Working state for the item drawer while it's open.
   let itemDraft = null; // { catIndex, editIndex, ...item fields, sizeNames snapshot from category }
@@ -1095,9 +1078,13 @@
 
   /* ================= SYNC (server load/save) ================= */
   function setSyncStatus(state, text) {
+    // The header that used to show this was removed — kept as a no-op so
+    // every loadMenu()/saveMenu() call site doesn't need its own guard.
     const el = document.getElementById('sync-indicator');
+    if (!el) return;
     el.className = state;
-    document.getElementById('sync-text').textContent = text;
+    const t = document.getElementById('sync-text');
+    if (t) t.textContent = text;
   }
 
   async function loadMenu(manual = false) {
@@ -1198,15 +1185,41 @@
     renderCatOptionList('single');
     renderCatOptionList('multi');
     renderCatBulkPriceInputs();
+    // A previous category's drawer may have been left scrolled halfway down
+    // with "More options" expanded — reset both so it always opens fresh.
+    document.getElementById('cat-more-details').open = false;
+    document.querySelector('#cat-drawer-overlay .drawer-body').scrollTop = 0;
     document.getElementById('cat-drawer-overlay').classList.add('open');
+    catDraftSnapshot = JSON.stringify(collectCategoryFormState());
   }
   function toggleAddBtn(inputId, btnId) {
     document.getElementById(btnId).disabled = !document.getElementById(inputId).value.trim();
   }
 
-  function closeCategoryDrawer() {
+  // Everything a person can change on this drawer, gathered into one plain
+  // object — compared against a snapshot taken on open to warn before an
+  // unsaved edit is lost. Name/icon are read straight from the inputs since
+  // catDraft itself isn't updated until Save; everything else is already
+  // kept live on catDraft by the add/remove/update functions above.
+  function collectCategoryFormState() {
+    return {
+      name: document.getElementById('cat-name-input').value.trim(),
+      icon: document.getElementById('cat-icon-input').value.trim(),
+      sizeNames: catDraft.sizeNames,
+      defaultPrices: catDraft.defaultPrices,
+      defaultFlatPrice: catDraft.defaultFlatPrice,
+      categorySingleOptions: catDraft.categorySingleOptions,
+      categoryMultiOptions: catDraft.categoryMultiOptions
+    };
+  }
+
+  function closeCategoryDrawer(force) {
+    if (!force && catDraft && catDraftSnapshot != null && JSON.stringify(collectCategoryFormState()) !== catDraftSnapshot) {
+      if (!confirm('You have unsaved changes to this category. Leave without saving?')) return;
+    }
     document.getElementById('cat-drawer-overlay').classList.remove('open');
     catDraft = null;
+    catDraftSnapshot = null;
   }
 
   function renderCatSizeChips() {
@@ -1393,7 +1406,7 @@
     const cat = commitCategoryDraft();
     if (!cat) return;
     saveMenu();
-    closeCategoryDrawer();
+    closeCategoryDrawer(true);
     renderAll();
     showToast('Category saved.');
   }
@@ -1443,6 +1456,7 @@
     if (menuCategories.length === 0) {
       tabsEl.innerHTML = ADD_CHIP;
       addBtn.disabled = true;
+      document.getElementById('cat-options-hint').textContent = '';
       document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Tap “＋ Category” above to create your first one.</div>`;
       return;
     }
@@ -1455,7 +1469,17 @@
     tabsEl.innerHTML = menuCategories.map(c => `
       <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" data-id="${c.id}" onclick="selectItemCategory('${c.id}')">${c.icon || ''} ${escapeHtml(c.name)}</button>
     `).join('') + ADD_CHIP;
+    renderCatOptionsHint();
     renderItemGrid();
+  }
+  // Small line under the category bar: how many shared options (crust types,
+  // add-ons, etc.) the active category applies to every item inside it.
+  function renderCatOptionsHint() {
+    const hint = document.getElementById('cat-options-hint');
+    const cat = getSelectedCategory();
+    if (!cat) { hint.textContent = ''; return; }
+    const n = (cat.categorySingleOptions || []).length + (cat.categoryMultiOptions || []).length;
+    hint.textContent = n > 0 ? `🔘 ${n} shared option${n === 1 ? '' : 's'} apply to every item in "${cat.name}"` : '';
   }
   function selectItemCategory(catId) {
     if (longPressed) { longPressed = false; return; }
@@ -1472,7 +1496,7 @@
     const grid = document.getElementById('item-grid');
     if (!cat) { grid.innerHTML = ''; return; }
     if (cat.items.length === 0) {
-      grid.innerHTML = `<div class="empty-state"><div class="display">No items in "${escapeHtml(cat.name)}"</div>Tap "+ New Item" above to add the first dish.</div>`;
+      grid.innerHTML = `<div class="empty-state"><div class="display">No items in "${escapeHtml(cat.name)}" yet</div>Tap "+ New Item" above to add the first dish.</div>`;
       return;
     }
     grid.innerHTML = cat.items.map((item, i) => {
@@ -1569,6 +1593,12 @@
     renderItemPriceInputs();
     renderItemOptionList('single');
     renderItemOptionList('multi');
+    // A previous item's drawer may have been left scrolled halfway down with
+    // "More options" expanded — reset both so New Item always opens fresh.
+    const itemMoreDetails = document.getElementById('item-more-details');
+    if (itemMoreDetails) itemMoreDetails.open = false;
+    const itemDrawerBody = document.querySelector('#item-drawer-overlay .drawer-body');
+    if (itemDrawerBody) itemDrawerBody.scrollTop = 0;
     document.getElementById('item-drawer-overlay').classList.add('open');
   }
   function closeItemDrawer() {
