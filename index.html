@@ -1561,9 +1561,11 @@ async function submitFinalOrder() {
         if (!activeAddr) return alert('Please select a valid delivery address');
     }
 
+    // Kept in sync with renderCheckoutPage()'s totals — no fees are charged
+    // until the developer dashboard has a way to configure them.
     let subtotal = items.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
-    let fee = 500; // Flat app/service fee (tax-inclusive), not percentage-based
-    let delivery = deliveryMethod === 'pickup' ? 0 : 2000;
+    let fee = 0;
+    let delivery = 0;
     let grandTotal = subtotal + fee + delivery;
 
     const orderData = {
@@ -1651,6 +1653,7 @@ async function submitFinalOrder() {
     const STORAGE_KEY_ACTIVE_RESTAURANT = 'active_restaurant_id';
     let currentRestaurantId = localStorage.getItem(STORAGE_KEY_ACTIVE_RESTAURANT) || 'default';
     let currentRestaurantName = 'Restaurant'; // Kept in sync by loadRestaurantInfo() — tagged onto cart items as they're added, so the (now multi-restaurant) cart can group and label them without a lookup later.
+    let currentRestaurantAddress = ''; // Same idea, for the Self-pick up screen.
     // Addresses are scoped PER Telegram account (by their numeric user id), not just per device —
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
@@ -1716,24 +1719,24 @@ async function submitFinalOrder() {
     let deliveryMethod = null;        // 'delivery' | 'pickup' — nothing pre-selected
     let checkoutTried = false;        // true after a failed "Continue" so missing sections show "Choose one"
 
-    // Payment methods come from GET /api/payment-methods (managed from the developer
-    // dashboard). This built-in list is only a fallback if the server can't be reached.
-    let paymentMethods = [
-        { id: 'kbzpay', name: 'KBZ Pay', logoUrl: '' },
-        { id: 'cod', name: 'Cash on Delivery', logoUrl: '' }
-    ];
+    // Payment methods are entirely dashboard-managed — nothing is hardcoded here.
+    // GET /api/payment-methods is the only source; an empty/failed result just
+    // means no payment methods are configured yet.
+    let paymentMethods = [];
+    let paymentMethodsLoaded = false;
     const PAY_EMOJI = { kbzpay: '📱', cod: '💵' };
     const escPay = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     async function loadPaymentMethods() {
         try {
             const res = await fetch(`${API_BASE}/api/payment-methods`);
             const d = await res.json();
-            if (d.success && Array.isArray(d.methods) && d.methods.length) {
-                paymentMethods = d.methods;
-                if (selectedPaymentMethod && !paymentMethods.some(p => p.id === selectedPaymentMethod)) selectedPaymentMethod = null;
-                if (currentTabId === 'restaurant-cart') renderRestaurantCartPage();
-            }
-        } catch (e) { /* keep fallback list */ }
+            paymentMethods = (d.success && Array.isArray(d.methods)) ? d.methods : [];
+        } catch (e) {
+            paymentMethods = [];
+        }
+        paymentMethodsLoaded = true;
+        if (selectedPaymentMethod && !paymentMethods.some(p => p.id === selectedPaymentMethod)) selectedPaymentMethod = null;
+        if (currentTabId === 'restaurant-cart') renderRestaurantCartPage();
     }
     loadPaymentMethods();
     let isSubmittingOrder = false; // guards "Make Payment" against multiple/rapid clicks
@@ -1988,6 +1991,7 @@ async function submitFinalOrder() {
 
             if (nameEl) nameEl.innerText = info.name || 'Restaurant';
             currentRestaurantName = info.name || 'Restaurant';
+            currentRestaurantAddress = info.address || '';
             if (taglineEl) taglineEl.innerText = info.tagline || '';
 
             if (info.logoUrl && logoImg && logoFallback) {
@@ -2415,7 +2419,8 @@ async function submitFinalOrder() {
             quantity: modalQuantityValue,
             options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard',
             restaurantId: currentRestaurantId,
-            restaurantName: currentRestaurantName
+            restaurantName: currentRestaurantName,
+            restaurantAddress: currentRestaurantAddress
         });
 
         updateCartBadge();
@@ -2454,10 +2459,16 @@ async function submitFinalOrder() {
     }
 
     // Whether an option (single or multiple) should be shown for the currently selected size.
-    // - opt.forSize set -> only available when that exact size name is selected (Option Manager).
-    // - opt.minSizeIndex set (legacy pizza crusts) -> available from that size upward.
-    // - neither set ("Default") -> available for every size.
+    // - opt.prices is a per-size array (current admin.html) -> unavailable on a size whose
+    //   entry is null/undefined; 0 means free, not unavailable.
+    // - opt.forSize set (older data) -> only available when that exact size name is selected.
+    // - opt.minSizeIndex set (older data, legacy pizza crusts) -> available from that size upward.
+    // - none of the above -> available for every size.
     function isOptionAvailableForSize(opt, dish) {
+        if (Array.isArray(opt.prices) && selectedSizeIndex >= 0) {
+            const p = opt.prices[selectedSizeIndex];
+            return p !== null && p !== undefined;
+        }
         if (opt.forSize) {
             if (selectedSizeIndex < 0 || !dish.sizes) return false;
             const currentSize = dish.sizes[selectedSizeIndex];
@@ -2797,8 +2808,8 @@ async function submitFinalOrder() {
             ${deliveryMethod === 'pickup' ? `
                 <div class="checkout-card" style="cursor: default; margin-top: 12px;">
                     <div class="address-info">
-                        <div class="address-info-header"><span class="address-title">Store Pick-up</span></div>
-                        <div class="address-details"><p>No delivery address needed — pick up your order at the restaurant.</p></div>
+                        <div class="address-info-header"><span class="address-title">📍 Pick up at ${escPay(items[0].restaurantName || 'the restaurant')}</span></div>
+                        <div class="address-details"><p>${items[0].restaurantAddress ? escPay(items[0].restaurantAddress) : 'Address not set yet — ask the restaurant for directions.'}</p></div>
                     </div>
                 </div>` : ''}
 
@@ -2808,7 +2819,7 @@ async function submitFinalOrder() {
                     <button class="pay-tile ${selectedPaymentMethod === p.id ? 'selected' : ''}" onclick="selectPayment('${escPay(p.id)}')">
                         <span class="pay-img">${p.logoUrl ? `<img src="${escPay(p.logoUrl)}" alt="" onerror="this.replaceWith(document.createTextNode('💳'))">` : (PAY_EMOJI[p.id] || '💳')}</span>
                         <span class="pay-name">${escPay(p.name)}</span>
-                    </button>`).join('')}
+                    </button>`).join('') || (paymentMethodsLoaded ? `<p class="sub-hint">No payment methods are set up yet — ask the restaurant to add one.</p>` : `<p class="sub-hint">Loading payment methods…</p>`)}
             </div>
 
             <div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Order Note (optional)</div>
@@ -2874,8 +2885,11 @@ async function submitFinalOrder() {
         }
 
         const restaurantName = items[0].restaurantName || 'Restaurant';
-        const SYSTEM_FEE = 0; // Placeholder — not wired up to anything yet, updating later
-        const deliveryFee = deliveryMethod === 'pickup' ? 0 : 2000;
+        // No delivery fee or system fee is charged yet — restaurants don't set
+        // these up anywhere, so showing a made-up number would be misleading.
+        // A future "Costing" section in the developer dashboard can add taxes
+        // and fees here; pricing.fees below is where they'd be summed in.
+        const fees = []; // [{ label, amount }, …] — populated from the dashboard later
 
         let itemsHtml = '';
         let itemsTotal = 0;
@@ -2884,12 +2898,12 @@ async function submitFinalOrder() {
             itemsTotal += lineTotal;
             itemsHtml += `<div class="summary-row"><span>${item.name} × ${item.quantity}</span><span>${lineTotal} MMK</span></div>`;
         });
-
-        const grandTotal = itemsTotal + SYSTEM_FEE + deliveryFee;
+        const feesTotal = fees.reduce((a, f) => a + f.amount, 0);
+        const grandTotal = itemsTotal + feesTotal;
 
         const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
         const addressText = deliveryMethod === 'pickup'
-            ? 'Store Pick-up (no delivery address needed)'
+            ? (items[0].restaurantAddress ? `Pick up at ${items[0].restaurantName} — ${items[0].restaurantAddress}` : `Pick up at ${items[0].restaurantName}`)
             : (activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected');
 
         const deliveryLabel = deliveryMethod === 'pickup' ? 'Self-pick up' : 'Delivery';
@@ -2908,9 +2922,8 @@ async function submitFinalOrder() {
             <div class="cart-section-card">
                 <div class="cart-section-title"><span>📋</span> Ordered Items</div>
                 <div style="margin-bottom: 8px;">${itemsHtml}</div>
-                <div class="summary-row" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>System fee</span><span>${SYSTEM_FEE} MMK</span></div>
-                <div class="summary-row"><span>Delivery fee</span><span>${deliveryFee === 0 ? 'Free' : deliveryFee + ' MMK'}</span></div>
-                <div class="summary-row grand-total"><span>Subtotal</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
+                ${fees.map(f => `<div class="summary-row" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>${escPay(f.label)}</span><span>${f.amount} MMK</span></div>`).join('')}
+                <div class="summary-row grand-total" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>Total</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
             </div>
 
             <div style="margin-top: 20px; margin-bottom: 24px;">
