@@ -372,6 +372,15 @@
   .option-price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; margin-bottom: 6px; }
   .option-price-grid input, .option-row select { padding: 7px 8px; font-size: 12px; }
   .option-price-grid label { font-size: 10px; }
+  .add-option-btn { width: 100%; justify-content: center; margin-bottom: 6px; }
+  .size-check-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: var(--card);
+  }
+  .size-check-row .chk-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; flex: 1; min-width: 0; }
+  .size-check-row .chk-label input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--basil); flex-shrink: 0; }
+  .size-check-row input[type="number"] { width: 96px; flex: 0 0 auto; padding: 7px 8px; font-size: 12.5px; }
+  .size-check-row input[type="number"]:disabled { opacity: .4; }
 
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -639,40 +648,33 @@
         <div class="sub-hint" style="margin-bottom:8px;">Leave empty if every item in this category has one flat price (e.g. Sides, Drinks).</div>
         <div class="chip-list" id="cat-size-chips"></div>
         <div class="chip-add-row">
-          <input type="text" id="cat-new-size-input" placeholder="e.g. Small" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
-          <button class="btn btn-outline btn-sm" onclick="addSizeChip()">Add</button>
+          <input type="text" id="cat-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('cat-new-size-input','cat-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
+          <button class="btn btn-outline btn-sm" id="cat-add-size-btn" disabled onclick="addSizeChip()">Add</button>
         </div>
       </div>
 
-<details class="more"><summary>Shared options &amp; bulk price</summary>
+      <div class="field" id="cat-bulk-price-section">
+        <label>💰 Price per size</label>
+        <div class="sub-hint" style="margin-bottom:8px;">Check a size to set its price. Every new item in this category starts with these — and saving updates them on every existing item too (items with their own custom sizes are skipped).</div>
+        <div id="cat-bulk-price-inputs"></div>
+      </div>
+
+<details class="more"><summary>Shared options</summary>
       <div class="ticket-divider"></div>
 
       <div class="option-block-head">
-        <h4>🔘 Shared single-choice options</h4>
-        <button class="btn btn-outline btn-sm" onclick="addCatOption('single')">+ Add</button>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('single')">➕ Add single option</button>
       </div>
-      <p class="sub-hint" style="margin:-4px 0 10px;">Applies to every item in this category — e.g. a crust type. Only one can be picked at a time.</p>
+      <p class="sub-hint" style="margin:-4px 0 10px;">Shared by every item in this category — e.g. a crust type. Only one can be picked at a time.</p>
       <div id="cat-single-options"></div>
 
       <div class="ticket-divider"></div>
 
       <div class="option-block-head">
-        <h4>☑️ Shared multi-choice add-ons</h4>
-        <button class="btn btn-outline btn-sm" onclick="addCatOption('multi')">+ Add</button>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('multi')">➕ Add add-on option</button>
       </div>
-      <p class="sub-hint" style="margin:-4px 0 10px;">Applies to every item in this category — e.g. extra toppings. Any number can be picked.</p>
+      <p class="sub-hint" style="margin:-4px 0 10px;">Shared by every item in this category — e.g. extra toppings. Any number can be picked.</p>
       <div id="cat-multi-options"></div>
-
-      <div class="ticket-divider"></div>
-
-      <div class="option-block-head" id="cat-bulk-price-section">
-        <h4>💰 Bulk-set price for every item</h4>
-      </div>
-      <div id="cat-bulk-price-section-body">
-        <p class="sub-hint" style="margin:-4px 0 10px;">Sets this price on every item in this category in one go — items with their own custom sizes are skipped, since those manage their own pricing.</p>
-        <div id="cat-bulk-price-inputs"></div>
-        <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="applyBulkPriceToCategory()">Apply to all items</button>
-      </div>
 </details>
     </div>
     <div class="drawer-foot">
@@ -714,8 +716,8 @@
         <div class="sub-hint" id="item-size-inherit-hint" style="margin-bottom:8px;"></div>
         <div class="chip-list" id="item-size-chips"></div>
         <div class="chip-add-row">
-          <input type="text" id="item-new-size-input" placeholder="e.g. Small" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItemSizeChip();}">
-          <button class="btn btn-outline btn-sm" onclick="addItemSizeChip()">Add</button>
+          <input type="text" id="item-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('item-new-size-input','item-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItemSizeChip();}">
+          <button class="btn btn-outline btn-sm" id="item-add-size-btn" disabled onclick="addItemSizeChip()">Add</button>
         </div>
         <button class="btn btn-outline btn-sm" id="item-reset-sizes-btn" style="margin-top:8px; display:none;" onclick="resetItemSizesToCategory()">↺ Use category's sizes instead</button>
       </div>
@@ -736,11 +738,8 @@
       </div>
 
       <div class="subform-block">
-        <div class="option-block-head">
-          <h4>🔘 Item-specific single-choice options</h4>
-          <button class="btn btn-outline btn-sm" onclick="addItemOption('single')">+ Add</button>
-        </div>
-        <p class="sub-hint" style="margin:-4px 0 10px;">On top of any shared options from the category — e.g. this item's own crust choices.</p>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addItemOption('single')">➕ Add single option</button>
+        <p class="sub-hint" style="margin:6px 0 10px;">On top of any shared options from the category — e.g. this item's own crust choices. Only one can be picked at a time.</p>
         <div class="field" style="margin-bottom:10px;">
           <label>Section title (shown to customers)</label>
           <input type="text" id="item-single-title-input" placeholder="Select Crust Type (Optional)">
@@ -749,11 +748,8 @@
       </div>
 
       <div class="subform-block">
-        <div class="option-block-head">
-          <h4>☑️ Item-specific add-ons</h4>
-          <button class="btn btn-outline btn-sm" onclick="addItemOption('multi')">+ Add</button>
-        </div>
-        <p class="sub-hint" style="margin:-4px 0 10px;">e.g. toppings only available on this item.</p>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addItemOption('multi')">➕ Add add-on option</button>
+        <p class="sub-hint" style="margin:6px 0 10px;">e.g. toppings only available on this item. Any number can be picked.</p>
         <div class="field" style="margin-bottom:10px;">
           <label>Section title (shown to customers)</label>
           <input type="text" id="item-multi-title-input" placeholder="Add Toppings">
@@ -1178,39 +1174,36 @@
   /* ---- Category drawer ---- */
   function openCategoryDrawer(index = null) {
     if (index === null) {
-      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [] };
+      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [], defaultPrices: [], defaultFlatPrice: null };
       document.getElementById('cat-drawer-title').textContent = 'New Category';
     } else {
       const cat = menuCategories[index];
+      const hasSizes = (cat.sizeNames || []).length > 0;
       catDraft = {
         editIndex: index,
         name: cat.name, icon: cat.icon || '🍽️',
         sizeNames: [...(cat.sizeNames || [])],
         categorySingleOptions: JSON.parse(JSON.stringify(cat.categorySingleOptions || [])),
-        categoryMultiOptions: JSON.parse(JSON.stringify(cat.categoryMultiOptions || []))
+        categoryMultiOptions: JSON.parse(JSON.stringify(cat.categoryMultiOptions || [])),
+        defaultPrices: hasSizes ? (cat.defaultPrices ? [...cat.defaultPrices] : cat.sizeNames.map(() => null)) : [],
+        defaultFlatPrice: hasSizes ? null : (cat.defaultFlatPrice != null ? cat.defaultFlatPrice : null)
       };
       document.getElementById('cat-drawer-title').textContent = `Edit "${cat.name}"`;
     }
     document.getElementById('cat-name-input').value = catDraft.name;
     document.getElementById('cat-icon-input').value = catDraft.icon;
     document.getElementById('cat-new-size-input').value = '';
+    document.getElementById('cat-add-size-btn').disabled = true;
     renderCatSizeChips();
     renderCatOptionList('single');
     renderCatOptionList('multi');
-    // Bulk-pricing only makes sense for a category that can already have
-    // items in it — a brand-new category is always empty, so hide it there.
-    const bulkSection = document.getElementById('cat-bulk-price-section');
-    const bulkBody = document.getElementById('cat-bulk-price-section-body');
-    if (catDraft.editIndex === null) {
-      bulkSection.style.display = 'none';
-      bulkBody.style.display = 'none';
-    } else {
-      bulkSection.style.display = '';
-      bulkBody.style.display = '';
-      renderCatBulkPriceInputs();
-    }
+    renderCatBulkPriceInputs();
     document.getElementById('cat-drawer-overlay').classList.add('open');
   }
+  function toggleAddBtn(inputId, btnId) {
+    document.getElementById(btnId).disabled = !document.getElementById(inputId).value.trim();
+  }
+
   function closeCategoryDrawer() {
     document.getElementById('cat-drawer-overlay').classList.remove('open');
     catDraft = null;
@@ -1235,16 +1228,47 @@
       return;
     }
     catDraft.sizeNames.push(name);
+    if (!catDraft.defaultPrices) catDraft.defaultPrices = [];
+    catDraft.defaultPrices.push(null);
+    syncCatOptionSizes();
     input.value = '';
+    toggleAddBtn('cat-new-size-input', 'cat-add-size-btn');
     renderCatSizeChips();
-    if (catDraft.editIndex !== null) renderCatBulkPriceInputs();
+    renderCatBulkPriceInputs();
+    renderCatOptionList('single');
+    renderCatOptionList('multi');
   }
   function removeSizeChip(i) {
     catDraft.sizeNames.splice(i, 1);
+    if (catDraft.defaultPrices) catDraft.defaultPrices.splice(i, 1);
+    syncCatOptionSizes();
     renderCatSizeChips();
-    if (catDraft.editIndex !== null) renderCatBulkPriceInputs();
+    renderCatBulkPriceInputs();
+    renderCatOptionList('single');
+    renderCatOptionList('multi');
+  }
+  // Keeps each shared option's per-size `prices` array the same length/shape
+  // as catDraft.sizeNames whenever a size is added or removed, preserving
+  // prices for sizes that still exist. Mirrors syncItemSizesArray() below.
+  function syncCatOptionSizes() {
+    const n = catDraft.sizeNames.length;
+    ['categorySingleOptions', 'categoryMultiOptions'].forEach(key => {
+      catDraft[key].forEach(opt => {
+        if (n > 0) {
+          const old = opt.prices || [];
+          opt.prices = catDraft.sizeNames.map((_, i) => (old[i] !== undefined ? old[i] : null));
+          delete opt.price;
+        } else {
+          const firstSet = (opt.prices || []).find(p => p != null);
+          opt.price = firstSet != null ? firstSet : (opt.price || 0);
+          delete opt.prices;
+        }
+      });
+    });
   }
 
+  // A blank/unchecked size means this option isn't offered on that size at
+  // all; checking the box and leaving the price at 0 means it's free there.
   function renderCatOptionList(kind) {
     const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
     const container = document.getElementById(kind === 'single' ? 'cat-single-options' : 'cat-multi-options');
@@ -1253,40 +1277,54 @@
       container.innerHTML = `<p class="sub-hint">None yet.</p>`;
       return;
     }
+    const hasSizes = catDraft.sizeNames.length > 0;
     container.innerHTML = options.map((opt, i) => {
-      const scope = opt.forSize || '';
-      const sizeOptsHtml = ['<option value="">Applies to all sizes</option>']
-        .concat(catDraft.sizeNames.map(sz => `<option value="${escapeHtml(sz)}">Only on ${escapeHtml(sz)}</option>`))
-        .map(o => scope && o.includes(`value="${escapeHtml(scope)}"`) ? o.replace('<option', '<option selected') : o)
-        .join('');
+      const priceInputs = hasSizes
+        ? `<div>` + catDraft.sizeNames.map((n, si) => {
+            const val = opt.prices ? opt.prices[si] : null;
+            const checked = val != null;
+            return `
+              <div class="size-check-row">
+                <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatOptionSizeChk('${kind}',${i},${si},this.checked)">${escapeHtml(n)}</label>
+                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateCatOptionPrice('${kind}',${i},${si},this.value)">
+              </div>`;
+          }).join('') + `</div>`
+        : `<div class="option-price-grid"><div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateCatOption('${kind}',${i},'price',this.value)"></div></div>`;
       return `
         <div class="option-row">
           <div class="option-row-top">
             <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateCatOption('${kind}',${i},'name',this.value)">
             <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeCatOption('${kind}',${i})">🗑️</button>
           </div>
-          <div class="option-price-grid">
-            <div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateCatOption('${kind}',${i},'price',this.value)"></div>
-            <div>
-              <label>Scope</label>
-              <select onchange="updateCatOption('${kind}',${i},'forSize',this.value)">${sizeOptsHtml}</select>
-            </div>
-          </div>
+          ${priceInputs}
         </div>
       `;
     }).join('');
   }
   function addCatOption(kind) {
     const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    catDraft[listKey].push({ name: '', price: 0 });
+    const hasSizes = catDraft.sizeNames.length > 0;
+    catDraft[listKey].push(hasSizes ? { name: '', prices: catDraft.sizeNames.map(() => null) } : { name: '', price: 0 });
     renderCatOptionList(kind);
   }
   function updateCatOption(kind, i, field, value) {
     const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
     const opt = catDraft[listKey][i];
     if (field === 'price') opt.price = parseFloat(value) || 0;
-    else if (field === 'forSize') { if (value) opt.forSize = value; else delete opt.forSize; }
     else opt[field] = value;
+  }
+  function toggleCatOptionSizeChk(kind, i, si, on) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    const opt = catDraft[listKey][i];
+    if (!opt.prices) opt.prices = catDraft.sizeNames.map(() => null);
+    opt.prices[si] = on ? 0 : null;
+    renderCatOptionList(kind);
+  }
+  function updateCatOptionPrice(kind, i, si, value) {
+    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
+    const opt = catDraft[listKey][i];
+    if (!opt.prices) opt.prices = catDraft.sizeNames.map(() => null);
+    opt.prices[si] = value === '' ? 0 : (parseFloat(value) || 0);
   }
   function removeCatOption(kind, i) {
     const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
@@ -1296,9 +1334,8 @@
 
   // Writes catDraft's fields into menuCategories (creating the category if
   // it's new) and returns the resulting category object, or null if the name
-  // is missing. Shared by saveCategoryDrawer() and applyBulkPriceToCategory()
-  // so both "just save" and "save, then bulk-price" go through one path and
-  // stay consistent with each other.
+  // is missing. Used by saveCategoryDrawer(), which also applies any
+  // checked "Price per size" defaults to the category's existing items.
   function commitCategoryDraft() {
     const name = document.getElementById('cat-name-input').value.trim();
     if (!name) { showToast('Category name is required.'); return null; }
@@ -1312,11 +1349,13 @@
         sizeNames: catDraft.sizeNames,
         categorySingleOptions: catDraft.categorySingleOptions,
         categoryMultiOptions: catDraft.categoryMultiOptions,
+        defaultPrices: catDraft.defaultPrices,
+        defaultFlatPrice: catDraft.defaultFlatPrice,
         items: []
       };
       menuCategories.push(cat);
       activeItemCategoryId = cat.id;
-      catDraft.editIndex = menuCategories.length - 1; // so a follow-up bulk-price call knows where to find it
+      catDraft.editIndex = menuCategories.length - 1;
     } else {
       cat = menuCategories[catDraft.editIndex];
       cat.name = name;
@@ -1324,18 +1363,27 @@
       cat.sizeNames = catDraft.sizeNames;
       cat.categorySingleOptions = catDraft.categorySingleOptions;
       cat.categoryMultiOptions = catDraft.categoryMultiOptions;
-      // Keep every item's own `sizes` array in sync with the category's size names —
-      // preserving prices for sizes that still exist, defaulting new ones to 0.
-      // Items with their own customSizeNames override are left alone — that's
-      // the whole point of the override, so a category edit doesn't clobber it.
+      cat.defaultPrices = catDraft.defaultPrices;
+      cat.defaultFlatPrice = catDraft.defaultFlatPrice;
+      // Keep every item's own `sizes` array in sync with the category's size
+      // names. A size with a price checked above always wins there — that's
+      // the point of checking it — otherwise the item keeps whatever price
+      // it already had (0 for a brand-new size). Items with their own
+      // customSizeNames override are left alone entirely.
       cat.items.forEach(item => {
         if (item.customSizeNames && item.customSizeNames.length) return;
-        const oldSizes = item.sizes || [];
-        item.sizes = cat.sizeNames.map(n => {
-          const existing = oldSizes.find(s => s.name === n);
-          return { name: n, price: existing ? existing.price : 0 };
-        });
-        if (item.sizes.length > 0) item.price = item.sizes[0].price;
+        if (cat.sizeNames.length === 0) {
+          if (cat.defaultFlatPrice != null) item.price = cat.defaultFlatPrice;
+          item.sizes = [];
+        } else {
+          const oldSizes = item.sizes || [];
+          item.sizes = cat.sizeNames.map((n, i) => {
+            const existing = oldSizes.find(s => s.name === n);
+            const def = (cat.defaultPrices || [])[i];
+            return { name: n, price: def != null ? def : (existing ? existing.price : 0) };
+          });
+          item.price = item.sizes[0].price;
+        }
       });
     }
     return cat;
@@ -1350,58 +1398,42 @@
     showToast('Category saved.');
   }
 
-  /* ---- Bulk-set price for every item in this category ---- */
+  /* ---- Price per size (this category's default, and every new item's starting price) ---- */
   function renderCatBulkPriceInputs() {
     const box = document.getElementById('cat-bulk-price-inputs');
     if (catDraft.sizeNames.length === 0) {
-      box.innerHTML = `<input type="number" id="cat-bulk-flat-price" placeholder="e.g. 2500">`;
+      const checked = catDraft.defaultFlatPrice != null;
+      box.innerHTML = `
+        <div class="size-check-row">
+          <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatFlatPriceChk(this.checked)">Starting price for every item</label>
+          <input type="number" id="cat-bulk-flat-price" placeholder="Not set" value="${checked ? catDraft.defaultFlatPrice : ''}" ${checked ? '' : 'disabled'} oninput="updateCatFlatPrice(this.value)">
+        </div>`;
     } else {
-      box.innerHTML = `<div class="size-price-grid">` + catDraft.sizeNames.map((n, i) => `
-        <div class="size-price-cell">
-          <label>${escapeHtml(n)}</label>
-          <input type="number" class="cat-bulk-size-price" data-size-index="${i}" placeholder="0">
-        </div>
-      `).join('') + `</div>`;
+      box.innerHTML = catDraft.sizeNames.map((n, i) => {
+        const val = (catDraft.defaultPrices || [])[i];
+        const checked = val != null;
+        return `
+          <div class="size-check-row">
+            <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatSizePriceChk(${i},this.checked)">${escapeHtml(n)}</label>
+            <input type="number" class="cat-bulk-size-price" data-size-index="${i}" placeholder="Not set" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateCatDefaultPrice(${i},this.value)">
+          </div>`;
+      }).join('');
     }
   }
-
-  function applyBulkPriceToCategory() {
-    if (catDraft.sizeNames.length === 0) {
-      const priceInput = document.getElementById('cat-bulk-flat-price');
-      var flatPrice = parseFloat(priceInput.value);
-      if (isNaN(flatPrice)) { showToast('Enter a price first.'); return; }
-    } else {
-      var sizePrices = catDraft.sizeNames.map((n, i) => {
-        const inp = document.querySelectorAll('.cat-bulk-size-price')[i];
-        return parseFloat(inp.value);
-      });
-      if (sizePrices.some(p => isNaN(p))) { showToast('Enter a price for every size first.'); return; }
-    }
-
-    if (!confirm('This overwrites the price for every item in this category (items with their own custom sizes are skipped). Continue?')) return;
-
-    const cat = commitCategoryDraft(); // saves name/icon/sizes/options first, so items stay consistent
-    if (!cat) return;
-
-    let updatedCount = 0;
-    cat.items.forEach(item => {
-      if (item.customSizeNames && item.customSizeNames.length) return; // this item manages its own sizes/prices
-      if (catDraft.sizeNames.length === 0) {
-        item.price = flatPrice;
-        item.sizes = [];
-      } else {
-        item.sizes = catDraft.sizeNames.map((n, i) => ({ name: n, price: sizePrices[i] }));
-        item.price = item.sizes[0].price;
-      }
-      updatedCount++;
-    });
-
-    saveMenu();
-    closeCategoryDrawer();
-    renderAll();
-    showToast(updatedCount > 0
-      ? `Price applied to ${updatedCount} item(s).`
-      : 'No items were updated — this category is empty, or every item has its own custom sizes.');
+  function toggleCatFlatPriceChk(on) {
+    catDraft.defaultFlatPrice = on ? 0 : null;
+    renderCatBulkPriceInputs();
+  }
+  function updateCatFlatPrice(value) {
+    catDraft.defaultFlatPrice = value === '' ? 0 : (parseFloat(value) || 0);
+  }
+  function toggleCatSizePriceChk(i, on) {
+    if (!catDraft.defaultPrices) catDraft.defaultPrices = catDraft.sizeNames.map(() => null);
+    catDraft.defaultPrices[i] = on ? 0 : null;
+    renderCatBulkPriceInputs();
+  }
+  function updateCatDefaultPrice(i, value) {
+    catDraft.defaultPrices[i] = value === '' ? 0 : (parseFloat(value) || 0);
   }
 
   /* ================= ITEMS VIEW ================= */
@@ -1487,10 +1519,15 @@
     const catSizeNames = cat.sizeNames || [];
 
     if (itemIndex === null) {
+      // New items start pre-filled with this category's "Price per size"
+      // defaults (set in the category drawer), so a restaurant doesn't have
+      // to retype the same prices for every dish in a category.
+      const catDefaults = cat.defaultPrices || [];
       itemDraft = {
         catId: cat.id, editIndex: null, usingCustomSizes: false, sizeNames: [...catSizeNames],
         name: '', description: '', image: '', rating: '4.8', time: '15-20 Min',
-        price: 0, sizes: catSizeNames.map(n => ({ name: n, price: 0 })),
+        price: cat.defaultFlatPrice != null ? cat.defaultFlatPrice : 0,
+        sizes: catSizeNames.map((n, i) => ({ name: n, price: catDefaults[i] != null ? catDefaults[i] : 0 })),
         singleChoiceTitle: 'Select Option', singleChoices: [],
         extrasTitle: 'Add Extras', extras: []
       };
@@ -1523,6 +1560,8 @@
     document.getElementById('item-time-input').value = itemDraft.time;
     document.getElementById('item-single-title-input').value = itemDraft.singleChoiceTitle;
     document.getElementById('item-multi-title-input').value = itemDraft.extrasTitle;
+    document.getElementById('item-new-size-input').value = '';
+    document.getElementById('item-add-size-btn').disabled = true;
     document.getElementById('upload-status').textContent = '';
     document.getElementById('upload-status').classList.remove('error');
     updateItemImagePreview();
@@ -1597,10 +1636,11 @@
       itemDraft[key].forEach(opt => {
         if (n > 0) {
           const old = opt.prices || [];
-          opt.prices = itemDraft.sizeNames.map((_, i) => old[i] || 0);
+          opt.prices = itemDraft.sizeNames.map((_, i) => (old[i] !== undefined ? old[i] : null));
           delete opt.price;
         } else {
-          opt.price = (opt.prices && opt.prices[0]) || opt.price || 0;
+          const firstSet = (opt.prices || []).find(p => p != null);
+          opt.price = firstSet != null ? firstSet : (opt.price || 0);
           delete opt.prices;
         }
       });
@@ -1627,6 +1667,7 @@
     itemDraft.sizeNames.push(name);
     syncItemSizesArray();
     input.value = '';
+    toggleAddBtn('item-new-size-input', 'item-add-size-btn');
     refreshItemSizeDependentUI();
   }
   function removeItemSizeChip(i) {
@@ -1736,6 +1777,8 @@
     }
   }
 
+  // A blank/unchecked size means this option isn't offered on that size at
+  // all; checking the box and leaving the price at 0 means it's free there.
   function renderItemOptionList(kind) {
     const listKey = kind === 'single' ? 'singleChoices' : 'extras';
     const container = document.getElementById(kind === 'single' ? 'item-single-options' : 'item-multi-options');
@@ -1747,16 +1790,16 @@
     const hasSizes = itemDraft.sizeNames.length > 0;
     container.innerHTML = options.map((opt, i) => {
       const priceInputs = hasSizes
-        ? `<div class="option-price-grid">` + itemDraft.sizeNames.map((n, si) => `
-            <div><label>${escapeHtml(n)}</label><input type="number" value="${(opt.prices && opt.prices[si]) || 0}" oninput="updateItemOptionPrice('${kind}',${i},${si},this.value)"></div>
-          `).join('') + `</div>`
+        ? `<div>` + itemDraft.sizeNames.map((n, si) => {
+            const val = opt.prices ? opt.prices[si] : null;
+            const checked = val != null;
+            return `
+              <div class="size-check-row">
+                <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleItemOptionSizeChk('${kind}',${i},${si},this.checked)">${escapeHtml(n)}</label>
+                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateItemOptionPrice('${kind}',${i},${si},this.value)">
+              </div>`;
+          }).join('') + `</div>`
         : `<div class="option-price-grid"><div><label>Price</label><input type="number" value="${opt.price || 0}" oninput="updateItemOption('${kind}',${i},'price',this.value)"></div></div>`;
-      const minSizeSelect = hasSizes
-        ? `<select onchange="updateItemOption('${kind}',${i},'minSizeIndex',this.value)">
-             <option value="">Available on all sizes</option>
-             ${itemDraft.sizeNames.map((n, si) => `<option value="${si}" ${opt.minSizeIndex === si ? 'selected' : ''}>${escapeHtml(n)} and up</option>`).join('')}
-           </select>`
-        : '';
       return `
         <div class="option-row">
           <div class="option-row-top">
@@ -1764,7 +1807,6 @@
             <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeItemOption('${kind}',${i})">🗑️</button>
           </div>
           ${priceInputs}
-          ${minSizeSelect}
         </div>
       `;
     }).join('');
@@ -1772,21 +1814,27 @@
   function addItemOption(kind) {
     const listKey = kind === 'single' ? 'singleChoices' : 'extras';
     const hasSizes = itemDraft.sizeNames.length > 0;
-    itemDraft[listKey].push(hasSizes ? { name: '', prices: itemDraft.sizeNames.map(() => 0) } : { name: '', price: 0 });
+    itemDraft[listKey].push(hasSizes ? { name: '', prices: itemDraft.sizeNames.map(() => null) } : { name: '', price: 0 });
     renderItemOptionList(kind);
   }
   function updateItemOption(kind, i, field, value) {
     const listKey = kind === 'single' ? 'singleChoices' : 'extras';
     const opt = itemDraft[listKey][i];
     if (field === 'price') opt.price = parseFloat(value) || 0;
-    else if (field === 'minSizeIndex') { if (value === '') delete opt.minSizeIndex; else opt.minSizeIndex = parseInt(value, 10); }
     else opt[field] = value;
+  }
+  function toggleItemOptionSizeChk(kind, i, si, on) {
+    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
+    const opt = itemDraft[listKey][i];
+    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => null);
+    opt.prices[si] = on ? 0 : null;
+    renderItemOptionList(kind);
   }
   function updateItemOptionPrice(kind, i, sizeIndex, value) {
     const listKey = kind === 'single' ? 'singleChoices' : 'extras';
     const opt = itemDraft[listKey][i];
-    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => 0);
-    opt.prices[sizeIndex] = parseFloat(value) || 0;
+    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => null);
+    opt.prices[sizeIndex] = value === '' ? 0 : (parseFloat(value) || 0);
   }
   function removeItemOption(kind, i) {
     const listKey = kind === 'single' ? 'singleChoices' : 'extras';
