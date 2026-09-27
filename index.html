@@ -697,6 +697,31 @@
             transition: color 0.2s;
         }
         .nav-item.active { color: var(--primary); }
+        .saved-seg { display: flex; gap: 8px; margin: 0 16px 14px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 4px; }
+        .saved-seg button { flex: 1; border: none; background: none; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+        .saved-seg button.active { background: var(--primary); color: #fff; }
+        .saved-cart-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+        .saved-cart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+        .saved-cart-title { font-size: 14.5px; font-weight: 800; color: var(--text-main); }
+        .saved-cart-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .saved-cart-del { background: none; border: none; color: #E5484D; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+        .saved-item-chip { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--border-light); cursor: pointer; }
+        .saved-item-chip:first-of-type { border-top: none; }
+        .saved-item-chip img { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--paper, #f2f2f2); }
+        .saved-item-chip .sic-name { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .saved-item-chip .sic-sub { font-size: 11px; color: var(--text-muted); }
+        .favorites-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .fav-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 16px; overflow: hidden; cursor: pointer; }
+        .fav-card img { width: 100%; height: 90px; object-fit: cover; display: block; }
+        .fav-card .fc-body { padding: 8px 10px 10px; }
+        .fav-card .fc-name { font-size: 12.5px; font-weight: 700; color: var(--text-main); line-height: 1.25; }
+        .fav-card .fc-restaurant { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+        .fav-heart-btn {
+            position: absolute; left: 18px; top: 18px; background: rgba(255,255,255,0.9);
+            border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 17px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2;
+        }
+        .save-cart-icon-btn { margin-left: auto; background: none; border: none; font-size: 18px; cursor: pointer; padding: 2px 4px; }
         .nav-icon { font-size: 20px; }
         .nav-item.cart-tab { position: relative; justify-content: flex-end; margin-top: -26px; }
         .cart-icon-curved {
@@ -1211,6 +1236,23 @@
         <div id="cart-page-content" class="scrollable-view-content cart-page-body"></div>
     </div>
 
+    <!-- SAVED VIEW — replaces the old Explore tab. Two sub-tabs: whole carts
+         saved from the restaurant-cart screen ("Saved Items"), and individual
+         dishes hearted from their item modal ("Favorites"). The per-restaurant
+         menu screen (browsing/ordering) still exists at #explore-view — it's
+         just reached by tapping a restaurant card or "+ Add Items" now,
+         rather than from its own bottom-nav icon. -->
+    <div id="saved-view" class="page-view">
+        <header>
+            <h1>Saved 🔖</h1>
+        </header>
+        <div class="saved-seg">
+            <button class="active" id="saved-seg-items" onclick="setSavedScope('items')">Saved Items</button>
+            <button id="saved-seg-favorites" onclick="setSavedScope('favorites')">Favorites</button>
+        </div>
+        <div id="saved-page-content" class="scrollable-view-content" style="padding: 0 16px;"></div>
+    </div>
+
     <!-- RESTAURANT CART VIEW — drill-in from the Cart tab, one restaurant's
          items/summary/"Continue Checkout" at a time. No back arrow here
          either — same reasoning as Checkout below. -->
@@ -1280,8 +1322,8 @@
         <div class="nav-item active" onclick="switchNavTab('home')">
             <span class="nav-icon">🏠</span>Home
         </div>
-        <div class="nav-item" onclick="switchNavTab('explore')">
-            <span class="nav-icon">🧭</span>Explore
+        <div class="nav-item" onclick="switchNavTab('saved')">
+            <span class="nav-icon">🔖</span>Saved
         </div>
         <div class="nav-item cart-tab" onclick="switchNavTab('cart')">
             <div class="cart-icon-curved">
@@ -1299,6 +1341,7 @@
     <div class="modal-overlay" id="item-modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">×</button>
+            <button class="fav-heart-btn" id="m-fav-btn" onclick="toggleFavoriteCurrentDish()">🤍</button>
             <div class="modal-body-scroll">
                 <img src="" class="modal-img" id="m-img" alt="food">
                 <div class="modal-inner-padding">
@@ -1555,11 +1598,8 @@ async function submitFinalOrder() {
     if (!items.length) return alert('This restaurant\'s cart is empty');
 
     if (!deliveryMethod || !selectedPaymentMethod) return alert('Please choose a delivery and payment method');
-    let activeAddr = null;
-    if (deliveryMethod === 'delivery') {
-        activeAddr = savedAddresses.find(a => a.id === activeAddressId);
-        if (!activeAddr) return alert('Please select a valid delivery address');
-    }
+    const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
+    if (!activeAddr) return alert('Please select your address first');
 
     // Kept in sync with renderCheckoutPage()'s totals — no fees are charged
     // until the developer dashboard has a way to configure them.
@@ -1577,7 +1617,8 @@ async function submitFinalOrder() {
         comment: (orderComment || '').trim().slice(0, 300),
         items: items,
         pricing: { subtotal, fee, delivery, total: grandTotal },
-        restaurantId: activeCartRestaurantId
+        restaurantId: activeCartRestaurantId,
+        clientOrderId: pendingOrderRef || undefined // reference shown to the customer on the Checkout page — informational only, the server still assigns the real order id
     };
 
     // Lock the button so a second tap (or accidental double-tap) can't submit a duplicate order
@@ -1606,7 +1647,7 @@ async function submitFinalOrder() {
             // restaurant at a time.
             cartItems = cartItems.filter(i => i.restaurantId !== activeCartRestaurantId);
             orderComment = '';
-            deliveryMethod = null; selectedPaymentMethod = null; checkoutTried = false;
+            deliveryMethod = null; selectedPaymentMethod = null; checkoutTried = false; pendingOrderRef = null;
             activeCartRestaurantId = null;
 
             // BUG FIX: this flag was only ever reset back to false in the
@@ -1658,6 +1699,9 @@ async function submitFinalOrder() {
     // otherwise anyone else using Telegram on the same phone/browser would see your saved address,
     // and vice-versa. Falls back to a shared "guest" bucket only if opened outside Telegram entirely.
     const STORAGE_KEY_ADDRESSES = telegramUser ? `bite_slice_user_addresses_${telegramUser.id}` : 'bite_slice_user_addresses_guest';
+    // Favorited dishes and whole saved carts follow the same per-account scoping as addresses.
+    const STORAGE_KEY_FAVORITES = telegramUser ? `bite_slice_favorites_${telegramUser.id}` : 'bite_slice_favorites_guest';
+    const STORAGE_KEY_SAVED_CARTS = telegramUser ? `bite_slice_saved_carts_${telegramUser.id}` : 'bite_slice_saved_carts_guest';
     // Cart is scoped per Telegram account the same way addresses are, and for
     // the same reason — this is what makes it safe to close the Mini App
     // right after an order (see submitFinalOrder()) without losing whatever
@@ -1715,6 +1759,12 @@ async function submitFinalOrder() {
     // --- CHECKOUT DATA STATE ---
     let savedAddresses = JSON.parse(localStorage.getItem(STORAGE_KEY_ADDRESSES)) || [];
     let activeAddressId = savedAddresses.length > 0 ? savedAddresses[0].id : null;
+    let favorites = [];
+    try { favorites = JSON.parse(localStorage.getItem(STORAGE_KEY_FAVORITES)) || []; } catch (e) { favorites = []; }
+    let savedCarts = [];
+    try { savedCarts = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED_CARTS)) || []; } catch (e) { savedCarts = []; }
+    let savedTabScope = 'items'; // 'items' | 'favorites' — which half of the Saved tab is showing
+    let pendingOrderRef = null;  // client-side reference shown on the final Checkout page, set when "Continue to Checkout" is tapped
     let selectedPaymentMethod = null; // nothing pre-selected — customer must choose
     let deliveryMethod = null;        // 'delivery' | 'pickup' — nothing pre-selected
     let checkoutTried = false;        // true after a failed "Continue" so missing sections show "Choose one"
@@ -1745,7 +1795,7 @@ async function submitFinalOrder() {
     let currentTabId = 'home';
     
     function switchNavTab(tabName, fromHistory = false) {
-        const PRIMARY_TABS = ['home', 'explore', 'cart', 'profile'];
+        const PRIMARY_TABS = ['home', 'explore', 'saved', 'cart', 'profile'];
         const wasDrillIn = !PRIMARY_TABS.includes(currentTabId);
         const isDrillIn = !PRIMARY_TABS.includes(tabName);
 
@@ -1757,7 +1807,7 @@ async function submitFinalOrder() {
         // switch — sliding those felt like the wrong metaphor for peer tabs.
         // Direction comes from screen DEPTH, so Checkout -> back to the cart
         // summary now plays the "back" transition instead of "forward" again.
-        const DEPTH = { home: 0, explore: 0, cart: 0, profile: 0, 'restaurant-cart': 1, checkout: 2 };
+        const DEPTH = { home: 0, explore: 0, saved: 0, cart: 0, profile: 0, 'restaurant-cart': 1, checkout: 2 };
         const depthOf = t => (DEPTH[t] !== undefined ? DEPTH[t] : 1);
         let direction = null;
         if (depthOf(tabName) > depthOf(currentTabId)) direction = 'forward';
@@ -1797,12 +1847,13 @@ async function submitFinalOrder() {
             }
         }
 
-        const tabIcons = { 'home': 0, 'explore': 1, 'cart': 2, 'profile': 3, 'restaurant-cart': 2 }; // restaurant-cart keeps the Cart icon highlighted — it's still part of the cart flow
+        const tabIcons = { 'home': 0, 'explore': 0, 'saved': 1, 'cart': 2, 'profile': 3, 'restaurant-cart': 2 }; // explore (a restaurant's menu) highlights Home, since that's where it's reached from now; restaurant-cart keeps the Cart icon highlighted — it's still part of the cart flow
         if (tabIcons[tabName] !== undefined) {
             document.querySelectorAll('.bottom-nav .nav-item')[tabIcons[tabName]].classList.add('active');
         }
 
         if (tabName === 'cart') renderCartPage();
+        if (tabName === 'saved') renderSavedView();
         if (tabName === 'restaurant-cart') renderRestaurantCartPage();
         if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
         if (tabName === 'profile') renderProfileOrders(); // Refresh pending/succeeded orders + history each visit
@@ -2217,6 +2268,7 @@ async function submitFinalOrder() {
         document.getElementById('m-title').innerText = dish.name;
         document.getElementById('m-desc').innerText = dish.description;
         refreshModalInCartIndicator(dish.id);
+        refreshModalFavoriteHeart(dish.id);
         
         const sizeContainer = document.getElementById('dynamic-sizes-container');
         const scContainer = document.getElementById('dynamic-single-choice-container');
@@ -2437,6 +2489,127 @@ async function submitFinalOrder() {
             if (found) return found;
         }
         return null;
+    }
+
+    /* ================= FAVORITES ================= */
+    // A favorite is identified by (restaurantId, dishId) together, since item
+    // ids are only unique within one restaurant's own menu.
+    function isFavoriteDish(restaurantId, dishId) {
+        return favorites.some(f => f.restaurantId === restaurantId && f.dishId === dishId);
+    }
+    function refreshModalFavoriteHeart(dishId) {
+        const btn = document.getElementById('m-fav-btn');
+        if (!btn) return;
+        btn.textContent = isFavoriteDish(currentRestaurantId, dishId) ? '❤️' : '🤍';
+    }
+    function toggleFavoriteCurrentDish() {
+        if (!currentModalDish) return;
+        const dishId = currentModalDish.id;
+        const idx = favorites.findIndex(f => f.restaurantId === currentRestaurantId && f.dishId === dishId);
+        if (idx >= 0) {
+            favorites.splice(idx, 1);
+            showToast('Removed from favorites');
+        } else {
+            favorites.push({
+                restaurantId: currentRestaurantId,
+                restaurantName: currentRestaurantName,
+                dishId,
+                name: currentModalDish.name,
+                image: currentModalDish.image,
+                price: (currentModalDish.sizes && currentModalDish.sizes.length) ? currentModalDish.sizes[0].price : currentModalDish.price
+            });
+            showToast('Added to favorites ❤️');
+        }
+        try { localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites)); } catch (e) {}
+        refreshModalFavoriteHeart(dishId);
+        if (document.getElementById('saved-view').classList.contains('active-view') && savedTabScope === 'favorites') renderSavedView();
+    }
+    function removeFavorite(restaurantId, dishId) {
+        favorites = favorites.filter(f => !(f.restaurantId === restaurantId && f.dishId === dishId));
+        try { localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites)); } catch (e) {}
+        renderSavedView();
+    }
+
+    /* ================= SAVED CARTS ================= */
+    // Snapshots the current restaurant-cart's items under a title the customer
+    // picks, so they can come back later, reopen any item (to re-pick a size
+    // or add more), and rebuild the order without starting from scratch.
+    function promptSaveCart() {
+        const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
+        if (!items.length) return;
+        const title = prompt('Save this cart as:', items[0].restaurantName ? `${items[0].restaurantName} order` : 'My order');
+        if (title === null) return; // cancelled
+        const trimmed = title.trim();
+        if (!trimmed) { showToast('Please enter a title.'); return; }
+        savedCarts.unshift({
+            id: Date.now(),
+            title: trimmed.slice(0, 60),
+            createdAt: Date.now(),
+            restaurantId: items[0].restaurantId,
+            restaurantName: items[0].restaurantName,
+            items: items.map(i => ({ dishId: i.dishId, name: i.name, image: i.image, unitPrice: i.unitPrice, quantity: i.quantity, options: i.options }))
+        });
+        try { localStorage.setItem(STORAGE_KEY_SAVED_CARTS, JSON.stringify(savedCarts)); } catch (e) {}
+        showToast('Saved! Find it under the Saved tab.');
+    }
+    function deleteSavedCart(id) {
+        savedCarts = savedCarts.filter(c => c.id !== id);
+        try { localStorage.setItem(STORAGE_KEY_SAVED_CARTS, JSON.stringify(savedCarts)); } catch (e) {}
+        renderSavedView();
+    }
+
+    /* ================= SAVED TAB (Saved Items / Favorites) ================= */
+    function setSavedScope(scope) {
+        savedTabScope = scope;
+        document.getElementById('saved-seg-items').classList.toggle('active', scope === 'items');
+        document.getElementById('saved-seg-favorites').classList.toggle('active', scope === 'favorites');
+        renderSavedView();
+    }
+    function renderSavedView() {
+        const box = document.getElementById('saved-page-content');
+        if (savedTabScope === 'favorites') {
+            box.innerHTML = favorites.length ? `<div class="favorites-grid">${favorites.map(f => `
+                <div class="fav-card" onclick="openSavedDish('${f.restaurantId}', ${f.dishId})">
+                    <img src="${f.image || ''}" alt="" onerror="this.style.opacity=0.2;">
+                    <div class="fc-body">
+                        <div class="fc-name">${f.name}</div>
+                        <div class="fc-restaurant">${f.restaurantName || ''}</div>
+                    </div>
+                </div>`).join('')}</div>`
+                : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No favorites yet — tap the ♡ on any item's page to save it here.</div>`;
+            return;
+        }
+        box.innerHTML = savedCarts.length ? savedCarts.map(c => `
+            <div class="saved-cart-card">
+                <div class="saved-cart-head">
+                    <div>
+                        <div class="saved-cart-title">${c.title}</div>
+                        <div class="saved-cart-meta">${c.restaurantName || ''} · ${new Date(c.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <button class="saved-cart-del" onclick="deleteSavedCart(${c.id})">Remove</button>
+                </div>
+                ${c.items.map(i => `
+                    <div class="saved-item-chip" onclick="openSavedDish('${c.restaurantId}', ${i.dishId})">
+                        <img src="${i.image || ''}" alt="" onerror="this.style.opacity=0.2;">
+                        <div>
+                            <div class="sic-name">${i.name} × ${i.quantity}</div>
+                            <div class="sic-sub">${i.options && i.options !== 'Standard' ? i.options : ''}</div>
+                        </div>
+                    </div>`).join('')}
+            </div>`).join('')
+            : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No saved carts yet — tap 🔖 next to "Order Items" on your cart to save one.</div>`;
+    }
+    // Opens a saved/favorited item's own modal so its size/options can be
+    // re-picked before adding to cart — switching the active restaurant
+    // first if the dish belongs to a different one than what's loaded.
+    async function openSavedDish(restaurantId, dishId) {
+        if (dishId === undefined || dishId === null) { showToast('This item is no longer available.'); return; }
+        if (restaurantId !== currentRestaurantId) {
+            await selectRestaurant(restaurantId);
+        }
+        const dish = findDishById(dishId);
+        if (!dish) { showToast('This item is no longer available.'); return; }
+        openModal(dish);
     }
 
     // Finds the category object that owns a given dish (by id, so it survives copies/refs).
@@ -2790,11 +2963,14 @@ async function submitFinalOrder() {
 
         container.innerHTML = `
             <div class="cart-section-card">
-                <div class="cart-section-title"><span>📋</span> Order Items</div>
+                <div class="cart-section-title"><span>📋</span> <span>Order Items</span><button class="save-cart-icon-btn" title="Save this cart" onclick="promptSaveCart()">🔖</button></div>
                 <div class="cart-items-list">${itemsHtml}</div>
             </div>
 
-            <div class="cart-section-title" id="sec-delivery" style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Delivery Method${checkoutTried && !deliveryMethod ? '<span class="req">Choose one</span>' : ''}</div>
+            <div class="cart-section-title" style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Shipping Address</div>
+            ${addressHtml}
+
+            <div class="cart-section-title" id="sec-delivery" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Delivery Method${checkoutTried && !deliveryMethod ? '<span class="req">Choose one</span>' : ''}</div>
             <div class="checkout-card delivery-method-card ${deliveryMethod === 'delivery' ? 'active-payment' : ''}" onclick="selectDeliveryMethod('delivery')">
                 <div class="radio-custom"></div>
                 <div class="payment-label" style="flex: 1;">Delivery</div>
@@ -2803,15 +2979,6 @@ async function submitFinalOrder() {
                 <div class="radio-custom"></div>
                 <div class="payment-label" style="flex: 1;">Self-pick up</div>
             </div>
-
-            ${deliveryMethod === 'delivery' ? `<div class="cart-section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Shipping Address</div>${addressHtml}` : ''}
-            ${deliveryMethod === 'pickup' ? `
-                <div class="checkout-card" style="cursor: default; margin-top: 12px;">
-                    <div class="address-info">
-                        <div class="address-info-header"><span class="address-title">📍 Pick up at ${escPay(items[0].restaurantName || 'the restaurant')}</span></div>
-                        <div class="address-details"><p>${items[0].restaurantAddress ? escPay(items[0].restaurantAddress) : 'Address not set yet — ask the restaurant for directions.'}</p></div>
-                    </div>
-                </div>` : ''}
 
             <div class="cart-section-title" id="sec-payment" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method${checkoutTried && !selectedPaymentMethod ? '<span class="req">Choose one</span>' : ''}</div>
             <div class="pay-row">
@@ -2860,11 +3027,17 @@ async function submitFinalOrder() {
             showToast(!deliveryMethod ? 'Please choose a delivery method.' : 'Please choose a payment method.');
             return;
         }
-        if (deliveryMethod === 'delivery' && !savedAddresses.find(a => a.id === activeAddressId)) {
-            alert('Please select or add a delivery address first.');
+        if (!savedAddresses.find(a => a.id === activeAddressId)) {
+            alert('Please select or add your address first.');
             if (savedAddresses.length === 0) openAddressModal();
             return;
         }
+
+        // A fresh reference number each time Checkout is entered — shown on
+        // the final page as "Order ID" so the customer has something to
+        // quote if anything needs sorting out. This is separate from (and
+        // shown ahead of) the real order id the server assigns on submit.
+        pendingOrderRef = 'ORD-' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).slice(2, 5).toUpperCase();
 
         switchNavTab('checkout');
     }
@@ -2896,15 +3069,15 @@ async function submitFinalOrder() {
         items.forEach(item => {
             const lineTotal = item.unitPrice * item.quantity;
             itemsTotal += lineTotal;
-            itemsHtml += `<div class="summary-row"><span>${item.name} × ${item.quantity}</span><span>${lineTotal} MMK</span></div>`;
+            const optsLine = item.options && item.options !== 'Standard'
+                ? `<div style="font-size:11px; color:var(--text-muted); font-weight:400; margin-top:2px;">${escPay(item.options).replace(/ \| /g, ' · ')}</div>` : '';
+            itemsHtml += `<div class="summary-row" style="align-items:flex-start;"><span>${escPay(item.name)} × ${item.quantity}${optsLine}</span><span>${lineTotal} MMK</span></div>`;
         });
         const feesTotal = fees.reduce((a, f) => a + f.amount, 0);
         const grandTotal = itemsTotal + feesTotal;
 
         const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
-        const addressText = deliveryMethod === 'pickup'
-            ? (items[0].restaurantAddress ? `Pick up at ${items[0].restaurantName} — ${items[0].restaurantAddress}` : `Pick up at ${items[0].restaurantName}`)
-            : (activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected');
+        const addressText = activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected';
 
         const deliveryLabel = deliveryMethod === 'pickup' ? 'Self-pick up' : 'Delivery';
         const paymentLabel = (paymentMethods.find(p => p.id === selectedPaymentMethod) || {}).name || selectedPaymentMethod;
@@ -2913,6 +3086,7 @@ async function submitFinalOrder() {
         container.innerHTML = `
             <div class="cart-section-card" style="margin-bottom: 16px;">
                 <div class="cart-section-title" style="margin-bottom: 14px;">${restaurantName}</div>
+                <div class="summary-row"><span>Order ID</span><span>#${pendingOrderRef || '—'}</span></div>
                 <div class="summary-row"><span>Delivery Method</span><span>${deliveryLabel}</span></div>
                 <div class="summary-row"><span>Payment Method</span><span>${paymentLabel}</span></div>
                 <div class="summary-row" style="align-items: flex-start;"><span>Address</span><span style="text-align:right; max-width: 62%;">${addressText}</span></div>
