@@ -631,7 +631,7 @@
 
       <div class="field">
         <label>Sizes</label>
-        <div class="sub-hint" style="margin-bottom:8px;">Adding size options here will apply to all the item in the same categroy. You can still modify specefic item option for custom options</div>
+        <div class="sub-hint" style="margin-bottom:8px;">Adding size options here will apply to all the item in the same categroy. You can still modify specefic item for its own custom options</div>
         <div class="chip-list" id="cat-size-chips"></div>
         <div class="chip-add-row">
           <input type="text" id="cat-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('cat-new-size-input','cat-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
@@ -641,7 +641,7 @@
 
       <div class="field" id="cat-bulk-price-section">
         <label>💰 Price per size</label>
-        <div class="sub-hint" style="margin-bottom:8px;"> Enter the price for each size option. These price will apply to every item under same category.(items with their own custom sizes are skipped).</div>
+        <div class="sub-hint" style="margin-bottom:8px;"> Enter the price for each size option. <B>These price will apply to every item under same category </B> .(items with their own custom sizes are skipped).</div>
         <div id="cat-bulk-price-inputs"></div>
       </div>
 
@@ -1631,7 +1631,7 @@
       resetBtn.style.display = catSizeNames.length ? 'inline-flex' : 'none';
     } else {
       hintEl.textContent = catSizeNames.length
-        ? `Currently using this category's sizes. Add a size below to override it just for this item.`
+        ? `Size options are aleady added by the categroy. You can modify and override it just for this item.`
         : `This category has no sizes — add one below to give just this item its own sizes.`;
       resetBtn.style.display = 'none';
     }
