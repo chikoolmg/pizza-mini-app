@@ -631,7 +631,7 @@
 
       <div class="field">
         <label>Sizes</label>
-        <div class="sub-hint" style="margin-bottom:8px;">Leave empty if every item in this category has one flat price (e.g. Sides, Drinks).</div>
+        <div class="sub-hint" style="margin-bottom:8px;">Adding size options here will apply to all the item in the same categroy. You can still modify specefic item option for custom options</div>
         <div class="chip-list" id="cat-size-chips"></div>
         <div class="chip-add-row">
           <input type="text" id="cat-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('cat-new-size-input','cat-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
@@ -641,20 +641,20 @@
 
       <div class="field" id="cat-bulk-price-section">
         <label>💰 Price per size</label>
-        <div class="sub-hint" style="margin-bottom:8px;">Check a size to set its price. Every new item in this category starts with these — and saving updates them on every existing item too (items with their own custom sizes are skipped).</div>
+        <div class="sub-hint" style="margin-bottom:8px;"> Enter the price for each size option. These price will apply to every item under same category.(items with their own custom sizes are skipped).</div>
         <div id="cat-bulk-price-inputs"></div>
       </div>
 
 <details class="more" id="cat-more-details" ontoggle="if(this.open) this.scrollIntoView({behavior:'smooth', block:'start'})"><summary>More options <span class="chevron">🔻</span></summary>
       <div class="ticket-divider"></div>
 
-      <p class="sub-hint" style="margin:0 0 10px;">Shared single-choice option — e.g. a crust type. Only one can be picked at a time.</p>
+      <p class="sub-hint" style="margin:0 0 10px;"> single-choice option — This option will apply to all the item in the same categrory.</p>
       <div id="cat-single-options"></div>
       <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('single')">➕ Add single option</button>
 
       <div class="ticket-divider"></div>
 
-      <p class="sub-hint" style="margin:0 0 10px;">Shared add-on option — e.g. extra toppings. Any number can be picked.</p>
+      <p class="sub-hint" style="margin:0 0 10px;">multiple add-on option — This option will apply to all the items in the same categroy.</p>
       <div id="cat-multi-options"></div>
       <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('multi')">➕ Add add-on option</button>
 </details>
