@@ -316,6 +316,25 @@
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
   .field .sub-hint { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 4px; line-height: 1.4; }
+  .important-note {
+    font-size: 12.5px; font-weight: 700; color: var(--basil-dark); background: var(--basil-tint);
+    border-radius: 10px; padding: 10px 12px; margin: -4px 0 18px; line-height: 1.4;
+  }
+  .group-add-row { display: flex; gap: 8px; margin-top: 10px; }
+  .group-add-row .btn { flex: 1; justify-content: center; }
+  .group-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; cursor: pointer;
+  }
+  .group-card:active { background: var(--paper); }
+  .group-card.group-card-readonly { cursor: default; background: var(--paper); }
+  .group-card-top { display: flex; align-items: center; gap: 8px; }
+  .group-card-icon { font-size: 15px; flex-shrink: 0; }
+  .group-card-title { font-size: 13.5px; font-weight: 700; color: var(--ink); flex: 1; min-width: 0; }
+  .group-card-badge { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 3px 9px; white-space: nowrap; }
+  .group-card-badge.badge-required { background: var(--brick-tint); color: var(--brick); }
+  .group-card-badge.badge-optional { background: var(--basil-tint); color: var(--basil-dark); }
+  .group-card-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; margin-left: 23px; }
   .field input[type="text"], .field input[type="number"], .field input[type="url"], .field textarea, .field select {
     width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
     font-size: 13.5px; background: #fff;
@@ -399,16 +418,12 @@
   .ctx-menu button:active{background:var(--paper)}
   .ctx-menu button:disabled{opacity:.35}
   .ctx-menu .danger{color:var(--brick)}
-  .more{margin-top:8px}
-  .more>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--basil-dark);padding:12px 14px;background:var(--basil-tint);border-radius:12px;display:flex;align-items:center;justify-content:space-between}
-  .more>summary .chevron{transition:transform .2s;font-size:11px}
-  .more[open]>summary .chevron{transform:rotate(180deg)}
-  .more[open]>summary{margin-bottom:14px}
   .cat-options-hint{font-size:12px;color:var(--muted);margin:2px 2px 12px;min-height:1px}
-  #item-drawer-overlay{align-items:stretch}
-  #item-drawer-overlay .drawer{max-width:none;max-height:none;height:100%;border-radius:0}
-  #item-drawer-overlay .drawer-head,#item-drawer-overlay .drawer-foot{border-radius:0}
-  #item-drawer-overlay .drawer-body{width:100%;max-width:560px;margin:0 auto}
+  #item-drawer-overlay,#group-drawer-overlay{align-items:stretch}
+  #item-drawer-overlay .drawer,#group-drawer-overlay .drawer{max-width:none;max-height:none;height:100%;border-radius:0}
+  #item-drawer-overlay .drawer-head,#item-drawer-overlay .drawer-foot,#group-drawer-overlay .drawer-head,#group-drawer-overlay .drawer-foot{border-radius:0}
+  #item-drawer-overlay .drawer-body,#group-drawer-overlay .drawer-body{width:100%;max-width:560px;margin:0 auto}
+  #group-drawer-overlay{z-index:70}
   .hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding:12px 0 24px}
   .hero-logo{width:150px;height:150px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden}
   .hero-logo img{width:100%;height:100%;object-fit:cover}
@@ -629,35 +644,30 @@
         </div>
       </div>
 
+      <p class="important-note">Adding sizes and options in the category will apply to all items under this category.</p>
+
       <div class="field">
         <label>Sizes</label>
-        <div class="sub-hint" style="margin-bottom:8px;">Adding size options here will apply to all the item in the same categroy. You can still modify specefic item for its own custom options</div>
         <div class="chip-list" id="cat-size-chips"></div>
         <div class="chip-add-row">
           <input type="text" id="cat-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('cat-new-size-input','cat-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSizeChip();}">
-          <button class="btn btn-outline btn-sm" id="cat-add-size-btn" disabled onclick="addSizeChip()">Add</button>
+          <button class="btn btn-outline btn-sm" id="cat-add-size-btn" disabled onclick="addSizeChip()">Add Size</button>
         </div>
       </div>
 
       <div class="field" id="cat-bulk-price-section">
-        <label>💰 Price per size</label>
-        <div class="sub-hint" style="margin-bottom:8px;"> Enter the price for each size option. <B>These price will apply to every item under same category </B> .(items with their own custom sizes are skipped).</div>
+        <label>Price per size</label>
         <div id="cat-bulk-price-inputs"></div>
       </div>
 
-<details class="more" id="cat-more-details" ontoggle="if(this.open) this.scrollIntoView({behavior:'smooth', block:'start'})"><summary>More options <span class="chevron">🔻</span></summary>
-      <div class="ticket-divider"></div>
-
-      <p class="sub-hint" style="margin:0 0 10px;"> single-choice option — This option will apply to all the item in the same categrory.</p>
-      <div id="cat-single-options"></div>
-      <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('single')">➕ Add single option</button>
-
-      <div class="ticket-divider"></div>
-
-      <p class="sub-hint" style="margin:0 0 10px;">multiple add-on option — This option will apply to all the items in the same categroy.</p>
-      <div id="cat-multi-options"></div>
-      <button class="btn btn-outline btn-sm add-option-btn" onclick="addCatOption('multi')">➕ Add add-on option</button>
-</details>
+      <div class="field">
+        <label>Options</label>
+        <div id="cat-option-groups-list"></div>
+        <div class="group-add-row">
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'single')">🔘 Single-choice group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'multi')">☑️ Add-on group</button>
+        </div>
+      </div>
     </div>
     <div class="drawer-foot">
       <button class="btn btn-outline" onclick="closeCategoryDrawer()">Cancel</button>
@@ -708,7 +718,8 @@
         <label>Description</label>
         <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
       </div>
-<details class="more" id="item-more-details" ontoggle="if(this.open) this.scrollIntoView({behavior:'smooth', block:'start'})"><summary>More options — rating, prep time, choices &amp; add-ons <span class="chevron">🔻</span></summary>      <div class="field-row">
+
+      <div class="field-row">
         <div class="field">
           <label>Rating (shown to customers)</label>
           <input type="text" id="item-rating-input" placeholder="4.8">
@@ -719,30 +730,58 @@
         </div>
       </div>
 
-      <div class="subform-block">
-        <button class="btn btn-outline btn-sm add-option-btn" onclick="addItemOption('single')">➕ Add single option</button>
-        <p class="sub-hint" style="margin:6px 0 10px;">On top of any shared options from the category — e.g. this item's own crust choices. Only one can be picked at a time.</p>
-        <div class="field" style="margin-bottom:10px;">
-          <label>Section title (shown to customers)</label>
-          <input type="text" id="item-single-title-input" placeholder="Select Crust Type (Optional)">
-        </div>
-        <div id="item-single-options"></div>
+      <div class="field" id="item-inherited-groups-field" style="display:none;">
+        <label>Options from this category</label>
+        <div id="item-inherited-groups-list"></div>
       </div>
 
-      <div class="subform-block">
-        <button class="btn btn-outline btn-sm add-option-btn" onclick="addItemOption('multi')">➕ Add add-on option</button>
-        <p class="sub-hint" style="margin:6px 0 10px;">e.g. toppings only available on this item. Any number can be picked.</p>
-        <div class="field" style="margin-bottom:10px;">
-          <label>Section title (shown to customers)</label>
-          <input type="text" id="item-multi-title-input" placeholder="Add Toppings">
+      <div class="field">
+        <label>This item's own options</label>
+        <div id="item-option-groups-list"></div>
+        <div class="group-add-row">
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'single')">🔘 Single-choice group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'multi')">☑️ Add-on group</button>
         </div>
-        <div id="item-multi-options"></div>
       </div>
-</details>
     </div>
     <div class="drawer-foot">
       <button class="btn btn-outline" onclick="closeItemDrawer()">Cancel</button>
       <button class="btn btn-primary" onclick="saveItemDrawer()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OPTION GROUP DRAWER ============ -->
+<!-- Opens on top of the Category or Item drawer (whichever is open underneath
+     stays in place) to add or edit one option group — e.g. "Crust Type" or
+     "Extra Toppings" — in its own focused page rather than inline in a long
+     scrolling form. -->
+<div class="drawer-overlay" id="group-drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-head">
+      <h3 id="group-drawer-title">New Option Group</h3>
+      <button class="drawer-close" onclick="closeGroupDrawer()">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="field">
+        <label>Group title (shown to customers)</label>
+        <input type="text" id="group-title-input" placeholder="e.g. Crust Type">
+      </div>
+      <div class="field">
+        <label class="chk-label" style="font-weight:700; font-size:13.5px;">
+          <input type="checkbox" id="group-required-input"> Customer must choose <span id="group-required-hint" class="sub-hint" style="font-weight:400;"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Options</label>
+        <div id="group-options-list"></div>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addGroupOption()">➕ Add option</button>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-danger-ghost" id="group-delete-btn" style="display:none; margin-right:auto;" onclick="deleteGroupFromDrawer()">Delete</button>
+      <button class="btn btn-outline" onclick="closeGroupDrawer()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGroupDrawer()">Save Group</button>
     </div>
   </div>
 </div>
@@ -788,11 +827,46 @@
   let restaurantProfile = { name: '', tagline: '', logoUrl: '', address: '' };
 
   // Working state for the category drawer while it's open.
-  let catDraft = null; // { editIndex, name, icon, sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [] }
+  let catDraft = null; // { editIndex, name, icon, sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null }
   let catDraftSnapshot = null; // JSON string of the form's state right after opening — compared on close to warn about unsaved edits
 
   // Working state for the item drawer while it's open.
-  let itemDraft = null; // { catIndex, editIndex, ...item fields, sizeNames snapshot from category }
+  let itemDraft = null; // { catIndex, editIndex, ...item fields, sizeNames snapshot from category, optionGroups: [] }
+
+  // Working state for the Option Group drawer (nested on top of the category
+  // or item drawer) while it's open.
+  let groupDraft = null;     // { id, kind: 'single'|'multi', title, required, options: [...] }
+  let groupDraftCtx = null;  // { scope: 'category' | 'item' }
+
+  let _groupIdCounter = 0;
+  function newGroupId() { return 'grp-' + Date.now() + '-' + (_groupIdCounter++); }
+
+  // One-time, in-memory upgrade of a category (and its items) saved before
+  // option groups existed: a category only ever had one unnamed shared
+  // single-choice list and one unnamed shared add-on list, and an item only
+  // ever had one titled single-choice list and one titled add-on list. Each
+  // becomes its own (Optional, by default) group here. Leaves everything
+  // else untouched, and does nothing if optionGroups is already present.
+  function migrateCategoryOptionGroups(cat) {
+    if (!cat.optionGroups) {
+      const groups = [];
+      if ((cat.categorySingleOptions || []).length) groups.push({ id: newGroupId(), kind: 'single', title: 'Options', required: false, options: cat.categorySingleOptions });
+      if ((cat.categoryMultiOptions || []).length) groups.push({ id: newGroupId(), kind: 'multi', title: 'Add-ons', required: false, options: cat.categoryMultiOptions });
+      cat.optionGroups = groups;
+      delete cat.categorySingleOptions;
+      delete cat.categoryMultiOptions;
+    }
+    (cat.items || []).forEach(migrateItemOptionGroups);
+  }
+  function migrateItemOptionGroups(item) {
+    if (item.optionGroups) return;
+    const groups = [];
+    if ((item.singleChoices || []).length) groups.push({ id: newGroupId(), kind: 'single', title: item.singleChoiceTitle || 'Select Option', required: false, options: item.singleChoices });
+    if ((item.extras || []).length) groups.push({ id: newGroupId(), kind: 'multi', title: item.extrasTitle || 'Add Extras', required: false, options: item.extras });
+    item.optionGroups = groups;
+    delete item.singleChoiceTitle; delete item.singleChoices;
+    delete item.extrasTitle; delete item.extras;
+  }
 
   /* ================= LOGIN (per-restaurant, via Telegram ID) ================= */
 
@@ -1094,6 +1168,7 @@
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
       menuCategories = Array.isArray(data) ? data : [];
+      menuCategories.forEach(migrateCategoryOptionGroups);
       setSyncStatus('saved', manual ? 'Reloaded' : 'Synced');
       renderAll();
     } catch (err) {
@@ -1161,7 +1236,7 @@
   /* ---- Category drawer ---- */
   function openCategoryDrawer(index = null) {
     if (index === null) {
-      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], categorySingleOptions: [], categoryMultiOptions: [], defaultPrices: [], defaultFlatPrice: null };
+      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null };
       document.getElementById('cat-drawer-title').textContent = 'New Category';
     } else {
       const cat = menuCategories[index];
@@ -1170,8 +1245,7 @@
         editIndex: index,
         name: cat.name, icon: cat.icon || '🍽️',
         sizeNames: [...(cat.sizeNames || [])],
-        categorySingleOptions: JSON.parse(JSON.stringify(cat.categorySingleOptions || [])),
-        categoryMultiOptions: JSON.parse(JSON.stringify(cat.categoryMultiOptions || [])),
+        optionGroups: JSON.parse(JSON.stringify(cat.optionGroups || [])),
         defaultPrices: hasSizes ? (cat.defaultPrices ? [...cat.defaultPrices] : cat.sizeNames.map(() => null)) : [],
         defaultFlatPrice: hasSizes ? null : (cat.defaultFlatPrice != null ? cat.defaultFlatPrice : null)
       };
@@ -1182,12 +1256,9 @@
     document.getElementById('cat-new-size-input').value = '';
     document.getElementById('cat-add-size-btn').disabled = true;
     renderCatSizeChips();
-    renderCatOptionList('single');
-    renderCatOptionList('multi');
+    renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
     renderCatBulkPriceInputs();
-    // A previous category's drawer may have been left scrolled halfway down
-    // with "More options" expanded — reset both so it always opens fresh.
-    document.getElementById('cat-more-details').open = false;
+    // A previous category's drawer may have been left scrolled halfway down — reset so it always opens fresh.
     document.querySelector('#cat-drawer-overlay .drawer-body').scrollTop = 0;
     document.getElementById('cat-drawer-overlay').classList.add('open');
     catDraftSnapshot = JSON.stringify(collectCategoryFormState());
@@ -1208,8 +1279,7 @@
       sizeNames: catDraft.sizeNames,
       defaultPrices: catDraft.defaultPrices,
       defaultFlatPrice: catDraft.defaultFlatPrice,
-      categorySingleOptions: catDraft.categorySingleOptions,
-      categoryMultiOptions: catDraft.categoryMultiOptions
+      optionGroups: catDraft.optionGroups
     };
   }
 
@@ -1243,33 +1313,32 @@
     catDraft.sizeNames.push(name);
     if (!catDraft.defaultPrices) catDraft.defaultPrices = [];
     catDraft.defaultPrices.push(null);
-    syncCatOptionSizes();
+    syncOptionGroupSizes(catDraft.optionGroups, catDraft.sizeNames);
     input.value = '';
     toggleAddBtn('cat-new-size-input', 'cat-add-size-btn');
     renderCatSizeChips();
     renderCatBulkPriceInputs();
-    renderCatOptionList('single');
-    renderCatOptionList('multi');
+    renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
   }
   function removeSizeChip(i) {
     catDraft.sizeNames.splice(i, 1);
     if (catDraft.defaultPrices) catDraft.defaultPrices.splice(i, 1);
-    syncCatOptionSizes();
+    syncOptionGroupSizes(catDraft.optionGroups, catDraft.sizeNames);
     renderCatSizeChips();
     renderCatBulkPriceInputs();
-    renderCatOptionList('single');
-    renderCatOptionList('multi');
+    renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
   }
-  // Keeps each shared option's per-size `prices` array the same length/shape
-  // as catDraft.sizeNames whenever a size is added or removed, preserving
-  // prices for sizes that still exist. Mirrors syncItemSizesArray() below.
-  function syncCatOptionSizes() {
-    const n = catDraft.sizeNames.length;
-    ['categorySingleOptions', 'categoryMultiOptions'].forEach(key => {
-      catDraft[key].forEach(opt => {
+
+  // Keeps every option's per-size `prices` array the same length/shape as
+  // the given sizeNames list whenever a size is added or removed, preserving
+  // prices for sizes that still exist. Shared by category and item drafts.
+  function syncOptionGroupSizes(groups, sizeNames) {
+    const n = sizeNames.length;
+    groups.forEach(g => {
+      g.options.forEach(opt => {
         if (n > 0) {
           const old = opt.prices || [];
-          opt.prices = catDraft.sizeNames.map((_, i) => (old[i] !== undefined ? old[i] : null));
+          opt.prices = sizeNames.map((_, i) => (old[i] !== undefined ? old[i] : null));
           delete opt.price;
         } else {
           const firstSet = (opt.prices || []).find(p => p != null);
@@ -1280,69 +1349,21 @@
     });
   }
 
-  // A blank/unchecked size means this option isn't offered on that size at
-  // all; checking the box and leaving the price at 0 means it's free there.
-  function renderCatOptionList(kind) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    const container = document.getElementById(kind === 'single' ? 'cat-single-options' : 'cat-multi-options');
-    const options = catDraft[listKey];
-    if (options.length === 0) {
-      container.innerHTML = `<p class="sub-hint">None yet.</p>`;
-      return;
-    }
-    const hasSizes = catDraft.sizeNames.length > 0;
-    container.innerHTML = options.map((opt, i) => {
-      const priceInputs = hasSizes
-        ? `<div>` + catDraft.sizeNames.map((n, si) => {
-            const val = opt.prices ? opt.prices[si] : null;
-            const checked = val != null;
-            return `
-              <div class="size-check-row">
-                <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatOptionSizeChk('${kind}',${i},${si},this.checked)">${escapeHtml(n)}</label>
-                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateCatOptionPrice('${kind}',${i},${si},this.value)">
-              </div>`;
-          }).join('') + `</div>`
-        : `<div class="option-price-grid"><div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateCatOption('${kind}',${i},'price',this.value)"></div></div>`;
-      return `
-        <div class="option-row">
-          <div class="option-row-top">
-            <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateCatOption('${kind}',${i},'name',this.value)">
-            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeCatOption('${kind}',${i})">🗑️</button>
-          </div>
-          ${priceInputs}
+  // Compact card list shared by the category drawer and the item drawer —
+  // tapping a card reopens it in the Option Group drawer for editing.
+  function renderOptionGroupsList(containerId, groups, scope) {
+    const box = document.getElementById(containerId);
+    if (!groups.length) { box.innerHTML = `<p class="sub-hint">None yet.</p>`; return; }
+    box.innerHTML = groups.map(g => `
+      <div class="group-card" onclick="openGroupDrawer('${scope}','${g.id}')">
+        <div class="group-card-top">
+          <span class="group-card-icon">${g.kind === 'single' ? '🔘' : '☑️'}</span>
+          <span class="group-card-title">${escapeHtml(g.title || 'Untitled group')}</span>
+          <span class="group-card-badge ${g.required ? 'badge-required' : 'badge-optional'}">${g.required ? 'Required' : 'Optional'}</span>
         </div>
-      `;
-    }).join('');
-  }
-  function addCatOption(kind) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    const hasSizes = catDraft.sizeNames.length > 0;
-    catDraft[listKey].push(hasSizes ? { name: '', prices: catDraft.sizeNames.map(() => null) } : { name: '', price: 0 });
-    renderCatOptionList(kind);
-  }
-  function updateCatOption(kind, i, field, value) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    const opt = catDraft[listKey][i];
-    if (field === 'price') opt.price = parseFloat(value) || 0;
-    else opt[field] = value;
-  }
-  function toggleCatOptionSizeChk(kind, i, si, on) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    const opt = catDraft[listKey][i];
-    if (!opt.prices) opt.prices = catDraft.sizeNames.map(() => null);
-    opt.prices[si] = on ? 0 : null;
-    renderCatOptionList(kind);
-  }
-  function updateCatOptionPrice(kind, i, si, value) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    const opt = catDraft[listKey][i];
-    if (!opt.prices) opt.prices = catDraft.sizeNames.map(() => null);
-    opt.prices[si] = value === '' ? 0 : (parseFloat(value) || 0);
-  }
-  function removeCatOption(kind, i) {
-    const listKey = kind === 'single' ? 'categorySingleOptions' : 'categoryMultiOptions';
-    catDraft[listKey].splice(i, 1);
-    renderCatOptionList(kind);
+        <div class="group-card-sub">${g.options.length} option${g.options.length === 1 ? '' : 's'}</div>
+      </div>
+    `).join('');
   }
 
   // Writes catDraft's fields into menuCategories (creating the category if
@@ -1360,8 +1381,7 @@
         id: 'cat-' + Date.now(),
         name, icon,
         sizeNames: catDraft.sizeNames,
-        categorySingleOptions: catDraft.categorySingleOptions,
-        categoryMultiOptions: catDraft.categoryMultiOptions,
+        optionGroups: catDraft.optionGroups,
         defaultPrices: catDraft.defaultPrices,
         defaultFlatPrice: catDraft.defaultFlatPrice,
         items: []
@@ -1374,8 +1394,7 @@
       cat.name = name;
       cat.icon = icon;
       cat.sizeNames = catDraft.sizeNames;
-      cat.categorySingleOptions = catDraft.categorySingleOptions;
-      cat.categoryMultiOptions = catDraft.categoryMultiOptions;
+      cat.optionGroups = catDraft.optionGroups;
       cat.defaultPrices = catDraft.defaultPrices;
       cat.defaultFlatPrice = catDraft.defaultFlatPrice;
       // Keep every item's own `sizes` array in sync with the category's size
@@ -1411,6 +1430,7 @@
     showToast('Category saved.');
   }
 
+  /* ---- Price per size (this category's default, and every new item's starting price) ---- */
   /* ---- Price per size (this category's default, and every new item's starting price) ---- */
   function renderCatBulkPriceInputs() {
     const box = document.getElementById('cat-bulk-price-inputs');
@@ -1478,8 +1498,8 @@
     const hint = document.getElementById('cat-options-hint');
     const cat = getSelectedCategory();
     if (!cat) { hint.textContent = ''; return; }
-    const n = (cat.categorySingleOptions || []).length + (cat.categoryMultiOptions || []).length;
-    hint.textContent = n > 0 ? `🔘 ${n} shared option${n === 1 ? '' : 's'} apply to every item in "${cat.name}"` : '';
+    const n = (cat.optionGroups || []).length;
+    hint.textContent = n > 0 ? `🔘 ${n} shared option group${n === 1 ? '' : 's'} apply to every item in "${cat.name}"` : '';
   }
   function selectItemCategory(catId) {
     if (longPressed) { longPressed = false; return; }
@@ -1507,13 +1527,13 @@
       } else {
         priceLabel = `${item.price} MMK`;
       }
-      const optCount = (item.singleChoices || []).length + (item.extras || []).length;
+      const optCount = (item.optionGroups || []).length;
       return `
         <div class="item-row ${item.soldOut ? 'sold' : ''}">
           <div class="item-info">
             <img class="item-thumb" src="${escapeHtml(item.image || '')}" onerror="this.style.opacity=0.25;">
             <div>
-              <div class="item-name">${escapeHtml(item.name)}${optCount ? `<span class="item-badge">${optCount} option${optCount===1?'':'s'}</span>` : ''}</div>
+              <div class="item-name">${escapeHtml(item.name)}${optCount ? `<span class="item-badge">${optCount} option group${optCount===1?'':'s'}</span>` : ''}</div>
               <div class="item-price">${priceLabel}</div>
             </div>
           </div>
@@ -1552,8 +1572,7 @@
         name: '', description: '', image: '', rating: '4.8', time: '15-20 Min',
         price: cat.defaultFlatPrice != null ? cat.defaultFlatPrice : 0,
         sizes: catSizeNames.map((n, i) => ({ name: n, price: catDefaults[i] != null ? catDefaults[i] : 0 })),
-        singleChoiceTitle: 'Select Option', singleChoices: [],
-        extrasTitle: 'Add Extras', extras: []
+        optionGroups: []
       };
       document.getElementById('item-drawer-title').textContent = 'New Item';
     } else {
@@ -1569,10 +1588,7 @@
           const existing = (item.sizes || []).find(s => s.name === n);
           return { name: n, price: existing ? existing.price : 0 };
         }),
-        singleChoiceTitle: item.singleChoiceTitle || 'Select Option',
-        singleChoices: JSON.parse(JSON.stringify(item.singleChoices || [])),
-        extrasTitle: item.extrasTitle || 'Add Extras',
-        extras: JSON.parse(JSON.stringify(item.extras || []))
+        optionGroups: JSON.parse(JSON.stringify(item.optionGroups || []))
       };
       document.getElementById('item-drawer-title').textContent = `Edit "${item.name}"`;
     }
@@ -1582,8 +1598,6 @@
     document.getElementById('item-desc-input').value = itemDraft.description;
     document.getElementById('item-rating-input').value = itemDraft.rating;
     document.getElementById('item-time-input').value = itemDraft.time;
-    document.getElementById('item-single-title-input').value = itemDraft.singleChoiceTitle;
-    document.getElementById('item-multi-title-input').value = itemDraft.extrasTitle;
     document.getElementById('item-new-size-input').value = '';
     document.getElementById('item-add-size-btn').disabled = true;
     document.getElementById('upload-status').textContent = '';
@@ -1591,12 +1605,9 @@
     updateItemImagePreview();
     renderItemSizeChips();
     renderItemPriceInputs();
-    renderItemOptionList('single');
-    renderItemOptionList('multi');
-    // A previous item's drawer may have been left scrolled halfway down with
-    // "More options" expanded — reset both so New Item always opens fresh.
-    const itemMoreDetails = document.getElementById('item-more-details');
-    if (itemMoreDetails) itemMoreDetails.open = false;
+    renderInheritedGroups();
+    renderOptionGroupsList('item-option-groups-list', itemDraft.optionGroups, 'item');
+    // A previous item's drawer may have been left scrolled halfway down — reset so New Item always opens fresh.
     const itemDrawerBody = document.querySelector('#item-drawer-overlay .drawer-body');
     if (itemDrawerBody) itemDrawerBody.scrollTop = 0;
     document.getElementById('item-drawer-overlay').classList.add('open');
@@ -1610,6 +1621,30 @@
     const img = document.getElementById('item-image-preview');
     img.style.opacity = 1;
     img.src = url;
+  }
+
+  // Read-only preview of the category's own option groups, shown in the item
+  // drawer so a restaurant can see what's already offered on every item in
+  // this category without having to leave and check the Category drawer.
+  // Editing them happens only in the Category drawer — one source of truth
+  // for anything shared across every item.
+  function renderInheritedGroups() {
+    const cat = menuCategories.find(c => c.id === itemDraft.catId);
+    const groups = (cat && cat.optionGroups) || [];
+    const field = document.getElementById('item-inherited-groups-field');
+    const box = document.getElementById('item-inherited-groups-list');
+    if (!groups.length) { field.style.display = 'none'; return; }
+    field.style.display = '';
+    box.innerHTML = groups.map(g => `
+      <div class="group-card group-card-readonly">
+        <div class="group-card-top">
+          <span class="group-card-icon">${g.kind === 'single' ? '🔘' : '☑️'}</span>
+          <span class="group-card-title">${escapeHtml(g.title || 'Untitled group')}</span>
+          <span class="group-card-badge ${g.required ? 'badge-required' : 'badge-optional'}">${g.required ? 'Required' : 'Optional'}</span>
+        </div>
+        <div class="group-card-sub">${g.options.length} option${g.options.length === 1 ? '' : 's'} · edit in this category's settings</div>
+      </div>
+    `).join('');
   }
 
   /* ---- Item-level size override (overwrites the category's sizes for just this item) ---- */
@@ -1631,7 +1666,7 @@
       resetBtn.style.display = catSizeNames.length ? 'inline-flex' : 'none';
     } else {
       hintEl.textContent = catSizeNames.length
-        ? `Size options are aleady added by the categroy. You can modify and override it just for this item.`
+        ? `Currently using this category's sizes. Add a size below to override it just for this item.`
         : `This category has no sizes — add one below to give just this item its own sizes.`;
       resetBtn.style.display = 'none';
     }
@@ -1657,31 +1692,13 @@
       const existing = itemDraft.sizes.find(s => s.name === n);
       return { name: n, price: existing ? existing.price : 0 };
     });
-    // Item-level option prices are stored positionally (one price per size,
-    // by index) — if the size list itself changed shape, reset those arrays
-    // to the new length rather than risk a price silently applying to the
-    // wrong size. Index 0 carries over as a reasonable starting point.
-    const n = itemDraft.sizeNames.length;
-    ['singleChoices', 'extras'].forEach(key => {
-      itemDraft[key].forEach(opt => {
-        if (n > 0) {
-          const old = opt.prices || [];
-          opt.prices = itemDraft.sizeNames.map((_, i) => (old[i] !== undefined ? old[i] : null));
-          delete opt.price;
-        } else {
-          const firstSet = (opt.prices || []).find(p => p != null);
-          opt.price = firstSet != null ? firstSet : (opt.price || 0);
-          delete opt.prices;
-        }
-      });
-    });
+    syncOptionGroupSizes(itemDraft.optionGroups, itemDraft.sizeNames);
   }
 
   function refreshItemSizeDependentUI() {
     renderItemSizeChips();
     renderItemPriceInputs();
-    renderItemOptionList('single');
-    renderItemOptionList('multi');
+    renderOptionGroupsList('item-option-groups-list', itemDraft.optionGroups, 'item');
   }
 
   function addItemSizeChip() {
@@ -1807,71 +1824,6 @@
     }
   }
 
-  // A blank/unchecked size means this option isn't offered on that size at
-  // all; checking the box and leaving the price at 0 means it's free there.
-  function renderItemOptionList(kind) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    const container = document.getElementById(kind === 'single' ? 'item-single-options' : 'item-multi-options');
-    const options = itemDraft[listKey];
-    if (options.length === 0) {
-      container.innerHTML = `<p class="sub-hint">None yet.</p>`;
-      return;
-    }
-    const hasSizes = itemDraft.sizeNames.length > 0;
-    container.innerHTML = options.map((opt, i) => {
-      const priceInputs = hasSizes
-        ? `<div>` + itemDraft.sizeNames.map((n, si) => {
-            const val = opt.prices ? opt.prices[si] : null;
-            const checked = val != null;
-            return `
-              <div class="size-check-row">
-                <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleItemOptionSizeChk('${kind}',${i},${si},this.checked)">${escapeHtml(n)}</label>
-                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateItemOptionPrice('${kind}',${i},${si},this.value)">
-              </div>`;
-          }).join('') + `</div>`
-        : `<div class="option-price-grid"><div><label>Price</label><input type="number" value="${opt.price || 0}" oninput="updateItemOption('${kind}',${i},'price',this.value)"></div></div>`;
-      return `
-        <div class="option-row">
-          <div class="option-row-top">
-            <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateItemOption('${kind}',${i},'name',this.value)">
-            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeItemOption('${kind}',${i})">🗑️</button>
-          </div>
-          ${priceInputs}
-        </div>
-      `;
-    }).join('');
-  }
-  function addItemOption(kind) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    const hasSizes = itemDraft.sizeNames.length > 0;
-    itemDraft[listKey].push(hasSizes ? { name: '', prices: itemDraft.sizeNames.map(() => null) } : { name: '', price: 0 });
-    renderItemOptionList(kind);
-  }
-  function updateItemOption(kind, i, field, value) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    const opt = itemDraft[listKey][i];
-    if (field === 'price') opt.price = parseFloat(value) || 0;
-    else opt[field] = value;
-  }
-  function toggleItemOptionSizeChk(kind, i, si, on) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    const opt = itemDraft[listKey][i];
-    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => null);
-    opt.prices[si] = on ? 0 : null;
-    renderItemOptionList(kind);
-  }
-  function updateItemOptionPrice(kind, i, sizeIndex, value) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    const opt = itemDraft[listKey][i];
-    if (!opt.prices) opt.prices = itemDraft.sizeNames.map(() => null);
-    opt.prices[sizeIndex] = value === '' ? 0 : (parseFloat(value) || 0);
-  }
-  function removeItemOption(kind, i) {
-    const listKey = kind === 'single' ? 'singleChoices' : 'extras';
-    itemDraft[listKey].splice(i, 1);
-    renderItemOptionList(kind);
-  }
-
   function saveItemDrawer() {
     const name = document.getElementById('item-name-input').value.trim();
     if (!name) { showToast('Item name is required.'); return; }
@@ -1886,10 +1838,7 @@
       image: document.getElementById('item-image-input').value.trim(),
       rating: document.getElementById('item-rating-input').value.trim() || '4.8',
       time: document.getElementById('item-time-input').value.trim() || '15-20 Min',
-      singleChoiceTitle: document.getElementById('item-single-title-input').value.trim() || 'Select Option',
-      singleChoices: itemDraft.singleChoices,
-      extrasTitle: document.getElementById('item-multi-title-input').value.trim() || 'Add Extras',
-      extras: itemDraft.extras
+      optionGroups: itemDraft.optionGroups
     };
 
     // Only stamp customSizeNames when this item actually overrides the
@@ -1916,6 +1865,118 @@
     closeItemDrawer();
     renderItemGrid();
     showToast('Item saved.');
+  }
+
+  /* ================= OPTION GROUP DRAWER ================= */
+  // Opened from either the Category drawer or the Item drawer (see
+  // groupDraftCtx.scope) to add or edit one option group in its own page,
+  // on top of whichever drawer is open underneath. Saving here only writes
+  // into that parent drawer's in-memory draft — nothing reaches the server
+  // until the parent's own Save button is pressed.
+  function groupDraftSizeNames() {
+    return groupDraftCtx.scope === 'category' ? catDraft.sizeNames : itemDraft.sizeNames;
+  }
+  function openGroupDrawer(scope, groupId, kindIfNew) {
+    const parentDraft = scope === 'category' ? catDraft : itemDraft;
+    groupDraftCtx = { scope };
+    if (groupId === null) {
+      groupDraft = { id: newGroupId(), kind: kindIfNew, title: '', required: false, options: [] };
+      document.getElementById('group-drawer-title').textContent = kindIfNew === 'single' ? 'New Single-choice Group' : 'New Add-on Group';
+      document.getElementById('group-delete-btn').style.display = 'none';
+    } else {
+      const existing = parentDraft.optionGroups.find(g => g.id === groupId);
+      if (!existing) return;
+      groupDraft = JSON.parse(JSON.stringify(existing));
+      document.getElementById('group-drawer-title').textContent = `Edit "${existing.title || 'Option Group'}"`;
+      document.getElementById('group-delete-btn').style.display = '';
+    }
+    document.getElementById('group-title-input').value = groupDraft.title;
+    document.getElementById('group-required-input').checked = !!groupDraft.required;
+    document.getElementById('group-required-hint').textContent =
+      groupDraft.kind === 'single' ? '(customer must pick exactly one)' : '(customer must pick at least one)';
+    renderGroupOptionsList();
+    document.querySelector('#group-drawer-overlay .drawer-body').scrollTop = 0;
+    document.getElementById('group-drawer-overlay').classList.add('open');
+  }
+  function closeGroupDrawer() {
+    document.getElementById('group-drawer-overlay').classList.remove('open');
+    groupDraft = null;
+    groupDraftCtx = null;
+  }
+  function renderGroupOptionsList() {
+    const box = document.getElementById('group-options-list');
+    const sizeNames = groupDraftSizeNames();
+    if (!groupDraft.options.length) { box.innerHTML = `<p class="sub-hint">None yet.</p>`; return; }
+    const hasSizes = sizeNames.length > 0;
+    box.innerHTML = groupDraft.options.map((opt, i) => {
+      const priceInputs = hasSizes
+        ? `<div>` + sizeNames.map((n, si) => {
+            const val = opt.prices ? opt.prices[si] : null;
+            const checked = val != null;
+            return `
+              <div class="size-check-row">
+                <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleGroupOptionSizeChk(${i},${si},this.checked)">${escapeHtml(n)}</label>
+                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateGroupOptionPrice(${i},${si},this.value)">
+              </div>`;
+          }).join('') + `</div>`
+        : `<div class="option-price-grid"><div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateGroupOptionFlatPrice(${i},this.value)"></div></div>`;
+      return `
+        <div class="option-row">
+          <div class="option-row-top">
+            <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateGroupOptionName(${i},this.value)">
+            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeGroupOption(${i})">🗑️</button>
+          </div>
+          ${priceInputs}
+        </div>
+      `;
+    }).join('');
+  }
+  function addGroupOption() {
+    const sizeNames = groupDraftSizeNames();
+    groupDraft.options.push(sizeNames.length ? { name: '', prices: sizeNames.map(() => null) } : { name: '', price: 0 });
+    renderGroupOptionsList();
+  }
+  function updateGroupOptionName(i, value) { groupDraft.options[i].name = value; }
+  function updateGroupOptionFlatPrice(i, value) { groupDraft.options[i].price = parseFloat(value) || 0; }
+  function toggleGroupOptionSizeChk(i, si, on) {
+    const opt = groupDraft.options[i];
+    if (!opt.prices) opt.prices = groupDraftSizeNames().map(() => null);
+    opt.prices[si] = on ? 0 : null;
+    renderGroupOptionsList();
+  }
+  function updateGroupOptionPrice(i, si, value) {
+    const opt = groupDraft.options[i];
+    if (!opt.prices) opt.prices = groupDraftSizeNames().map(() => null);
+    opt.prices[si] = value === '' ? 0 : (parseFloat(value) || 0);
+  }
+  function removeGroupOption(i) {
+    groupDraft.options.splice(i, 1);
+    renderGroupOptionsList();
+  }
+  function saveGroupDrawer() {
+    const title = document.getElementById('group-title-input').value.trim();
+    if (!title) { showToast('Group title is required.'); return; }
+    groupDraft.title = title;
+    groupDraft.required = document.getElementById('group-required-input').checked;
+
+    const parentDraft = groupDraftCtx.scope === 'category' ? catDraft : itemDraft;
+    const idx = parentDraft.optionGroups.findIndex(g => g.id === groupDraft.id);
+    if (idx >= 0) parentDraft.optionGroups[idx] = groupDraft;
+    else parentDraft.optionGroups.push(groupDraft);
+
+    const scope = groupDraftCtx.scope;
+    closeGroupDrawer();
+    if (scope === 'category') renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
+    else renderOptionGroupsList('item-option-groups-list', itemDraft.optionGroups, 'item');
+  }
+  function deleteGroupFromDrawer() {
+    if (!confirm('Delete this option group?')) return;
+    const parentDraft = groupDraftCtx.scope === 'category' ? catDraft : itemDraft;
+    parentDraft.optionGroups = parentDraft.optionGroups.filter(g => g.id !== groupDraft.id);
+    const scope = groupDraftCtx.scope;
+    closeGroupDrawer();
+    if (scope === 'category') renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
+    else renderOptionGroupsList('item-option-groups-list', itemDraft.optionGroups, 'item');
   }
 
   /* ================= SETTINGS ================= */
