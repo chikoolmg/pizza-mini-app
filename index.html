@@ -832,6 +832,7 @@
         .modal-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
 
         .options-group { margin-bottom: 22px; }
+        .options-group-missing { outline: 2px solid #E5484D; outline-offset: 6px; border-radius: 10px; }
         .options-header-line {
             display: flex;
             justify-content: space-between;
@@ -1744,8 +1745,7 @@ async function submitFinalOrder() {
     let currentModalDish = null;
     let modalQuantityValue = 1;
     let selectedSizeIndex = -1; 
-    let selectedSingleChoiceIndex = -1; 
-    let selectedExtras = []; 
+    let selectedGroupChoices = {}; // { [groupId]: number (single-choice index, or absent) | number[] (multi-choice indices) }
 
     let cartItems = [];
     try {
@@ -2271,24 +2271,23 @@ async function submitFinalOrder() {
     function openModal(dish) {
         if (dish.soldOut) { showToast('Sorry, this item is sold out.'); return; }
         currentModalDish = dish;
-        // Combine this item's own options with its category's Option Manager defaults —
-        // computed once per modal-open so every selection/price function below reads a
-        // stable, consistent list (dish._effSingleChoices / dish._effExtras).
-        currentModalDish._effSingleChoices = getEffectiveSingleChoices(dish);
-        currentModalDish._effExtras = getEffectiveExtras(dish);
+        // Combines this item's own option groups with its category's shared
+        // groups — computed once per modal-open so every selection/price
+        // function below reads a stable, consistent list (dish._effGroups).
+        // Tolerant of both the current optionGroups shape and older saved
+        // menus that still use the flat singleChoices/extras shape.
+        currentModalDish._effGroups = getEffectiveGroups(dish);
         modalQuantityValue = 1;
-        selectedExtras = [];
-        
+        selectedGroupChoices = {};
+
         document.getElementById('m-img').src = dish.image;
         document.getElementById('m-title').innerText = dish.name;
         document.getElementById('m-desc').innerText = dish.description;
         refreshModalInCartIndicator(dish.id);
         refreshModalFavoriteHeart(dish.id);
-        
+
         const sizeContainer = document.getElementById('dynamic-sizes-container');
-        const scContainer = document.getElementById('dynamic-single-choice-container');
-        const extrasContainer = document.getElementById('dynamic-extras-container');
-        
+
         if (dish.sizes && dish.sizes.length > 0) {
             selectedSizeIndex = 0;
             sizeContainer.innerHTML = `
@@ -2306,14 +2305,10 @@ async function submitFinalOrder() {
             sizeContainer.innerHTML = '';
         }
 
-        selectedSingleChoiceIndex = -1;
-        selectedExtras = [];
-        renderCrustOptions();
-        renderExtraOptions();
-        
+        renderOptionGroups();
         updateModalPrice();
         document.getElementById('item-modal').classList.add('open');
-        
+
         if (!history.state || history.state.type !== 'modal') {
             history.pushState({ ...history.state, type: 'modal' }, '');
         }
@@ -2329,39 +2324,37 @@ async function submitFinalOrder() {
         updateTelegramBackButton();
     }
 
-    // Renders the crust (single-choice/radio) options for the currently open dish,
-    // hiding any choice whose minSizeIndex is above the selected size (e.g. hidden on Small).
-    // Radios here are optional and can be unchecked by clicking the selected one again.
-    function renderCrustOptions() {
-        const scContainer = document.getElementById('dynamic-single-choice-container');
+    // Renders every option group for the currently open dish — any number of
+    // single-choice (radio) groups and any number of add-on (checkbox)
+    // groups, each with its own title and Required/Optional state. Options
+    // scoped to a size that isn't selected are fully hidden, same as before.
+    function renderOptionGroups() {
         const dish = currentModalDish;
-        const allChoices = dish._effSingleChoices || dish.singleChoices || [];
-        // Options scoped to a specific size are fully hidden (not just greyed out) when
-        // that size isn't selected — index kept from the full list so click handlers
-        // still target the right entry in dish._effSingleChoices.
-        const visible = allChoices
-            .map((sc, i) => ({ sc, i }))
-            .filter(({ sc }) => isOptionAvailableForSize(sc, dish));
-
-        if (visible.length === 0) {
-            scContainer.innerHTML = '';
-            return;
-        }
-        const title = dish.singleChoiceTitle || 'Select Option';
-        scContainer.innerHTML = `
-            <div class="options-group">
+        const groups = dish._effGroups || [];
+        document.getElementById('dynamic-single-choice-container').innerHTML =
+            groups.filter(g => g.kind === 'single').map(g => renderSingleGroup(g, dish)).join('');
+        document.getElementById('dynamic-extras-container').innerHTML =
+            groups.filter(g => g.kind === 'multi').map(g => renderMultiGroup(g, dish)).join('');
+    }
+    function renderSingleGroup(g, dish) {
+        const visible = g.options.map((opt, i) => ({ opt, i })).filter(({ opt }) => isOptionAvailableForSize(opt, dish));
+        if (visible.length === 0) return '';
+        const sel = selectedGroupChoices[g.id];
+        return `
+            <div class="options-group" id="group-${g.id}">
                 <div class="options-header-line">
-                    <h4>${title}</h4><span style="font-size: 11px; color: var(--primary); font-weight: 600;">(Optional)</span>
+                    <h4>${g.title || 'Select Option'}</h4>
+                    <span style="font-size: 11px; font-weight: 600; color: ${g.required ? '#E5484D' : 'var(--primary)'};">${g.required ? 'Required' : 'Optional'}</span>
                 </div>
                 <div>
-                    ${visible.map(({ sc, i }) => {
-                        const price = getChoicePrice(sc);
-                        const checked = selectedSingleChoiceIndex === i;
+                    ${visible.map(({ opt, i }) => {
+                        const price = getChoicePrice(opt);
+                        const checked = sel === i;
                         return `
                             <label class="option-item-row">
                                 <div class="option-item-label">
-                                    <input type="radio" name="modal-single-choice" ${checked ? 'checked' : ''} onclick="handleCrustClick(this, ${i})">
-                                    <span>${sc.name}</span>
+                                    <input type="radio" name="modal-group-${g.id}" ${checked ? 'checked' : ''} onclick="handleGroupSingleClick('${g.id}', ${i}, ${!!g.required})">
+                                    <span>${opt.name}</span>
                                 </div>
                                 <span class="option-item-price">${price > 0 ? '+' + Math.round(price) + ' MMK' : 'Free'}</span>
                             </label>`;
@@ -2369,33 +2362,25 @@ async function submitFinalOrder() {
                 </div>
             </div>`;
     }
-
-    // Renders the multiple-choice (checkbox) add-ons, showing the price for the currently selected size.
-    function renderExtraOptions() {
-        const extrasContainer = document.getElementById('dynamic-extras-container');
-        const dish = currentModalDish;
-        const allExtras = dish._effExtras || dish.extras || [];
-        const visible = allExtras
-            .map((ex, i) => ({ ex, i }))
-            .filter(({ ex }) => isOptionAvailableForSize(ex, dish));
-
-        if (visible.length === 0) {
-            extrasContainer.innerHTML = '';
-            return;
-        }
-        const title = dish.extrasTitle || 'Add Extras';
-        extrasContainer.innerHTML = `
-            <div class="options-group">
-                <div class="options-header-line"><h4>${title}</h4></div>
+    function renderMultiGroup(g, dish) {
+        const visible = g.options.map((opt, i) => ({ opt, i })).filter(({ opt }) => isOptionAvailableForSize(opt, dish));
+        if (visible.length === 0) return '';
+        const sel = selectedGroupChoices[g.id] || [];
+        return `
+            <div class="options-group" id="group-${g.id}">
+                <div class="options-header-line">
+                    <h4>${g.title || 'Add Extras'}</h4>
+                    ${g.required ? `<span style="font-size: 11px; font-weight: 600; color: #E5484D;">Pick at least one</span>` : ''}
+                </div>
                 <div>
-                    ${visible.map(({ ex, i }) => {
-                        const price = getChoicePrice(ex);
-                        const checked = selectedExtras.includes(i);
+                    ${visible.map(({ opt, i }) => {
+                        const price = getChoicePrice(opt);
+                        const checked = sel.includes(i);
                         return `
                             <label class="option-item-row">
                                 <div class="option-item-label">
-                                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExtra(${i}, this.checked)">
-                                    <span>${ex.name}</span>
+                                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleGroupMulti('${g.id}', ${i}, this.checked)">
+                                    <span>${opt.name}</span>
                                 </div>
                                 <span class="option-item-price">+${Math.round(price)} MMK</span>
                             </label>`;
@@ -2404,7 +2389,7 @@ async function submitFinalOrder() {
             </div>`;
     }
 
-    // Returns the price of a crust/extra option for the currently selected size.
+    // Returns the price of an option for the currently selected size.
     // Supports the new per-size `prices` array, with a fallback to a flat `price` for older data.
     function getChoicePrice(choice) {
         if (Array.isArray(choice.prices)) {
@@ -2419,31 +2404,36 @@ async function submitFinalOrder() {
         document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`modal-size-btn-${idx}`).classList.add('active');
 
-        // A crust choice may no longer be available on the newly selected size — clear it if so.
-        if (selectedSingleChoiceIndex >= 0) {
-            const sc = (currentModalDish._effSingleChoices || currentModalDish.singleChoices)[selectedSingleChoiceIndex];
-            if (sc && !isOptionAvailableForSize(sc, currentModalDish)) selectedSingleChoiceIndex = -1;
-        }
-        // Same for any checked extras that are scoped to a size no longer selected.
-        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
-        selectedExtras = selectedExtras.filter(idx => isOptionAvailableForSize(effExtras[idx], currentModalDish));
-        renderCrustOptions();
-        renderExtraOptions();
+        // A choice may no longer be available on the newly selected size — clear it if so.
+        const groups = currentModalDish._effGroups || [];
+        groups.forEach(g => {
+            if (g.kind === 'single') {
+                const sel = selectedGroupChoices[g.id];
+                if (sel !== undefined && sel >= 0 && !isOptionAvailableForSize(g.options[sel], currentModalDish)) delete selectedGroupChoices[g.id];
+            } else {
+                const sel = selectedGroupChoices[g.id];
+                if (sel) selectedGroupChoices[g.id] = sel.filter(i => isOptionAvailableForSize(g.options[i], currentModalDish));
+            }
+        });
+        renderOptionGroups();
         updateModalPrice();
     }
-    // Radios are optional here: clicking an already-selected crust option unchecks it.
-    function handleCrustClick(el, idx) {
-        if (selectedSingleChoiceIndex === idx) {
-            selectedSingleChoiceIndex = -1;
-            el.checked = false;
-        } else {
-            selectedSingleChoiceIndex = idx;
-        }
+    // Radios are optional unless the group is Required: clicking an
+    // already-selected optional choice unchecks it; a Required group always
+    // keeps exactly one choice selected.
+    function handleGroupSingleClick(groupId, idx, required) {
+        const cur = selectedGroupChoices[groupId];
+        if (!required && cur === idx) delete selectedGroupChoices[groupId];
+        else selectedGroupChoices[groupId] = idx;
+        document.getElementById('group-' + groupId)?.classList.remove('options-group-missing');
         updateModalPrice();
     }
-    function toggleExtra(idx, isChecked) {
-        if(isChecked) selectedExtras.push(idx);
-        else selectedExtras = selectedExtras.filter(id => id !== idx);
+    function toggleGroupMulti(groupId, idx, isChecked) {
+        const arr = selectedGroupChoices[groupId] ? [...selectedGroupChoices[groupId]] : [];
+        if (isChecked) { if (!arr.includes(idx)) arr.push(idx); }
+        else { const i = arr.indexOf(idx); if (i >= 0) arr.splice(i, 1); }
+        selectedGroupChoices[groupId] = arr;
+        if (arr.length) document.getElementById('group-' + groupId)?.classList.remove('options-group-missing');
         updateModalPrice();
     }
     function updateQty(delta) {
@@ -2455,34 +2445,59 @@ async function submitFinalOrder() {
 
     function updateModalPrice() {
         document.getElementById('m-qty').innerText = modalQuantityValue;
-        const effSingleChoices = currentModalDish._effSingleChoices || currentModalDish.singleChoices || [];
-        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
+        const groups = currentModalDish._effGroups || [];
         let base = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
-        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(effSingleChoices[selectedSingleChoiceIndex]) : 0;
-        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(effExtras[idx]), 0);
-        const finalTotal = ((base + scPrice + extrasTotal) * modalQuantityValue);
+        let optTotal = 0;
+        groups.forEach(g => {
+            const sel = selectedGroupChoices[g.id];
+            if (g.kind === 'single') {
+                if (sel !== undefined && sel >= 0 && g.options[sel]) optTotal += getChoicePrice(g.options[sel]);
+            } else if (sel) {
+                sel.forEach(i => { if (g.options[i]) optTotal += getChoicePrice(g.options[i]); });
+            }
+        });
+        const finalTotal = (base + optTotal) * modalQuantityValue;
         document.getElementById('m-total-price').innerText = finalTotal + ' MMK';
     }
 
     function addToCartAction() {
-        // Crust (single-choice) selection is optional — no validation blocks adding to cart.
-        const effSingleChoices = currentModalDish._effSingleChoices || currentModalDish.singleChoices || [];
-        const effExtras = currentModalDish._effExtras || currentModalDish.extras || [];
-        let singleUnitPrice = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
-        let scPrice = (selectedSingleChoiceIndex >= 0) ? getChoicePrice(effSingleChoices[selectedSingleChoiceIndex]) : 0;
-        let extrasTotal = selectedExtras.reduce((sum, idx) => sum + getChoicePrice(effExtras[idx]), 0);
-        
+        const groups = currentModalDish._effGroups || [];
+
+        // Block adding to cart if any Required group has no selection yet —
+        // highlight it and scroll it into view rather than silently ignoring it.
+        for (const g of groups) {
+            const sel = selectedGroupChoices[g.id];
+            const missing = g.kind === 'single' ? (sel === undefined || sel < 0) : !(sel && sel.length);
+            if (g.required && missing) {
+                const el = document.getElementById('group-' + g.id);
+                if (el) { el.classList.add('options-group-missing'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                showToast(`Please choose ${g.title || 'an option'}.`);
+                return;
+            }
+        }
+
+        let unitPrice = (selectedSizeIndex >= 0) ? Math.round(currentModalDish.sizes[selectedSizeIndex].price) : Math.round(currentModalDish.price);
         let optionsDetails = [];
         if (selectedSizeIndex >= 0) optionsDetails.push(currentModalDish.sizes[selectedSizeIndex].name);
-        if (selectedSingleChoiceIndex >= 0) optionsDetails.push(effSingleChoices[selectedSingleChoiceIndex].name);
-        if (selectedExtras.length > 0) optionsDetails.push("Extras: " + selectedExtras.map(idx => effExtras[idx].name).join(', '));
+        groups.forEach(g => {
+            const sel = selectedGroupChoices[g.id];
+            if (g.kind === 'single') {
+                if (sel !== undefined && sel >= 0 && g.options[sel]) {
+                    unitPrice += getChoicePrice(g.options[sel]);
+                    optionsDetails.push(g.options[sel].name);
+                }
+            } else if (sel && sel.length) {
+                unitPrice += sel.reduce((sum, i) => sum + (g.options[i] ? getChoicePrice(g.options[i]) : 0), 0);
+                optionsDetails.push(`${g.title || 'Extras'}: ` + sel.map(i => g.options[i].name).join(', '));
+            }
+        });
 
         cartItems.push({
             id: Date.now(),
             dishId: currentModalDish.id,
             name: currentModalDish.name,
             image: currentModalDish.image,
-            unitPrice: singleUnitPrice + scPrice + extrasTotal,
+            unitPrice,
             quantity: modalQuantityValue,
             options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard',
             restaurantId: currentRestaurantId,
@@ -2677,17 +2692,28 @@ async function submitFinalOrder() {
         return menuCategories.find(c => c.items.some(i => i.id === dish.id)) || null;
     }
 
-    // Combines an item's own options with its category's Option Manager defaults.
-    // Category-wide options are prepended so they render first, followed by the item's own.
-    function getEffectiveSingleChoices(dish) {
+    // Combines an item's own option groups with its category's shared groups —
+    // category groups first, then the item's own, matching admin.html's order.
+    // Tolerant of both the current `optionGroups` shape and the older flat
+    // singleChoices/extras shape, for menus saved before this existed.
+    function getEffectiveGroups(dish) {
         const cat = getCategoryForDish(dish);
-        const catOpts = (cat && cat.categorySingleOptions) || [];
-        return [...catOpts, ...(dish.singleChoices || [])];
+        const catGroups = (cat && cat.optionGroups) || legacyGroupsFromCategory(cat);
+        const itemGroups = dish.optionGroups || legacyGroupsFromItem(dish);
+        return [...catGroups, ...itemGroups];
     }
-    function getEffectiveExtras(dish) {
-        const cat = getCategoryForDish(dish);
-        const catOpts = (cat && cat.categoryMultiOptions) || [];
-        return [...catOpts, ...(dish.extras || [])];
+    function legacyGroupsFromCategory(cat) {
+        if (!cat) return [];
+        const groups = [];
+        if ((cat.categorySingleOptions || []).length) groups.push({ id: '_legacy_cat_single', kind: 'single', title: 'Options', required: false, options: cat.categorySingleOptions });
+        if ((cat.categoryMultiOptions || []).length) groups.push({ id: '_legacy_cat_multi', kind: 'multi', title: 'Add-ons', required: false, options: cat.categoryMultiOptions });
+        return groups;
+    }
+    function legacyGroupsFromItem(dish) {
+        const groups = [];
+        if ((dish.singleChoices || []).length) groups.push({ id: '_legacy_item_single', kind: 'single', title: dish.singleChoiceTitle || 'Select Option', required: false, options: dish.singleChoices });
+        if ((dish.extras || []).length) groups.push({ id: '_legacy_item_multi', kind: 'multi', title: dish.extrasTitle || 'Add Extras', required: false, options: dish.extras });
+        return groups;
     }
 
     // Whether an option (single or multiple) should be shown for the currently selected size.
