@@ -120,6 +120,23 @@
   .setup-card p.intro { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; text-align: center; }
   #setup-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
 
+  .setup-steps { text-align: center; font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 14px; letter-spacing: .02em; }
+  .setup-logo-block { text-align: center; margin-bottom: 16px; }
+  .setup-logo-block .thumb-preview { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 10px; display: block; }
+  .setup-logo-block .upload-row { justify-content: center; margin-bottom: 0; }
+  .setup-actions { display: flex; gap: 10px; align-items: center; }
+  .setup-actions .btn-primary { flex: 1; justify-content: center; }
+  .pin-hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+  .launch-card { border: 1px solid var(--line); border-left: 4px solid var(--mustard); }
+  .launch-card.live { border-left-color: var(--basil); background: var(--basil-tint); }
+  .launch-progress { font-size: 12px; font-weight: 600; color: var(--ink); margin: 0 0 12px; }
+  #launch-success { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+  #launch-success.open { display: flex; }
+  #launch-success .box { background: var(--card); border-radius: 20px; padding: 30px 26px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); }
+  #launch-success .big { font-size: 46px; margin-bottom: 8px; }
+  #launch-success h2 { margin: 0 0 8px; font-size: 19px; }
+  #launch-success p { margin: 0 0 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+
   /* ============ APP SHELL ============ */
   #app { display: none; min-height: 100vh; flex-direction: column; }
   header.top-bar {
@@ -499,35 +516,61 @@
 <!-- ============ RESTAURANT SETUP (shown once, for a brand-new restaurant) ============ -->
 <div id="setup-gate" style="display:none;">
   <div class="setup-card">
-    <div class="ticket-icon">🏬</div>
-    <h1>Welcome! Let's set up your restaurant</h1>
-    <p class="intro">Just a few details before you start building your menu. You can change any of this later from Settings.</p>
+    <!-- ---- Step 1: profile ---- -->
+    <div id="setup-step-1">
+      <div class="setup-steps">STEP 1 OF 2</div>
+      <h1>Welcome! Let's set up your restaurant</h1>
+      <p class="intro">Fill in every field to continue. You can change any of this later from Settings.</p>
 
-    <div class="field">
-      <label>Restaurant name</label>
-      <input type="text" id="setup-name-input" placeholder="e.g. Bite & Slice Pizzeria">
-    </div>
-    <div class="field">
-      <label>Tagline / title <span style="font-weight:400;">(shown under your name to customers)</span></label>
-      <input type="text" id="setup-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
-    </div>
-    <div class="field">
-      <label>Logo</label>
-      <img class="thumb-preview" id="setup-logo-preview" src="" alt="" style="opacity:0.3;" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
-      <div class="upload-row">
-        <button type="button" class="btn-upload" id="setup-logo-upload-btn" onclick="document.getElementById('setup-logo-file-input').click()">📷 Upload Logo</button>
-        <span class="upload-status" id="setup-logo-upload-status"></span>
+      <div class="setup-logo-block">
+        <img class="thumb-preview" id="setup-logo-preview" src="" alt="" style="opacity:0.3;" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
+        <div class="upload-row">
+          <button type="button" class="btn-upload" id="setup-logo-upload-btn" onclick="document.getElementById('setup-logo-file-input').click()">📷 Upload Logo</button>
+          <span class="upload-status" id="setup-logo-upload-status"></span>
+        </div>
+        <input type="file" id="setup-logo-file-input" accept="image/*" style="display:none" onchange="handleSetupLogoFileSelect(event)">
+        <input type="hidden" id="setup-logo-input">
       </div>
-      <input type="file" id="setup-logo-file-input" accept="image/*" style="display:none" onchange="handleSetupLogoFileSelect(event)">
-      <input type="url" id="setup-logo-input" placeholder="or paste an image link…" oninput="updateSetupLogoPreview()">
-    </div>
-    <div class="field">
-      <label>Restaurant address</label>
-      <textarea id="setup-address-input" placeholder="Street, township, city — shown to customers at checkout"></textarea>
+
+      <div class="field">
+        <label>Restaurant name</label>
+        <input type="text" id="setup-name-input" placeholder="e.g. Bite & Slice Pizzeria">
+      </div>
+      <div class="field">
+        <label>Tagline / title <span style="font-weight:400;">(shown under your name to customers)</span></label>
+        <input type="text" id="setup-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
+      </div>
+      <div class="field">
+        <label>Restaurant address</label>
+        <textarea id="setup-address-input" placeholder="Street, township, city — shown to customers at checkout"></textarea>
+      </div>
+
+      <div id="setup-error"></div>
+      <button class="btn btn-primary" id="setup-next-btn" style="width:100%; justify-content:center;" onclick="completeSetup()" disabled>Next</button>
     </div>
 
-    <div id="setup-error"></div>
-    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="completeSetup()">Save &amp; Continue to Menu</button>
+    <!-- ---- Step 2: location pin (skippable) ---- -->
+    <div id="setup-step-2" style="display:none;">
+      <div class="setup-steps">STEP 2 OF 2</div>
+      <div class="ticket-icon">📍</div>
+      <h1>Pin your location</h1>
+      <p class="intro">Add a location pin so riders and customers can find you easily. You can skip this and add it later from Settings.</p>
+
+      <div class="field">
+        <label>Location pin address</label>
+        <input type="text" id="setup-pin-input" placeholder="Tap the button below to drop a pin" oninput="updateSetupPinState()">
+        <button type="button" class="btn-upload" id="setup-pin-btn" style="margin-top:8px;" onclick="useCurrentLocation('setup-pin-input','setup-pin-status',updateSetupPinState)">📍 Use my current location</button>
+        <div class="pin-hint" id="setup-pin-status">Stand at your restaurant when you tap this for the most accurate pin.</div>
+      </div>
+
+      <div class="setup-actions">
+        <button class="btn btn-outline" onclick="backToStep1()">← Back</button>
+        <button class="btn btn-primary" id="setup-continue-btn" onclick="finishSetup(true)" disabled>Continue to Menu</button>
+      </div>
+      <div style="text-align:center; margin-top:12px;">
+        <button class="btn-ghost" onclick="finishSetup(false)">Skip for now</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -569,6 +612,8 @@
     <div class="view" id="view-settings">
       <div class="section-head"><h2>Settings</h2></div>
 
+      <div class="settings-card launch-card" id="launch-card"></div>
+
       <div class="hero" id="profile-hero">
         <div class="hero-logo"><img id="hero-logo-img" alt="" style="display:none"><span id="hero-logo-fallback">🍕</span></div>
         <button class="btn-ghost" onclick="toggleProfileEdit(true)">✏️ Edit profile</button>
@@ -592,11 +637,17 @@
             <span class="upload-status" id="settings-logo-upload-status"></span>
           </div>
           <input type="file" id="settings-logo-file-input" accept="image/*" style="display:none" onchange="handleSettingsLogoFileSelect(event)">
-          <input type="url" id="settings-logo-input" placeholder="or paste an image link…" oninput="updateSettingsLogoPreview()">
+          <input type="hidden" id="settings-logo-input">
         </div>
         <div class="field">
           <label>Restaurant address</label>
           <textarea id="settings-address-input" placeholder="Street, township, city"></textarea>
+        </div>
+        <div class="field">
+          <label>Location pin address <span style="font-weight:400;">(optional)</span></label>
+          <input type="text" id="settings-pin-input" placeholder="Tap the button below to drop a pin">
+          <button type="button" class="btn-upload" style="margin-top:8px;" onclick="useCurrentLocation('settings-pin-input','settings-pin-status')">📍 Use my current location</button>
+          <div class="pin-hint" id="settings-pin-status"></div>
         </div>
         <div class="settings-row">
           <button class="btn btn-primary btn-sm" onclick="saveSettingsProfile()">Save</button>
@@ -794,6 +845,15 @@
     <button class="danger" onclick="ctxAction('delete')">🗑️ Delete category</button>
   </div>
 </div>
+<div id="launch-success">
+  <div class="box">
+    <div class="big">🎉</div>
+    <h2>You're live!</h2>
+    <p>Your restaurant has been launched successfully and now shows on the customer home screen. Orders can start coming in.</p>
+    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="document.getElementById('launch-success').classList.remove('open')">Great!</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -824,7 +884,7 @@
   // The current restaurant's profile — name/tagline/logo/address shown to
   // customers. Populated on login (or session restore) from the server's
   // response, not fetched separately.
-  let restaurantProfile = { name: '', tagline: '', logoUrl: '', address: '' };
+  let restaurantProfile = { name: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false };
 
   // Working state for the category drawer while it's open.
   let catDraft = null; // { editIndex, name, icon, sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null }
@@ -891,7 +951,11 @@
       name: restaurant.name || '',
       tagline: restaurant.tagline || '',
       logoUrl: restaurant.logoUrl || '',
-      address: restaurant.address || ''
+      address: restaurant.address || '',
+      locationPin: restaurant.locationPin || '',
+      // Only an explicit false hides the restaurant — an older server that
+      // doesn't send this field must not make everyone look unpublished.
+      isPublished: restaurant.isPublished !== false
     };
   }
 
@@ -1023,6 +1087,7 @@
     document.getElementById('not-approved-gate').style.display = 'none';
     applyBrandHeader();
     renderSettingsProfileFields(); // keep Settings tab in sync regardless of which screen shows first
+    renderLaunchCard();
 
     if (isFreshRestaurant()) {
       showSetupGate();
@@ -1071,7 +1136,7 @@
       });
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
-      restaurantProfile = profile;
+      restaurantProfile = Object.assign({}, restaurantProfile, profile);
       return true;
     } catch (err) {
       showToast('Could not save restaurant profile: ' + err.message);
@@ -1084,9 +1149,15 @@
     document.getElementById('setup-tagline-input').value = restaurantProfile.tagline;
     document.getElementById('setup-logo-input').value = restaurantProfile.logoUrl;
     document.getElementById('setup-address-input').value = restaurantProfile.address;
+    document.getElementById('setup-pin-input').value = restaurantProfile.locationPin || '';
     document.getElementById('setup-logo-upload-status').textContent = '';
     document.getElementById('setup-logo-upload-status').classList.remove('error');
+    document.getElementById('setup-error').textContent = '';
     updateSetupLogoPreview();
+    updateSetupNextState();
+    updateSetupPinState();
+    document.getElementById('setup-step-1').style.display = 'block';
+    document.getElementById('setup-step-2').style.display = 'none';
     document.getElementById('app').style.display = 'none';
     document.getElementById('setup-gate').style.display = 'flex';
   }
@@ -1095,28 +1166,131 @@
     document.getElementById('setup-logo-preview').src = document.getElementById('setup-logo-input').value.trim();
   }
 
+  // "Next" stays disabled until every field on step 1 is filled in.
+  function updateSetupNextState() {
+    const filled = ['setup-name-input', 'setup-tagline-input', 'setup-logo-input', 'setup-address-input']
+      .every(id => document.getElementById(id).value.trim() !== '');
+    document.getElementById('setup-next-btn').disabled = !filled;
+  }
+  ['setup-name-input', 'setup-tagline-input', 'setup-logo-input', 'setup-address-input'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateSetupNextState);
+  });
+
+  function updateSetupPinState() {
+    document.getElementById('setup-continue-btn').disabled = !document.getElementById('setup-pin-input').value.trim();
+  }
+
+  // Step 1 -> step 2. The profile is saved here, so closing the app between
+  // the two steps doesn't lose anything.
   async function completeSetup() {
-    const name = document.getElementById('setup-name-input').value.trim();
-    if (!name) {
-      document.getElementById('setup-error').textContent = 'Restaurant name is required.';
-      return;
-    }
     const profile = {
-      name,
+      name: document.getElementById('setup-name-input').value.trim(),
       tagline: document.getElementById('setup-tagline-input').value.trim(),
       logoUrl: document.getElementById('setup-logo-input').value.trim(),
-      address: document.getElementById('setup-address-input').value.trim()
+      address: document.getElementById('setup-address-input').value.trim(),
+      locationPin: restaurantProfile.locationPin || ''
     };
+    if (!profile.name || !profile.tagline || !profile.logoUrl || !profile.address) {
+      document.getElementById('setup-error').textContent = 'Please fill in every field.';
+      return;
+    }
+    const btn = document.getElementById('setup-next-btn');
+    btn.disabled = true;
     const ok = await saveRestaurantProfile(profile);
     if (!ok) {
       document.getElementById('setup-error').textContent = 'Could not save — check your connection and try again.';
+      btn.disabled = false;
       return;
     }
-    renderSettingsProfileFields();
+    document.getElementById('setup-error').textContent = '';
     applyBrandHeader();
+    renderSettingsProfileFields();
+    document.getElementById('setup-step-1').style.display = 'none';
+    document.getElementById('setup-step-2').style.display = 'block';
+    updateSetupPinState();
+  }
+
+  function backToStep1() {
+    document.getElementById('setup-step-2').style.display = 'none';
+    document.getElementById('setup-step-1').style.display = 'block';
+    updateSetupNextState();
+  }
+
+  // Step 2 -> the menu. withPin=false is the "Skip for now" path.
+  async function finishSetup(withPin) {
+    if (withPin) {
+      const pin = document.getElementById('setup-pin-input').value.trim();
+      if (!pin) return;
+      const ok = await saveRestaurantProfile(Object.assign({}, restaurantProfile, { locationPin: pin }));
+      if (!ok) return; // saveRestaurantProfile already showed the error toast
+      renderSettingsProfileFields();
+    }
     document.getElementById('setup-gate').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    showToast('Restaurant profile saved — now add your categories and items!');
+    renderLaunchCard();
+    showToast('Profile saved — now add your menu. You can launch from Settings once you have 5 items.');
+  }
+
+  // Fills a field with a Google Maps link for the device's current position.
+  // Needs the person to allow location access; fails gracefully if they don't.
+  function useCurrentLocation(inputId, statusId, onChange) {
+    const status = document.getElementById(statusId);
+    if (!navigator.geolocation) { status.textContent = "This device can't share its location — you can skip this step."; return; }
+    status.textContent = 'Getting your location…';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
+        document.getElementById(inputId).value = `https://maps.google.com/?q=${lat},${lng}`;
+        status.textContent = '✓ Pin dropped at your current location.';
+        if (onChange) onChange();
+      },
+      () => { status.textContent = "Couldn't get your location. Allow location access and try again, or skip for now."; },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  /* ================= LAUNCH (publish) ================= */
+  const MIN_ITEMS_TO_PUBLISH = 5;
+  function countMenuItems() {
+    return menuCategories.reduce((n, c) => n + ((c.items || []).length), 0);
+  }
+  function renderLaunchCard() {
+    const card = document.getElementById('launch-card');
+    if (!card) return;
+    if (restaurantProfile.isPublished) {
+      card.classList.add('live');
+      card.innerHTML = `<h3>✅ Your restaurant is live</h3><p style="margin:0;">Customers can see it on the home screen and place orders.</p>`;
+      return;
+    }
+    card.classList.remove('live');
+    const n = countMenuItems();
+    const ready = n >= MIN_ITEMS_TO_PUBLISH;
+    card.innerHTML = `
+      <h3>🚧 Your restaurant is not published yet</h3>
+      <p>Customers can't see it until you launch. Add at least ${MIN_ITEMS_TO_PUBLISH} items to your menu first.</p>
+      <div class="launch-progress">${Math.min(n, MIN_ITEMS_TO_PUBLISH)} of ${MIN_ITEMS_TO_PUBLISH} items added${ready ? ' — ready to launch!' : ` — add ${MIN_ITEMS_TO_PUBLISH - n} more`}</div>
+      <button class="btn btn-primary" id="launch-btn" style="width:100%; justify-content:center;" onclick="startLaunching()" ${ready ? '' : 'disabled'}>🚀 Start launching</button>`;
+  }
+  async function startLaunching() {
+    if (countMenuItems() < MIN_ITEMS_TO_PUBLISH) { showToast(`Add at least ${MIN_ITEMS_TO_PUBLISH} items first.`); return; }
+    const btn = document.getElementById('launch-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Launching…'; }
+    try {
+      await saveMenu(); // make sure the server has the latest items before it counts them
+      const res = await fetch(`${API_BASE}/api/admin/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: currentRestaurantId })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
+      restaurantProfile.isPublished = true;
+      renderLaunchCard();
+      document.getElementById('launch-success').classList.add('open');
+    } catch (err) {
+      showToast("Couldn't launch: " + err.message);
+      renderLaunchCard();
+    }
   }
 
   function renderSettingsProfileFields() {
@@ -1124,6 +1298,8 @@
     document.getElementById('settings-tagline-input').value = restaurantProfile.tagline;
     document.getElementById('settings-logo-input').value = restaurantProfile.logoUrl;
     document.getElementById('settings-address-input').value = restaurantProfile.address;
+    document.getElementById('settings-pin-input').value = restaurantProfile.locationPin || '';
+    document.getElementById('settings-pin-status').textContent = '';
     document.getElementById('settings-logo-upload-status').textContent = '';
     document.getElementById('settings-logo-upload-status').classList.remove('error');
     updateSettingsLogoPreview();
@@ -1140,7 +1316,8 @@
       name,
       tagline: document.getElementById('settings-tagline-input').value.trim(),
       logoUrl: document.getElementById('settings-logo-input').value.trim(),
-      address: document.getElementById('settings-address-input').value.trim()
+      address: document.getElementById('settings-address-input').value.trim(),
+      locationPin: document.getElementById('settings-pin-input').value.trim()
     };
     const ok = await saveRestaurantProfile(profile);
     if (ok) {
@@ -1209,6 +1386,7 @@
 
   function renderAll() {
     renderItemsView();
+    renderLaunchCard();
   }
 
   function showToast(msg) {
@@ -1775,7 +1953,9 @@
         throw new Error((data.error && data.error.message) || 'Upload failed');
       }
 
-      document.getElementById(urlInputElId).value = data.secure_url;
+      const urlInput = document.getElementById(urlInputElId);
+      urlInput.value = data.secure_url;
+      urlInput.dispatchEvent(new Event('input'));
       img.src = data.secure_url;
       if (statusEl) statusEl.textContent = '✓ Uploaded';
     } catch (err) {
