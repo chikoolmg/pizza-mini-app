@@ -1312,6 +1312,8 @@
    style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;">
     Telegram information loading...
 </p>
+<p id="app-diag"
+   style="font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 6px; opacity:.8;"></p>
 <p id="telegram-username-info"
    style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 2px; display:none;">
 </p>
@@ -1468,6 +1470,27 @@ if (tg) {
     } catch (e) { console.warn('Fullscreen not available:', e); }
     applyTelegramInsets();
 }
+
+// Small status line at the bottom of the Profile card (build + what Telegram reports), so it is
+// obvious whether the newest file is running and why fullscreen did or didn't switch on.
+let fullscreenFailReason = '';
+function updateDiag() {
+    const el = document.getElementById('app-diag');
+    if (!el) return;
+    if (!tg) { el.textContent = 'build fs2 · not inside Telegram'; return; }
+    el.textContent = `build fs2 · ${tg.platform} · API ${tg.version} · fullscreen: ${tg.isFullscreen ? 'on' : 'off'}`
+        + (fullscreenFailReason ? ` (${fullscreenFailReason})` : '')
+        + ` · top ${document.documentElement.style.getPropertyValue('--app-top-inset') || '0px'}`;
+}
+if (tg) {
+    try {
+        tg.onEvent('fullscreenChanged', updateDiag);
+        tg.onEvent('fullscreenFailed', (e) => { fullscreenFailReason = (e && e.error) || 'failed'; updateDiag(); });
+        tg.onEvent('safeAreaChanged', updateDiag);
+        tg.onEvent('contentSafeAreaChanged', updateDiag);
+    } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => { updateDiag(); setTimeout(updateDiag, 1500); });
 
 const telegramUser = tg?.initDataUnsafe?.user || null;
     function displayTelegramUser() {
