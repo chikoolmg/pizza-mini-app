@@ -25,6 +25,10 @@
             --kbz-blue: #0056B3; 
             --tg-star: #2AABEE; 
             --star-gold: #FFC107;
+            /* Filled in by applyTelegramInsets() — non-zero only in Telegram's fullscreen mode,
+               where Telegram floats its own Close / minimize buttons over the top of the app. */
+            --app-top-inset: 0px;
+            --app-bottom-inset: 0px;
             --success-green: #10B981;
             --danger-red: #EF4444;
         }
@@ -76,12 +80,24 @@
         .page-view {
             display: none;
             flex-direction: column;
-            height: 100%;
+            height: calc(100% - var(--app-top-inset));
             width: 100%;
             overflow: hidden;
             position: absolute;
-            top: 0;
+            top: var(--app-top-inset);
             left: 0;
+        }
+
+        /* Colours the strip behind Telegram's floating Close / minimize buttons so it
+           blends into the white header instead of showing a grey band. */
+        #app-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: var(--app-top-inset);
+            background: var(--bg-card);
+            z-index: 15;
+            pointer-events: none;
         }
 
         .page-view.active-view { display: flex; z-index: 2; }
@@ -115,7 +131,7 @@
         .scrollable-view-content {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 120px;
+            padding-bottom: calc(120px + var(--app-bottom-inset));
         }
 
         header {
@@ -674,7 +690,8 @@
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 76px;
+            height: calc(76px + var(--app-bottom-inset));
+            padding-bottom: var(--app-bottom-inset);
             background: var(--bg-card);
             border-top: 1px solid var(--border-light);
             border-radius: 24px 24px 0 0;
@@ -970,7 +987,7 @@
 
         .toast-msg {
             position: absolute;
-            top: 20px;
+            top: calc(20px + var(--app-top-inset));
             left: 50%;
             transform: translateX(-50%) translateY(-100px);
             background: #2D2D2D;
@@ -1416,9 +1433,40 @@
 
     const tg = window.Telegram?.WebApp;
 
+// Fullscreen like the DOGS-style mini apps: Telegram's top bar disappears and its Close /
+// minimize (⌄) buttons float over the app, so the whole screen is ours. We then push our own
+// content down by exactly the space those buttons use (applyTelegramInsets).
+// Only phones get fullscreen — on desktop it would take over the whole monitor.
+function applyTelegramInsets() {
+    if (!tg) return;
+    const root = document.documentElement.style;
+    const full = !!tg.isFullscreen;
+    const top = full ? ((tg.safeAreaInset?.top || 0) + (tg.contentSafeAreaInset?.top || 0)) : 0;
+    const bottom = (tg.safeAreaInset?.bottom || 0);
+    root.setProperty('--app-top-inset', top + 'px');
+    root.setProperty('--app-bottom-inset', bottom + 'px');
+}
+
 if (tg) {
     tg.ready();
     tg.expand();
+
+    // Colours the (non-fullscreen) header / bottom bar to match the app, so no stray bar shows.
+    try { tg.setHeaderColor('#FFFFFF'); } catch (e) {}
+    try { tg.setBackgroundColor('#F7F9FA'); } catch (e) {}
+    try { tg.setBottomBarColor('#FFFFFF'); } catch (e) {}
+
+    // Keep Telegram's swipe-down-to-minimize gesture switched on.
+    try { if (tg.isVersionAtLeast('7.7')) tg.enableVerticalSwipes(); } catch (e) {}
+
+    try {
+        tg.onEvent('fullscreenChanged', applyTelegramInsets);
+        tg.onEvent('safeAreaChanged', applyTelegramInsets);
+        tg.onEvent('contentSafeAreaChanged', applyTelegramInsets);
+        const isPhone = ['android', 'android_x', 'ios'].includes(tg.platform);
+        if (isPhone && tg.isVersionAtLeast('8.0') && !tg.isFullscreen) tg.requestFullscreen();
+    } catch (e) { console.warn('Fullscreen not available:', e); }
+    applyTelegramInsets();
 }
 
 const telegramUser = tg?.initDataUnsafe?.user || null;
