@@ -27,6 +27,7 @@
             --star-gold: #FFC107;
             /* Filled in by applyTelegramInsets() — non-zero only in Telegram's fullscreen mode,
                where Telegram floats its own Close / minimize buttons over the top of the app. */
+            --accent: #FF6A1F; /* IWTEAT orange — bottom tab bar */
             --app-top-inset: 0px;
             --app-bottom-inset: 0px;
             --success-green: #10B981;
@@ -175,7 +176,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 28px;
+            color: var(--accent);
             background: linear-gradient(135deg, var(--primary-tint), #ffffff);
             border: 1px solid var(--border-light);
         }
@@ -411,7 +413,8 @@
             color: var(--text-muted);
             font-weight: 500;
         }
-        .rating-star { color: #FFA801; }
+        .rating-star { color: #FFA801; display: inline-flex; font-size: 13px; }
+        .rating-star svg { fill: currentColor; }
         .add-card-btn {
             background: var(--primary);
             color: var(--text-white);
@@ -605,7 +608,8 @@
             border-radius: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
-        .empty-cart-icon { font-size: 54px; margin-bottom: 12px; display: block; }
+        .empty-cart-icon { font-size: 54px; margin-bottom: 12px; display: block; color: #C5CAD1; }
+        .empty-cart-icon .ico { width: 1em; height: 1em; }
         .btn-browse {
             background: var(--primary);
             color: white;
@@ -686,37 +690,68 @@
             gap: 10px;
         }
 
+        /* Bottom tab bar — Home / Saved / Cart / Profile, flat icons + labels, orange when active */
         .bottom-nav {
             position: absolute;
             bottom: 0;
+            left: 0;
             width: 100%;
-            height: calc(76px + var(--app-bottom-inset));
-            padding-bottom: var(--app-bottom-inset);
+            height: calc(72px + var(--app-bottom-inset));
+            padding: 0 6px var(--app-bottom-inset);
             background: var(--bg-card);
-            border-top: 1px solid var(--border-light);
-            border-radius: 24px 24px 0 0;
+            border-radius: 28px 28px 0 0;
             z-index: 20;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 0 10px;
-            box-shadow: 0 -8px 20px rgba(0,0,0,0.04);
+            box-shadow: 0 -6px 24px rgba(0,0,0,0.07);
             transition: transform 0.3s ease;
         }
         .nav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: var(--text-muted);
-            font-size: 11px;
-            font-weight: 600;
+            justify-content: center;
+            color: #8A8F98;
+            font-size: 11.5px;
+            font-weight: 500;
             cursor: pointer;
-            gap: 4px;
+            gap: 5px;
             text-align: center;
             flex: 1;
+            height: 100%;
             transition: color 0.2s;
         }
-        .nav-item.active { color: var(--primary); }
+        .nav-item.active { color: var(--accent); font-weight: 600; }
+        .nav-icon { position: relative; display: flex; width: 28px; height: 28px; }
+        .nav-icon .ico { width: 28px; height: 28px; }
+        .nav-icon svg { width: 28px; height: 28px; }
+        .nav-item.active .ic-fill { fill: currentColor; }
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -9px;
+            background: var(--accent);
+            color: #FFFFFF;
+            font-size: 10.5px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--bg-card);
+            line-height: 1;
+        }
+
+        /* Line icons (inline SVG) that replace the old emojis */
+        .ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; flex-shrink: 0; }
+        .ico svg { width: 100%; height: 100%; display: block; }
+        .ico-accent { color: var(--accent); }
+        h1 .ico, h2 .ico { margin-left: 4px; color: var(--accent); }
+        .ico-fill svg { fill: currentColor; }
         .saved-seg { display: flex; gap: 8px; margin: 0 16px 14px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 4px; }
         .saved-seg button { flex: 1; border: none; background: none; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
         .saved-seg button.active { background: var(--primary); color: #fff; }
@@ -739,42 +774,12 @@
         .fav-card .fc-restaurant { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
         .fav-heart-btn {
             position: absolute; left: 18px; top: 18px; background: rgba(255,255,255,0.9);
-            border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 17px;
+            border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; color: #8A8F98;
             display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2;
         }
-        .save-cart-icon-btn { margin-left: auto; background: none; border: none; font-size: 18px; cursor: pointer; padding: 2px 4px; }
-        .nav-icon { font-size: 20px; }
-        .nav-item.cart-tab { position: relative; justify-content: flex-end; margin-top: -26px; }
-        .cart-icon-curved {
-            width: 54px;
-            height: 54px;
-            background: var(--primary);
-            color: var(--text-white);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 22px;
-            box-shadow: 0 6px 16px rgba(255, 106, 31, 0.35);
-            margin-bottom: 10px;
-            position: relative;
-        }
-        .cart-badge {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            background: #2D2D2D;
-            color: #FFFFFF;
-            font-size: 11px;
-            font-weight: 800;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px solid var(--bg-card);
-        }
+        .fav-heart-btn.on { color: #EF4444; }
+        .fav-heart-btn.on svg { fill: currentColor; }
+        .save-cart-icon-btn { margin-left: auto; background: none; border: none; font-size: 20px; color: var(--accent); cursor: pointer; padding: 2px 4px; display: flex; align-items: center; }
 
         /* FULL PAGE ITEM MODAL WITH FROZEN BOTTOM PANEL */
         .modal-overlay {
@@ -987,22 +992,27 @@
 
         .toast-msg {
             position: absolute;
-            top: calc(20px + var(--app-top-inset));
+            bottom: calc(88px + var(--app-bottom-inset));
             left: 50%;
-            transform: translateX(-50%) translateY(-100px);
+            transform: translateX(-50%) translateY(16px);
             background: #2D2D2D;
             color: #FFFFFF;
-            padding: 10px 20px;
+            padding: 10px 18px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 600;
             z-index: 200;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.25s ease, opacity 0.25s ease, visibility 0s linear 0.25s;
             box-shadow: 0 6px 16px rgba(0,0,0,0.2);
             pointer-events: none;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .toast-msg.show { transform: translateX(-50%) translateY(0); }
+        .toast-msg.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; transition-delay: 0s; }
 
         .simple-card-view {
             background: var(--bg-card);
@@ -1216,14 +1226,14 @@
 <body>
 
 <div id="app-container">
-    <div id="toast" class="toast-msg">🛒 Item added to Cart!</div>
+    <div id="toast" class="toast-msg"></div>
 
     <!-- HOME VIEW — restaurant browse/discovery screen (swapped in from the
          old Explore tab; see the big comment on renderHomeBrowseView() for
          why). This is the default landing tab. -->
     <div id="home-view" class="page-view active-view">
         <header>
-            <h1>Explore Restaurants 🍽️</h1>
+            <h1>Explore Restaurants <i class="ico" data-icon="utensils"></i></h1>
         </header>
         <div class="scrollable-view-content" style="padding-top: 16px;">
             <div id="home-restaurant-rows"></div>
@@ -1237,7 +1247,7 @@
     <div id="explore-view" class="page-view">
         <div class="restaurant-menu-scroll" id="restaurant-menu-scroll">
             <div class="restaurant-hero" id="restaurant-hero">
-                <div class="restaurant-hero-logo restaurant-hero-fallback" id="restaurant-hero-fallback">🍕</div>
+                <div class="restaurant-hero-logo restaurant-hero-fallback" id="restaurant-hero-fallback"><i class="ico" data-icon="store"></i></div>
                 <img id="restaurant-logo-img" class="restaurant-hero-logo" src="" alt="Restaurant logo" style="display:none;">
                 <div class="restaurant-hero-text">
                     <h1 id="active-restaurant-title">Bite & Slice Pizzeria</h1>
@@ -1252,7 +1262,7 @@
     <!-- CART VIEW -->
     <div id="cart-view" class="page-view">
         <div class="cart-header">
-            <h2>Your Cart 🛒</h2>
+            <h2>Your Cart <i class="ico" data-icon="cart"></i></h2>
             <span style="font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer;" onclick="switchNavTab('explore')">+ Add Items</span>
         </div>
         <div id="cart-page-content" class="scrollable-view-content cart-page-body"></div>
@@ -1266,7 +1276,7 @@
          rather than from its own bottom-nav icon. -->
     <div id="saved-view" class="page-view">
         <header>
-            <h1>Saved 🔖</h1>
+            <h1>Saved <i class="ico" data-icon="heart"></i></h1>
         </header>
         <div class="saved-seg">
             <button class="active" id="saved-seg-items" onclick="setSavedScope('items')">Saved Items</button>
@@ -1298,11 +1308,11 @@
     <!-- PROFILE VIEW -->
     <div id="profile-view" class="page-view">
         <header>
-            <h1>My Profile 👤</h1>
+            <h1>My Profile <i class="ico" data-icon="user"></i></h1>
         </header>
         <div class="scrollable-view-content" style="padding: 16px;">
             <div class="simple-card-view" style="padding: 20px;">
-                <div id="profile-avatar-fallback" style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; overflow: hidden;">👤</div>
+                <div id="profile-avatar-fallback" style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; overflow: hidden;"><i class="ico" data-icon="user" style="font-size:34px;"></i></div>
                 <img id="profile-avatar-img" src="" alt="Profile photo" style="display:none; width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 2px solid var(--primary-tint);">
                 <h3 id="profile-display-name" style="font-size: 16px; color: var(--text-main); text-align: center;">
     Guest Customer
@@ -1335,7 +1345,7 @@
                 </div>
             </div>
 
-            <div class="cart-section-title" style="margin-top: 22px;">📦 Order History</div>
+            <div class="cart-section-title" style="margin-top: 22px;"><i class="ico ico-accent" data-icon="package"></i> Order History</div>
             <div id="profile-order-history-list"></div>
         </div>
     </div>
@@ -1344,20 +1354,16 @@
     <!-- Curved Bottom Navigation Bar -->
     <nav class="bottom-nav" id="main-bottom-nav">
         <div class="nav-item active" onclick="switchNavTab('home')">
-            <span class="nav-icon">🏠</span>Home
+            <span class="nav-icon"><i class="ico" data-icon="home" data-fill="1"></i></span>Home
         </div>
         <div class="nav-item" onclick="switchNavTab('saved')">
-            <span class="nav-icon">🔖</span>Saved
+            <span class="nav-icon"><i class="ico" data-icon="heart" data-fill="1"></i></span>Saved
         </div>
-        <div class="nav-item cart-tab" onclick="switchNavTab('cart')">
-            <div class="cart-icon-curved">
-                🛒
-                <div class="cart-badge" id="cart-badge-count">0</div>
-            </div>
-            Cart
+        <div class="nav-item" onclick="switchNavTab('cart')">
+            <span class="nav-icon"><i class="ico" data-icon="cart"></i><span class="cart-badge" id="cart-badge-count">0</span></span>Cart
         </div>
         <div class="nav-item" onclick="switchNavTab('profile')">
-            <span class="nav-icon">👤</span>Profile
+            <span class="nav-icon"><i class="ico" data-icon="user" data-fill="1"></i></span>Profile
         </div>
     </nav>
 
@@ -1365,14 +1371,14 @@
     <div class="modal-overlay" id="item-modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">×</button>
-            <button class="fav-heart-btn" id="m-fav-btn" onclick="toggleFavoriteCurrentDish()">🤍</button>
+            <button class="fav-heart-btn" id="m-fav-btn" onclick="toggleFavoriteCurrentDish()"><i class="ico" data-icon="heart"></i></button>
             <div class="modal-body-scroll">
                 <img src="" class="modal-img" id="m-img" alt="food">
                 <div class="modal-inner-padding">
                     <h2 class="modal-title" id="m-title">Item Name</h2>
                     <p class="modal-desc" id="m-desc">Description.</p>
                     <div class="in-cart-indicator" id="m-in-cart-indicator" style="display:none;" onclick="goToCartAndHighlight(currentModalDish && currentModalDish.id)">
-                        🛒 <span id="m-in-cart-qty">0</span> already in your cart — tap to view
+                        <i class="ico" data-icon="cart"></i> <span id="m-in-cart-qty">0</span> already in your cart — tap to view
                     </div>
 
                     <div id="dynamic-sizes-container"></div>
@@ -1430,6 +1436,53 @@
 </div>
 
 <script>
+
+
+    // ================= ICONS (inline SVG, replaces the old emojis) =================
+    // Simple line icons drawn with currentColor, so they follow the text colour of whatever
+    // they sit in. <i class="ico" data-icon="name"> in the HTML is swapped for the SVG right
+    // away; JS-built markup uses icon('name').
+    const ICONS = {
+        home: '<path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+        heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+        clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+        utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+        store: '<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-2-.9 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/>',
+        package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+        card: '<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
+        cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+        phone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+        xCircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
+        chef: '<path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/>',
+        bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+        timer: '<path d="M10 2h4"/><path d="M12 14l3-3"/><circle cx="12" cy="14" r="8"/>'
+    };
+    function icon(name, size, extraClass, fill) {
+        const body = ICONS[name] || '';
+        const style = size ? ` style="font-size:${size}px"` : '';
+        return `<i class="ico ${extraClass || ''}"${style}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${fill ? ' class="ic-fill"' : ''}>${body}</svg></i>`;
+    }
+    function hydrateIcons(root) {
+        (root || document).querySelectorAll('i.ico[data-icon]').forEach(el => {
+            const body = ICONS[el.dataset.icon];
+            if (!body || el.firstChild) return;
+            el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${el.dataset.fill ? ' class="ic-fill"' : ''}>${body}</svg>`;
+        });
+    }
+    hydrateIcons();
+    // Used when a payment logo image fails to load.
+    function payIconFallback(img) {
+        const span = document.createElement('span');
+        span.innerHTML = icon('card', 30);
+        img.replaceWith(span.firstChild);
+    }
 
     // ================= TELEGRAM MINI APP =================
 
@@ -1591,17 +1644,17 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
             // canceled=red). The last three keys are legacy statuses from before
             // the multi-stage flow, kept so older orders still render correctly.
             const STATUS_META = {
-                payment_pending:    { icon: '⏳', label: 'Verifying Payment',     css: 'pending' },
-                payment_failed:     { icon: '❌', label: 'Payment Failed',        css: 'canceled' },
-                restaurant_pending: { icon: '👨‍🍳', label: 'Waiting for Restaurant', css: 'pending' },
-                order_rejected:     { icon: '❌', label: 'Rejected',              css: 'canceled' },
-                awaiting_rider:     { icon: '🍳', label: 'Preparing',             css: 'pending' },
-                rider_assigned:     { icon: '🚴', label: 'Out for Delivery',      css: 'pending' },
-                delivered:          { icon: '✅', label: 'Delivered',             css: 'confirmed' },
-                user_canceled:      { icon: '❌', label: 'Canceled',              css: 'canceled' },
-                pending:            { icon: '⏳', label: 'Pending',               css: 'pending' },
-                confirmed:          { icon: '✅', label: 'Succeeded',             css: 'confirmed' },
-                canceled:           { icon: '❌', label: 'Canceled',              css: 'canceled' },
+                payment_pending:    { icon: icon('clock'), label: 'Verifying Payment',     css: 'pending' },
+                payment_failed:     { icon: icon('xCircle'), label: 'Payment Failed',        css: 'canceled' },
+                restaurant_pending: { icon: icon('clock'), label: 'Waiting for Restaurant', css: 'pending' },
+                order_rejected:     { icon: icon('xCircle'), label: 'Rejected',              css: 'canceled' },
+                awaiting_rider:     { icon: icon('chef'), label: 'Preparing',             css: 'pending' },
+                rider_assigned:     { icon: icon('bike'), label: 'Out for Delivery',      css: 'pending' },
+                delivered:          { icon: icon('checkCircle'), label: 'Delivered',             css: 'confirmed' },
+                user_canceled:      { icon: icon('xCircle'), label: 'Canceled',              css: 'canceled' },
+                pending:            { icon: icon('clock'), label: 'Pending',               css: 'pending' },
+                confirmed:          { icon: icon('checkCircle'), label: 'Succeeded',             css: 'confirmed' },
+                canceled:           { icon: icon('xCircle'), label: 'Canceled',              css: 'canceled' },
             };
             const TERMINAL_SUCCESS = new Set(['delivered', 'confirmed']);
             const TERMINAL_END = new Set(['delivered', 'confirmed', 'payment_failed', 'order_rejected', 'user_canceled', 'canceled']);
@@ -1849,7 +1902,7 @@ async function submitFinalOrder() {
     // means no payment methods are configured yet.
     let paymentMethods = [];
     let paymentMethodsLoaded = false;
-    const PAY_EMOJI = { kbzpay: '📱', cod: '💵' };
+    const PAY_EMOJI = { kbzpay: icon('phone', 30), cod: icon('cash', 30) };
     const escPay = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     async function loadPaymentMethods() {
         try {
@@ -2269,8 +2322,8 @@ async function submitFinalOrder() {
                         </div>
                         <p class="food-desc">${dish.description}</p>
                         <div class="food-meta">
-                            <div class="meta-group"><span class="rating-star">★</span>${dish.rating || '4.8'}</div>
-                            <div class="meta-group"><span>⏱</span>${dish.time || '15 Min'}</div>
+                            <div class="meta-group"><span class="rating-star">${icon("star", 13)}</span>${dish.rating || '4.8'}</div>
+                            <div class="meta-group"><span>${icon("timer", 13)}</span>${dish.time || '15 Min'}</div>
                             <div class="card-qty-zone" id="qty-zone-${dish.id}">${dish.soldOut ? '' : buildCardQtyControlHTML(dishQty)}</div>
                         </div>
                     </div>`;
@@ -2601,7 +2654,9 @@ async function submitFinalOrder() {
     function refreshModalFavoriteHeart(dishId) {
         const btn = document.getElementById('m-fav-btn');
         if (!btn) return;
-        btn.textContent = isFavoriteDish(currentRestaurantId, dishId) ? '❤️' : '🤍';
+        const isFav = isFavoriteDish(currentRestaurantId, dishId);
+        btn.classList.toggle('on', isFav);
+        btn.innerHTML = icon('heart');
     }
     function toggleFavoriteCurrentDish() {
         if (!currentModalDish) return;
@@ -2619,7 +2674,7 @@ async function submitFinalOrder() {
                 image: currentModalDish.image,
                 price: (currentModalDish.sizes && currentModalDish.sizes.length) ? currentModalDish.sizes[0].price : currentModalDish.price
             });
-            showToast('Added to favorites ❤️');
+            showToast('Added to favorites');
         }
         try { localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites)); } catch (e) {}
         refreshModalFavoriteHeart(dishId);
@@ -2718,7 +2773,7 @@ async function submitFinalOrder() {
                         <div class="fc-restaurant">${f.restaurantName || ''}</div>
                     </div>
                 </div>`).join('')}</div>`
-                : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No favorites yet — tap the ♡ on any item's page to save it here.</div>`;
+                : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No favorites yet — tap the ${icon('heart', 14)} on any item's page to save it here.</div>`;
             return;
         }
         box.innerHTML = savedCarts.length ? savedCarts.map(c => `
@@ -2742,7 +2797,7 @@ async function submitFinalOrder() {
                         </div>
                     </div>`).join('')}
             </div>`).join('')
-            : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No saved carts yet — tap 🔖 next to "Order Items" on your cart to save one.</div>`;
+            : `<div class="empty-state" style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No saved carts yet — tap ${icon("bookmark", 14)} next to "Order Items" on your cart to save one.</div>`;
     }
     // Opens a saved/favorited item's own modal so its size/options can be
     // re-picked before adding to cart — switching the active restaurant
@@ -2941,7 +2996,10 @@ async function submitFinalOrder() {
 
     /* ================= CART RENDERING ================= */
     function updateCartBadge() {
-        document.getElementById('cart-badge-count').innerText = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+        const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+        const badgeEl = document.getElementById('cart-badge-count');
+        badgeEl.innerText = cartCount > 99 ? '99+' : cartCount;
+        badgeEl.style.display = cartCount ? 'flex' : 'none';
         // Persisted here since every cart mutation (add/remove/qty change/
         // successful order) already calls this function — one choke point,
         // so the cart survives the Mini App closing and reopening instead of
@@ -2950,7 +3008,10 @@ async function submitFinalOrder() {
     }
     function showToast(msg) {
         const toast = document.getElementById('toast');
-        toast.innerText = `🛒 ${msg}`;
+        toast.innerHTML = icon('cart', 15);
+        const toastText = document.createElement('span');
+        toastText.textContent = msg;
+        toast.appendChild(toastText);
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 2200);
     }
@@ -2965,7 +3026,7 @@ async function submitFinalOrder() {
         if (cartItems.length === 0) {
             container.innerHTML = `
                 <div class="empty-cart-container">
-                    <span class="empty-cart-icon">🍕</span>
+                    <span class="empty-cart-icon">${icon("cart")}</span>
                     <h3>Your cart is empty!</h3>
                     <button class="btn-browse" onclick="switchNavTab('explore')">Browse Menu</button>
                 </div>
@@ -3138,7 +3199,7 @@ async function submitFinalOrder() {
 
         container.innerHTML = `
             <div class="cart-section-card">
-                <div class="cart-section-title"><span>📋</span> <span>Order Items</span><button class="save-cart-icon-btn" title="Save this cart" onclick="promptSaveCart()">🔖</button></div>
+                <div class="cart-section-title"><span>${icon("clipboard", 18, "ico-accent")}</span> <span>Order Items</span><button class="save-cart-icon-btn" title="Save this cart" onclick="promptSaveCart()">${icon("bookmark")}</button></div>
                 <div class="cart-items-list">${itemsHtml}</div>
             </div>
 
@@ -3159,7 +3220,7 @@ async function submitFinalOrder() {
             <div class="pay-row">
                 ${paymentMethods.map(p => `
                     <button class="pay-tile ${selectedPaymentMethod === p.id ? 'selected' : ''}" onclick="selectPayment('${escPay(p.id)}')">
-                        <span class="pay-img">${p.logoUrl ? `<img src="${escPay(p.logoUrl)}" alt="" onerror="this.replaceWith(document.createTextNode('💳'))">` : (PAY_EMOJI[p.id] || '💳')}</span>
+                        <span class="pay-img">${p.logoUrl ? `<img src="${escPay(p.logoUrl)}" alt="" onerror="payIconFallback(this)">` : (PAY_EMOJI[p.id] || icon('card', 30))}</span>
                         <span class="pay-name">${escPay(p.name)}</span>
                     </button>`).join('') || (paymentMethodsLoaded ? `<p class="sub-hint">No payment methods are set up yet — ask the restaurant to add one.</p>` : `<p class="sub-hint">Loading payment methods…</p>`)}
             </div>
@@ -3301,7 +3362,7 @@ async function submitFinalOrder() {
             </div>
 
             <div class="cart-section-card">
-                <div class="cart-section-title"><span>📋</span> Ordered Items</div>
+                <div class="cart-section-title"><span>${icon("clipboard", 18, "ico-accent")}</span> Ordered Items</div>
                 <div style="margin-bottom: 8px;">${itemsHtml}</div>
                 ${fees.map(f => `<div class="summary-row" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>${escPay(f.label)}</span><span>${f.amount} MMK</span></div>`).join('')}
                 <div class="summary-row grand-total" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>Total</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
