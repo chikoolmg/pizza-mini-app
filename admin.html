@@ -2268,7 +2268,7 @@
       : `<div class="empty-state"><div class="display">No orders in this period</div></div>`;
   }
   async function orderAction(id, action) {
-    if (action === 'reject' && !confirm('Reject this order?')) return;
+    if (action === 'reject' && !confirm('Are you sure to reject the order?')) return;
     try {
       const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ orderId: id, action }) });
       const d = await res.json();
