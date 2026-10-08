@@ -3,36 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Menu Manager — tgi pizza</title>
+<title>IWTEAT — Restaurant Manager</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root {
-    --paper: #F6F5F0;
+    --paper: #F8F9FB;
     --card: #FFFFFF;
-    --ink: #1C1F1A;
-    --muted: #7C7768;
-    --line: #E4E1D6;
-    --basil: #2F6B4F;
-    --basil-dark: #1F4E39;
-    --basil-tint: #E7F0EA;
-    --brick: #B5482F;
-    --brick-tint: #FBEBE6;
-    --mustard: #C98A2C;
-    --mustard-tint: #FBF1DF;
-    --shadow: 0 1px 2px rgba(28,31,26,0.04), 0 8px 24px -12px rgba(28,31,26,0.12);
+    --ink: #222222;
+    --muted: #888888;
+    --line: #EEEEEE;
+    --primary: #F47721;
+    --primary-dark: #DB6516;
+    --primary-tint: #FEF1E8;
+    --secondary: #FF9A52;
+    --ok: #12A150;
+    --ok-tint: #E8F7EE;
+    --brick: #E5484D;
+    --brick-tint: #FDECEC;
+    --mustard: #E08A00;
+    --mustard-tint: #FFF4DC;
+    --shadow: 0 2px 10px rgba(0,0,0,0.06);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--paper);
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; }
+  h1, h2, h3, .display { font-family: 'Poppins', -apple-system, sans-serif; }
   .mono { font-family: 'IBM Plex Mono', monospace; }
+  .ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; flex-shrink: 0; line-height: 1; }
+  .ico svg { width: 100%; height: 100%; display: block; }
+  .ico-accent { color: var(--primary); }
+  .btn .ico, .btn-upload .ico, .btn-ghost .ico { font-size: 15px; }
   button { font-family: inherit; }
   input, textarea, select { font-family: inherit; }
 
@@ -47,7 +56,7 @@
   .pin-card {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 36px 32px;
     max-width: 340px;
     width: 100%;
@@ -58,7 +67,7 @@
     width: 44px; height: 44px;
     margin: 0 auto 16px;
     border-radius: 12px;
-    background: var(--basil);
+    background: var(--primary);
     color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-size: 20px;
@@ -77,7 +86,7 @@
     margin-bottom: 14px;
     font-family: 'IBM Plex Mono', monospace;
   }
-  #pin-input:focus { outline: none; border-color: var(--basil); }
+  #pin-input:focus { outline: none; border-color: var(--primary); }
   #pin-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
   .pin-note {
     margin-top: 18px;
@@ -92,50 +101,59 @@
 
   /* ============ RESTAURANT SETUP (first run for a brand-new restaurant) ============ */
   #setup-gate {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    position: fixed; inset: 0; z-index: 40;
+    display: none; flex-direction: column;
+    background: var(--card);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
   .setup-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 32px 28px;
-    max-width: 460px;
-    width: 100%;
-    box-shadow: var(--shadow);
+    width: 100%; max-width: 520px; margin: 0 auto; flex: 1;
+    display: flex; flex-direction: column;
+    padding: calc(18px + env(safe-area-inset-top, 0px)) 20px calc(22px + env(safe-area-inset-bottom, 0px));
   }
-  .setup-card .ticket-icon {
-    width: 44px; height: 44px;
-    margin: 0 auto 16px;
-    border-radius: 12px;
-    background: var(--basil);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-  }
-  .setup-card h1 { font-size: 20px; margin: 0 0 6px; font-weight: 600; text-align: center; }
-  .setup-card p.intro { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; text-align: center; }
-  #setup-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
-
-  .setup-steps { text-align: center; font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 14px; letter-spacing: .02em; }
+  .setup-step { display: flex; flex-direction: column; flex: 1; }
+  .setup-top { display: flex; align-items: center; justify-content: space-between; min-height: 40px; margin-bottom: 8px; }
+  .setup-back { background: var(--paper); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .setup-card h1 { font-size: 20px; margin: 2px 0 4px; font-weight: 700; letter-spacing: -0.2px; }
+  .setup-card p.intro { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; line-height: 1.55; }
+  #setup-error { color: var(--brick); font-size: 12.5px; margin: 4px 0 10px; min-height: 16px; }
+  .setup-spacer { flex: 1; min-height: 12px; }
+  .skip-link { margin: 16px 0 0; text-align: right; font-size: 13px; color: var(--muted); text-decoration: underline; cursor: pointer; align-self: flex-end; background: none; border: none; padding: 4px 0; font-family: inherit; }
+  .handle-wrap { position: relative; }
+  .handle-wrap input { padding-right: 56px !important; }
+  .handle-wrap input.mono-input { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
+  .handle-count { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); }
+  .handle-status { font-size: 11.5px; margin-top: 5px; min-height: 16px; color: var(--muted); display: flex; align-items: center; gap: 5px; line-height: 1.4; }
+  .handle-status.ok { color: var(--ok); } .handle-status.bad { color: var(--brick); }
+  .field input[readonly] { background: var(--paper); color: var(--muted); }
+  .map-box { height: 44vh; min-height: 240px; max-height: 380px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #EDEFF2; position: relative; z-index: 0; }
+  .map-box.small { height: 200px; }
+  .map-fallback { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  .map-pin { width: 28px; height: 28px; background: var(--primary); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); position: relative; }
+  .map-pin::after { content: ''; position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; top: 7px; left: 7px; }
+  .btn.btn-wide { width: 100%; justify-content: center; padding: 13px; font-size: 14px; }
+  .btn.btn-outline-accent { background: var(--card); color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn.btn-outline-accent:hover { background: var(--primary-tint); }
+  .setup-steps { font-size: 11.5px; color: var(--primary); font-weight: 700; letter-spacing: .06em; }
   .setup-logo-block { text-align: center; margin-bottom: 16px; }
-  .setup-logo-block .thumb-preview { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 10px; display: block; }
+  .setup-logo-block .thumb-preview { width: 92px; height: 92px; border-radius: 50%; margin: 0 auto 8px; display: block; border: 3px solid var(--primary-tint); background: var(--primary-tint) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F47721' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7'/><path d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/><path d='M2 7h20'/></svg>") center/42% no-repeat; }
   .setup-logo-block .upload-row { justify-content: center; margin-bottom: 0; }
   .setup-actions { display: flex; gap: 10px; align-items: center; }
   .setup-actions .btn-primary { flex: 1; justify-content: center; }
   .pin-hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
-  .launch-card { border: 1px solid var(--line); border-left: 4px solid var(--mustard); }
-  .launch-card.live { border-left-color: var(--basil); background: var(--basil-tint); }
-  .launch-progress { font-size: 12px; font-weight: 600; color: var(--ink); margin: 0 0 12px; }
-  #launch-success { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+  .launch-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; margin-top: 20px; }
+  .launch-card h3 { font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .launch-card h3 .ico { color: var(--primary); font-size: 18px; }
+  .launch-card p { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
+  .launch-bar { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+  .launch-bar > i { display: block; height: 100%; background: var(--primary); border-radius: 99px; transition: width .35s ease; }
+  .launch-progress { font-size: 12px; font-weight: 600; color: var(--ink); margin: 0 0 14px; }
+  #launch-success { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
   #launch-success.open { display: flex; }
-  #launch-success .box { background: var(--card); border-radius: 20px; padding: 30px 26px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); }
-  #launch-success .big { font-size: 46px; margin-bottom: 8px; }
-  #launch-success h2 { margin: 0 0 8px; font-size: 19px; }
-  #launch-success p { margin: 0 0 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  #launch-success .box { background: var(--card); border-radius: 20px; padding: 30px 24px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  #launch-success .big { width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 50%; background: var(--primary-tint); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  #launch-success h2 { margin: 0 0 8px; font-size: 20px; }
+  #launch-success p { margin: 0 0 20px; font-size: 13px; color: var(--muted); line-height: 1.55; }
 
   /* ============ APP SHELL ============ */
   #app { display: none; min-height: 100vh; flex-direction: column; }
@@ -151,7 +169,7 @@
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand .mark {
     width: 34px; height: 34px; border-radius: 9px;
-    background: var(--basil); color: #fff;
+    background: var(--primary); color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-size: 16px; flex-shrink: 0;
   }
@@ -168,7 +186,7 @@
     white-space: nowrap;
   }
   #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background 0.2s; }
-  #sync-indicator.saved #sync-dot { background: var(--basil); }
+  #sync-indicator.saved #sync-dot { background: var(--primary); }
   #sync-indicator.saving #sync-dot { background: var(--mustard); animation: pulse 0.9s infinite; }
   #sync-indicator.error #sync-dot { background: var(--brick); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -179,22 +197,21 @@
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     display: flex; justify-content: space-around;
     background: var(--card);
-    border-top: 1px solid var(--line);
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -6px 20px -12px rgba(28,31,26,0.18);
+    border-radius: 24px 24px 0 0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.07);
   }
   .tab-btn {
-    flex: 1; max-width: 140px;
+    flex: 1; max-width: 160px;
     background: none; border: none; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 8px 6px 7px;
-    border-radius: 12px;
-    font-size: 10.5px; font-weight: 600; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 6px 6px;
+    font-size: 11.5px; font-weight: 500; color: #7D7D7D;
   }
-  .tab-btn .tab-icon { font-size: 19px; line-height: 1; }
-  .tab-btn.active { color: var(--basil-dark); background: var(--basil-tint); }
+  .tab-btn .tab-icon { font-size: 26px; line-height: 1; display: flex; }
+  .tab-btn.active { color: var(--primary); font-weight: 600; }
 
-  main { flex: 1; padding: 20px 20px calc(84px + env(safe-area-inset-bottom, 0px)); max-width: 900px; width: 100%; margin: 0 auto; }
+  main { flex: 1; padding: 20px 16px calc(100px + env(safe-area-inset-bottom, 0px)); max-width: 900px; width: 100%; margin: 0 auto; }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -206,19 +223,19 @@
   .section-head p.hint { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
 
   .btn {
-    border: none; border-radius: 10px; cursor: pointer;
+    border: none; border-radius: 12px; cursor: pointer;
     font-size: 13px; font-weight: 600; padding: 10px 16px;
     display: inline-flex; align-items: center; gap: 6px;
     transition: transform 0.06s ease;
   }
   .btn:active { transform: scale(0.97); }
-  .btn-primary { background: var(--basil); color: #fff; }
-  .btn-primary:hover { background: var(--basil-dark); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
   .btn-outline { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
   .btn-outline:hover { background: var(--paper); }
   .btn-danger-ghost { background: var(--brick-tint); color: var(--brick); }
   .btn-danger-ghost:hover { background: #f6d9d1; }
-  .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 8px; }
+  .btn-sm { padding: 7px 11px; font-size: 12px; border-radius: 10px; }
   .btn-icon { padding: 7px 9px; }
   .btn:disabled { opacity: 0.55; cursor: default; }
 
@@ -234,7 +251,7 @@
   .cat-row {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 14px 16px;
     display: flex; align-items: center; justify-content: space-between;
     gap: 10px;
@@ -268,19 +285,26 @@
     border: 1px solid var(--line); background: var(--card);
     font-size: 13px; font-weight: 600; color: var(--muted);
   }
-  .cat-chip-tab.active { background: var(--basil); color: #fff; border-color: var(--basil); }
+  .cat-chip-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   .item-grid { display: flex; flex-direction: column; gap: 10px; }
   .item-row {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
     padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
+  .item-row:active { background: var(--primary-tint); }
+  .item-row .item-text { min-width: 0; }
+  .item-thumb.ph { display: flex; align-items: center; justify-content: center; background: var(--primary-tint); color: var(--primary); font-size: 24px; border: none; }
+  .item-desc { font-size: 11.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .item-info { flex: 1; min-width: 0; }
+  .stock-on { color: var(--ok); } .stock-off { color: var(--brick); }
   .item-row .item-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .item-thumb {
-    width: 52px; height: 52px; border-radius: 10px; object-fit: cover;
+    width: 56px; height: 56px; border-radius: 12px; object-fit: cover;
     border: 1px solid var(--line); flex-shrink: 0; background: var(--paper);
   }
   .item-name { font-size: 14px; font-weight: 600; }
-  .item-price { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .item-price { font-size: 12.5px; color: var(--primary); font-weight: 600; margin-top: 3px; }
   .item-badge {
     display: inline-block; font-size: 10px; font-weight: 700; color: var(--mustard);
     background: var(--mustard-tint); border-radius: 6px; padding: 1px 6px; margin-left: 6px;
@@ -290,7 +314,7 @@
 
   /* ---- settings view ---- */
   .settings-card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
     padding: 18px; margin-bottom: 14px;
   }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; font-weight: 600; }
@@ -334,7 +358,7 @@
   .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
   .field .sub-hint { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 4px; line-height: 1.4; }
   .important-note {
-    font-size: 12.5px; font-weight: 700; color: var(--basil-dark); background: var(--basil-tint);
+    font-size: 12.5px; font-weight: 700; color: var(--primary-dark); background: var(--primary-tint);
     border-radius: 10px; padding: 10px 12px; margin: -4px 0 18px; line-height: 1.4;
   }
   .group-add-row { display: flex; gap: 8px; margin-top: 10px; }
@@ -350,13 +374,13 @@
   .group-card-title { font-size: 13.5px; font-weight: 700; color: var(--ink); flex: 1; min-width: 0; }
   .group-card-badge { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 3px 9px; white-space: nowrap; }
   .group-card-badge.badge-required { background: var(--brick-tint); color: var(--brick); }
-  .group-card-badge.badge-optional { background: var(--basil-tint); color: var(--basil-dark); }
+  .group-card-badge.badge-optional { background: var(--primary-tint); color: var(--primary-dark); }
   .group-card-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; margin-left: 23px; }
   .field input[type="text"], .field input[type="number"], .field input[type="url"], .field textarea, .field select {
     width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
     font-size: 13.5px; background: #fff;
   }
-  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--basil); }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--primary); }
   .field textarea { resize: vertical; min-height: 60px; }
   .field-row { display: flex; gap: 10px; }
   .field-row .field { flex: 1; }
@@ -368,7 +392,7 @@
 
   .upload-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .btn-upload {
-    background: var(--basil-tint); color: var(--basil-dark); border: 1px solid var(--basil);
+    background: var(--primary-tint); color: var(--primary-dark); border: 1px solid var(--primary);
     border-radius: 10px; padding: 8px 14px; font-size: 12.5px; font-weight: 700;
     cursor: pointer;
   }
@@ -378,11 +402,11 @@
 
   .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .chip {
-    background: var(--basil-tint); color: var(--basil-dark); border-radius: 20px;
+    background: var(--primary-tint); color: var(--primary-dark); border-radius: 20px;
     padding: 5px 8px 5px 12px; font-size: 12px; font-weight: 600;
     display: flex; align-items: center; gap: 6px;
   }
-  .chip button { background: none; border: none; color: var(--basil-dark); font-weight: 800; cursor: pointer; font-size: 13px; padding: 0; }
+  .chip button { background: none; border: none; color: var(--primary-dark); font-weight: 800; cursor: pointer; font-size: 13px; padding: 0; }
   .chip-add-row { display: flex; gap: 6px; }
   .chip-add-row input { flex: 1; }
 
@@ -414,20 +438,20 @@
     padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: var(--card);
   }
   .size-check-row .chk-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; flex: 1; min-width: 0; }
-  .size-check-row .chk-label input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--basil); flex-shrink: 0; }
+  .size-check-row .chk-label input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); flex-shrink: 0; }
   .size-check-row input[type="number"] { width: 96px; flex: 0 0 auto; padding: 7px 8px; font-size: 12.5px; }
   .size-check-row input[type="number"]:disabled { opacity: .4; }
 
   .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
     background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 30px;
-    font-size: 13px; font-weight: 500; z-index: 100;
+    font-size: 13px; font-weight: 500; z-index: 100; width: max-content; max-width: calc(100vw - 32px); text-align: center;
     opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
   .cat-chip-tab{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-  .cat-chip-tab.add{border-style:dashed;color:var(--basil-dark);background:transparent}
+  .cat-chip-tab.add{border-style:dashed;color:var(--primary-dark);background:transparent}
   .ctx-overlay{position:fixed;inset:0;z-index:90;display:none}
   .ctx-overlay.open{display:block}
   .ctx-menu{position:absolute;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);min-width:200px;padding:6px}
@@ -442,19 +466,21 @@
   #item-drawer-overlay .drawer-body,#group-drawer-overlay .drawer-body{width:100%;max-width:560px;margin:0 auto}
   #group-drawer-overlay{z-index:70}
   .hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding:12px 0 24px}
-  .hero-logo{width:150px;height:150px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden}
+  .hero-handle{font-size:12.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:-6px}
+  .hero-handle:empty{display:none}
+  .hero-logo{width:150px;height:150px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--primary);overflow:hidden}
   .hero-logo img{width:100%;height:100%;object-fit:cover}
   .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
-  .btn-ghost:active{background:var(--basil-tint)}
+  .btn-ghost:active{background:var(--primary-tint)}
   .item-row.sold{opacity:.55}
   .tab-btn{position:relative}
-  .tab-badge{display:none;position:absolute;top:2px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--brick);color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center}
+  .tab-badge{display:none;position:absolute;top:0;left:calc(50% + 8px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--brick);color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center}
   .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:14px}
   .seg button{flex:1;border:none;background:none;padding:9px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
-  .seg button.active{background:var(--basil);color:#fff}
+  .seg button.active{background:var(--primary);color:#fff}
   .stats{display:flex;gap:10px;margin-bottom:14px}
   .stats div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-  .stats b{display:block;font-size:20px;font-family:'Fraunces',serif}
+  .stats b{display:block;font-size:20px;font-weight:700}
   .stats span{font-size:11px;color:var(--muted)}
   .o-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
   .o-card.new{border-color:var(--brick);box-shadow:0 0 0 3px var(--brick-tint)}
@@ -465,10 +491,10 @@
   .pill{font-size:10.5px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap}
   .pill.new{background:var(--brick-tint);color:var(--brick)}
   .pill.wait{background:var(--mustard-tint);color:var(--mustard)}
-  .pill.ok{background:var(--basil-tint);color:var(--basil-dark)}
+  .pill.ok{background:var(--ok-tint);color:var(--ok)}
   .pill.bad{background:var(--paper);color:var(--muted)}
   .o-who{font-size:13.5px;font-weight:600;margin:10px 0 2px}
-  .o-who a{color:var(--basil-dark);text-decoration:none;font-weight:500;margin-left:6px}
+  .o-who a{color:var(--primary-dark);text-decoration:none;font-weight:500;margin-left:6px}
   .o-addr{font-size:12px;color:var(--muted);margin-bottom:8px}
   .o-note{background:var(--mustard-tint);border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:6px}
   .o-item{font-size:13px;padding:5px 0;border-top:1px dashed var(--line)}
@@ -486,25 +512,25 @@
 
 <!-- ============ DEVELOPER/TESTING LOGIN (fallback for outside Telegram) ============ -->
 <!-- Real restaurant owners never see this — they open admin.html from the bot's
-     "🏬 Open My Restaurant" button and are auto-detected (see autoLogin() below).
+     "Open My Restaurant" button and are auto-detected (see autoLogin() below).
      This screen only appears when admin.html is opened in a plain browser
      (no Telegram Mini App context), so you can still test it yourself. -->
 <div id="pin-gate">
   <div class="pin-card">
-    <div class="ticket-icon">🔐</div>
+    <div class="ticket-icon"><i class="ico " data-icon="lock"></i></div>
     <h1 id="login-restaurant-name">Menu Manager</h1>
     <p id="pin-gate-intro">Developer/testing login — not shown inside Telegram. Enter a Telegram numeric ID to preview that restaurant's admin panel.</p>
     <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 123456789">
     <div id="pin-error"></div>
     <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="tryLogin()">Log In</button>
-    <div class="pin-note">Real restaurant owners should open this page from the bot's "🏬 Open My Restaurant" button instead — they won't need to type anything.</div>
+    <div class="pin-note">Real restaurant owners should open this page from the bot's "Open My Restaurant" button instead — they won't need to type anything.</div>
   </div>
 </div>
 
 <!-- ============ NOT APPROVED (shown when Telegram auto-login finds no restaurant for this ID) ============ -->
 <div id="not-approved-gate" style="display:none;">
   <div class="pin-card">
-    <div class="ticket-icon">🚫</div>
+    <div class="ticket-icon"><i class="ico " data-icon="ban"></i></div>
     <h1>Not approved yet</h1>
     <p id="not-approved-message">This Telegram account isn't linked to a restaurant yet. If you'd like to list your restaurant, open the bot and tap "List My Restaurant".</p>
     <a href="https://t.me/assichit_bot" target="_blank" rel="noopener" style="text-decoration:none; display:block;">
@@ -514,18 +540,19 @@
 </div>
 
 <!-- ============ RESTAURANT SETUP (shown once, for a brand-new restaurant) ============ -->
-<div id="setup-gate" style="display:none;">
+<div id="setup-gate">
   <div class="setup-card">
+
     <!-- ---- Step 1: profile ---- -->
-    <div id="setup-step-1">
-      <div class="setup-steps">STEP 1 OF 2</div>
+    <div class="setup-step" id="setup-step-1">
+      <div class="setup-top"><span class="setup-steps">STEP 1 OF 2</span></div>
       <h1>Welcome! Let's set up your restaurant</h1>
-      <p class="intro">Fill in every field to continue. You can change any of this later from Settings.</p>
+      <p class="intro">Fill in every field to continue. You can change most of this later from Settings.</p>
 
       <div class="setup-logo-block">
-        <img class="thumb-preview" id="setup-logo-preview" src="" alt="" style="opacity:0.3;" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
+        <img class="thumb-preview" id="setup-logo-preview" src="" alt="" onerror="this.style.opacity=0.6;" onload="this.style.opacity=1;">
         <div class="upload-row">
-          <button type="button" class="btn-upload" id="setup-logo-upload-btn" onclick="document.getElementById('setup-logo-file-input').click()">📷 Upload Logo</button>
+          <button type="button" class="btn-upload" id="setup-logo-upload-btn" onclick="document.getElementById('setup-logo-file-input').click()"><i class="ico" data-icon="camera"></i> Upload Logo</button>
           <span class="upload-status" id="setup-logo-upload-status"></span>
         </div>
         <input type="file" id="setup-logo-file-input" accept="image/*" style="display:none" onchange="handleSetupLogoFileSelect(event)">
@@ -537,6 +564,14 @@
         <input type="text" id="setup-name-input" placeholder="e.g. Bite & Slice Pizzeria">
       </div>
       <div class="field">
+        <label>Restaurant ID <span style="font-weight:400;">(unique — used for your shareable link)</span></label>
+        <div class="handle-wrap">
+          <input type="text" id="setup-handle-input" class="mono-input" placeholder="e.g. pizza_supreme" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('setup')">
+          <span class="handle-count" id="setup-handle-count">0/20</span>
+        </div>
+        <div class="handle-status" id="setup-handle-status">Letters, numbers and underscore only. It can't be changed later.</div>
+      </div>
+      <div class="field">
         <label>Tagline / title <span style="font-weight:400;">(shown under your name to customers)</span></label>
         <input type="text" id="setup-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
       </div>
@@ -545,41 +580,39 @@
         <textarea id="setup-address-input" placeholder="Street, township, city — shown to customers at checkout"></textarea>
       </div>
 
+      <div class="setup-spacer"></div>
       <div id="setup-error"></div>
-      <button class="btn btn-primary" id="setup-next-btn" style="width:100%; justify-content:center;" onclick="completeSetup()" disabled>Next</button>
+      <button class="btn btn-primary btn-wide" id="setup-next-btn" onclick="completeSetup()" disabled>Next</button>
     </div>
 
     <!-- ---- Step 2: location pin (skippable) ---- -->
-    <div id="setup-step-2" style="display:none;">
-      <div class="setup-steps">STEP 2 OF 2</div>
-      <div class="ticket-icon">📍</div>
+    <div class="setup-step" id="setup-step-2" style="display:none;">
+      <div class="setup-top">
+        <button class="setup-back" aria-label="Back" onclick="backToStep1()"><i class="ico" data-icon="arrowLeft"></i></button>
+        <span class="setup-steps">STEP 2 OF 2</span>
+      </div>
       <h1>Pin your location</h1>
-      <p class="intro">Add a location pin so riders and customers can find you easily. You can skip this and add it later from Settings.</p>
+      <p class="intro">Riders and customers can find you easily with a location pin. Tap the map or drag the pin to fine-tune it.</p>
 
-      <div class="field">
-        <label>Location pin address</label>
-        <input type="text" id="setup-pin-input" placeholder="Tap the button below to drop a pin" oninput="updateSetupPinState()">
-        <button type="button" class="btn-upload" id="setup-pin-btn" style="margin-top:8px;" onclick="useCurrentLocation('setup-pin-input','setup-pin-status',updateSetupPinState)">📍 Use my current location</button>
-        <div class="pin-hint" id="setup-pin-status">Stand at your restaurant when you tap this for the most accurate pin.</div>
-      </div>
+      <div class="map-box" id="setup-map"></div>
+      <input type="hidden" id="setup-pin-input">
+      <div class="pin-hint" id="setup-pin-status">Stand at your restaurant when you tap the button for the most accurate pin.</div>
+      <button type="button" class="btn btn-outline-accent btn-wide" style="margin-top:12px;" onclick="useMyLocation('setup')"><i class="ico" data-icon="locate"></i> Use my current location</button>
 
-      <div class="setup-actions">
-        <button class="btn btn-outline" onclick="backToStep1()">← Back</button>
-        <button class="btn btn-primary" id="setup-continue-btn" onclick="finishSetup(true)" disabled>Continue to Menu</button>
-      </div>
-      <div style="text-align:center; margin-top:12px;">
-        <button class="btn-ghost" onclick="finishSetup(false)">Skip for now</button>
-      </div>
+      <div class="setup-spacer"></div>
+      <button class="btn btn-primary btn-wide" id="setup-continue-btn" style="margin-top:18px;" onclick="finishSetup(true)" disabled>Continue to Menu</button>
+      <button class="skip-link" onclick="finishSetup(false)">Skip for now</button>
     </div>
+
   </div>
 </div>
 
 <!-- ============ APP ============ -->
 <div id="app">
   <nav class="tabs">
-    <button class="tab-btn active" id="tab-btn-orders" onclick="switchView('orders')"><span class="tab-icon">🔔</span><span>Orders</span><span class="tab-badge" id="orders-badge"></span></button>
-    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon">🍕</span><span>Menu</span></button>
-    <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon">⚙️</span><span>Settings</span></button>
+    <button class="tab-btn active" id="tab-btn-orders" onclick="switchView('orders')"><span class="tab-icon"><i class="ico " data-icon="clipboard"></i></span><span>Orders</span><span class="tab-badge" id="orders-badge"></span></button>
+    <button class="tab-btn" id="tab-btn-items" onclick="switchView('items')"><span class="tab-icon"><i class="ico " data-icon="utensils"></i></span><span>Menu</span></button>
+    <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon"><i class="ico " data-icon="gear"></i></span><span>Settings</span></button>
   </nav>
 
   <main>
@@ -604,19 +637,19 @@
     <div class="view" id="view-items">
       <div class="cat-chip-bar" id="item-cat-tabs"></div>
       <div class="cat-options-hint" id="cat-options-hint"></div>
-      <button class="btn btn-primary" id="add-item-btn" style="width:100%; padding:13px; font-size:14px; margin-bottom:14px;" onclick="openItemDrawer(null)">+ New Item</button>
+      <button class="btn btn-primary" id="add-item-btn" style="width:100%; padding:13px; font-size:14px; margin-bottom:14px;" onclick="openItemDrawer(null)"><i class="ico " data-icon="plus"></i> New Item</button>
       <div class="item-grid" id="item-grid"></div>
+      <div class="launch-card" id="launch-card" style="display:none;"></div>
     </div>
 
     <!-- SETTINGS VIEW -->
     <div class="view" id="view-settings">
       <div class="section-head"><h2>Settings</h2></div>
 
-      <div class="settings-card launch-card" id="launch-card"></div>
-
       <div class="hero" id="profile-hero">
-        <div class="hero-logo"><img id="hero-logo-img" alt="" style="display:none"><span id="hero-logo-fallback">🍕</span></div>
-        <button class="btn-ghost" onclick="toggleProfileEdit(true)">✏️ Edit profile</button>
+        <div class="hero-logo"><img id="hero-logo-img" alt="" style="display:none"><span id="hero-logo-fallback"><i class="ico " data-icon="store"></i></span></div>
+        <div class="hero-handle" id="hero-handle"></div>
+        <button class="btn-ghost" onclick="toggleProfileEdit(true)"><i class="ico " data-icon="edit"></i> Edit profile</button>
       </div>
       <div class="settings-card" id="profile-edit-card" style="display:none;">
         <h3>Edit profile</h3>
@@ -626,6 +659,14 @@
           <input type="text" id="settings-name-input" placeholder="e.g. Bite & Slice Pizzeria">
         </div>
         <div class="field">
+          <label>Restaurant ID</label>
+          <div class="handle-wrap">
+            <input type="text" id="settings-handle-input" class="mono-input" placeholder="e.g. pizza_supreme" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('settings')">
+            <span class="handle-count" id="settings-handle-count">0/20</span>
+          </div>
+          <div class="handle-status" id="settings-handle-status"></div>
+        </div>
+        <div class="field">
           <label>Tagline / title</label>
           <input type="text" id="settings-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
         </div>
@@ -633,7 +674,7 @@
           <label>Logo</label>
           <img class="thumb-preview" id="settings-logo-preview" src="" alt="" onerror="this.style.opacity=0.3;" onload="this.style.opacity=1;">
           <div class="upload-row">
-            <button type="button" class="btn-upload" id="settings-logo-upload-btn" onclick="document.getElementById('settings-logo-file-input').click()">📷 Upload Logo</button>
+            <button type="button" class="btn-upload" id="settings-logo-upload-btn" onclick="document.getElementById('settings-logo-file-input').click()"><i class="ico " data-icon="camera"></i> Upload Logo</button>
             <span class="upload-status" id="settings-logo-upload-status"></span>
           </div>
           <input type="file" id="settings-logo-file-input" accept="image/*" style="display:none" onchange="handleSettingsLogoFileSelect(event)">
@@ -644,10 +685,11 @@
           <textarea id="settings-address-input" placeholder="Street, township, city"></textarea>
         </div>
         <div class="field">
-          <label>Location pin address <span style="font-weight:400;">(optional)</span></label>
-          <input type="text" id="settings-pin-input" placeholder="Tap the button below to drop a pin">
-          <button type="button" class="btn-upload" style="margin-top:8px;" onclick="useCurrentLocation('settings-pin-input','settings-pin-status')">📍 Use my current location</button>
+          <label>Location pin <span style="font-weight:400;">(optional)</span></label>
+          <div class="map-box small" id="settings-map"></div>
+          <input type="hidden" id="settings-pin-input">
           <div class="pin-hint" id="settings-pin-status"></div>
+          <button type="button" class="btn btn-outline-accent btn-sm" style="margin-top:8px;" onclick="useMyLocation('settings')"><i class="ico " data-icon="locate"></i> Use my current location</button>
         </div>
         <div class="settings-row">
           <button class="btn btn-primary btn-sm" onclick="saveSettingsProfile()">Save</button>
@@ -656,7 +698,7 @@
       </div>
 
       <div class="settings-card">
-        <h3>📥 Backup &amp; restore</h3>
+        <h3><i class="ico ico-accent" data-icon="download"></i> Backup &amp; restore</h3>
         <p>Export the full menu as a JSON file, or paste one back in to restore it. Useful before making big changes, or to copy a menu between restaurants later.</p>
         <div class="settings-row">
           <button class="btn btn-outline btn-sm" onclick="exportMenuBackup()">Export JSON</button>
@@ -665,7 +707,7 @@
       </div>
 
       <div class="settings-card">
-        <h3>🔄 Sync</h3>
+        <h3><i class="ico ico-accent" data-icon="refresh"></i> Sync</h3>
         <p>The menu is stored on your server, not in this browser — every device reads the same data. Use this if you suspect this tab is showing something stale.</p>
         <div class="settings-row">
           <button class="btn btn-outline btn-sm" onclick="loadMenu(true)">Reload from server</button>
@@ -715,8 +757,8 @@
         <label>Options</label>
         <div id="cat-option-groups-list"></div>
         <div class="group-add-row">
-          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'single')">🔘 Single-choice group</button>
-          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'multi')">☑️ Add-on group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'single')"><i class="ico " data-icon="circleDot"></i> Single-choice group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('category', null, 'multi')"><i class="ico " data-icon="checkSquare"></i> Add-on group</button>
         </div>
       </div>
     </div>
@@ -737,7 +779,7 @@
     <div class="drawer-body">
       <img class="thumb-preview" id="item-image-preview" src="" alt="" style="cursor:pointer" onclick="document.getElementById('item-image-file-input').click()" onerror="this.style.opacity=0.3;">
       <div class="upload-row">
-        <button type="button" class="btn-upload" id="upload-photo-btn" onclick="document.getElementById('item-image-file-input').click()">📷 Upload Photo</button>
+        <button type="button" class="btn-upload" id="upload-photo-btn" onclick="document.getElementById('item-image-file-input').click()"><i class="ico " data-icon="camera"></i> Upload Photo</button>
         <span class="upload-status" id="upload-status"></span>
       </div>
       <input type="file" id="item-image-file-input" accept="image/*" style="display:none" onchange="handleItemImageFileSelect(event)">
@@ -748,6 +790,13 @@
       <div class="field">
         <label>Name</label>
         <input type="text" id="item-name-input" placeholder="e.g. Cheesy Margherita">
+      </div>
+      <div class="field">
+        <label>Description <span style="font-weight:400;">(max 50 characters)</span></label>
+        <div class="handle-wrap">
+          <input type="text" id="item-desc-input" maxlength="50" placeholder="What's in it, what makes it good…" oninput="updateDescCount()">
+          <span class="handle-count" id="item-desc-count">0/50</span>
+        </div>
       </div>
       <div class="field" id="item-price-field">
         <label id="item-price-label">Price (MMK)</label>
@@ -762,23 +811,17 @@
           <input type="text" id="item-new-size-input" placeholder="e.g. Small" oninput="toggleAddBtn('item-new-size-input','item-add-size-btn')" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItemSizeChip();}">
           <button class="btn btn-outline btn-sm" id="item-add-size-btn" disabled onclick="addItemSizeChip()">Add</button>
         </div>
-        <button class="btn btn-outline btn-sm" id="item-reset-sizes-btn" style="margin-top:8px; display:none;" onclick="resetItemSizesToCategory()">↺ Use category's sizes instead</button>
+        <button class="btn btn-outline btn-sm" id="item-reset-sizes-btn" style="margin-top:8px; display:none;" onclick="resetItemSizesToCategory()"><i class="ico " data-icon="reset"></i> Use category's sizes instead</button>
       </div>
 
       <div class="field">
-        <label>Description</label>
-        <textarea id="item-desc-input" placeholder="What's in it, what makes it good…"></textarea>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label>Rating (shown to customers)</label>
-          <input type="text" id="item-rating-input" placeholder="4.8">
-        </div>
-        <div class="field">
-          <label>Prep time</label>
-          <input type="text" id="item-time-input" placeholder="15-20 Min">
-        </div>
+        <label>Prep time</label>
+        <select id="item-time-input">
+          <option value="5-10 mins">5-10 mins</option>
+          <option value="10-20 mins">10-20 mins</option>
+          <option value="20-30 mins">20-30 mins</option>
+          <option value="35-45 mins">35-45 mins</option>
+        </select>
       </div>
 
       <div class="field" id="item-inherited-groups-field" style="display:none;">
@@ -790,8 +833,8 @@
         <label>This item's own options</label>
         <div id="item-option-groups-list"></div>
         <div class="group-add-row">
-          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'single')">🔘 Single-choice group</button>
-          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'multi')">☑️ Add-on group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'single')"><i class="ico " data-icon="circleDot"></i> Single-choice group</button>
+          <button class="btn btn-outline btn-sm" onclick="openGroupDrawer('item', null, 'multi')"><i class="ico " data-icon="checkSquare"></i> Add-on group</button>
         </div>
       </div>
     </div>
@@ -826,7 +869,7 @@
       <div class="field">
         <label>Options</label>
         <div id="group-options-list"></div>
-        <button class="btn btn-outline btn-sm add-option-btn" onclick="addGroupOption()">➕ Add option</button>
+        <button class="btn btn-outline btn-sm add-option-btn" onclick="addGroupOption()"><i class="ico " data-icon="plus"></i> Add option</button>
       </div>
     </div>
     <div class="drawer-foot">
@@ -839,18 +882,18 @@
 
 <div class="ctx-overlay" id="ctx-overlay" onclick="closeCatMenu()">
   <div class="ctx-menu" id="ctx-menu" onclick="event.stopPropagation()">
-    <button onclick="ctxAction('edit')">✏️ Edit category</button>
-    <button id="ctx-left" onclick="ctxAction('left')">⬅️ Move left</button>
-    <button id="ctx-right" onclick="ctxAction('right')">➡️ Move right</button>
-    <button class="danger" onclick="ctxAction('delete')">🗑️ Delete category</button>
+    <button onclick="ctxAction('edit')"><i class="ico " data-icon="edit"></i> Edit category</button>
+    <button id="ctx-left" onclick="ctxAction('left')"><i class="ico " data-icon="arrowLeft"></i> Move left</button>
+    <button id="ctx-right" onclick="ctxAction('right')"><i class="ico " data-icon="arrowRight"></i> Move right</button>
+    <button class="danger" onclick="ctxAction('delete')"><i class="ico " data-icon="trash"></i> Delete category</button>
   </div>
 </div>
 <div id="launch-success">
   <div class="box">
-    <div class="big">🎉</div>
-    <h2>You're live!</h2>
-    <p>Your restaurant has been launched successfully and now shows on the customer home screen. Orders can start coming in.</p>
-    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="document.getElementById('launch-success').classList.remove('open')">Great!</button>
+    <div class="big"><i class="ico " data-icon="checkCircle"></i></div>
+    <h2>Congratulations!</h2>
+    <p>Your restaurant is now live on the IWTEAT home screen. Customers can find you and start ordering.</p>
+    <button class="btn btn-primary btn-wide" onclick="document.getElementById('launch-success').classList.remove('open')">Done</button>
   </div>
 </div>
 
@@ -859,8 +902,47 @@
 <script>
   const API_BASE = 'https://chitkool.pythonanywhere.com';
 
+  // ================= ICONS (inline SVG — replaces the old emojis) =================
+  const ICONS = {
+    lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+    clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+    utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+    gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    locate: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/>',
+    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    circleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
+    checkSquare: '<path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+    send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    store: '<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-2-.9 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0 2.7 2.7 0 0 1-4 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/>',
+    call: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>'
+  };
+  function icon(name, extraClass) {
+    return `<i class="ico ${extraClass || ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg></i>`;
+  }
+  function hydrateIcons(root) {
+    (root || document).querySelectorAll('i.ico[data-icon]').forEach(el => {
+      if (el.firstChild || !ICONS[el.dataset.icon]) return;
+      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[el.dataset.icon]}</svg>`;
+    });
+  }
+  hydrateIcons();
+
   // Present only when admin.html is opened inside Telegram (e.g. via the bot's
-  // "🏬 Open My Restaurant" button). Absent in a plain browser — that's how we
+  // "Open My Restaurant" button). Absent in a plain browser — that's how we
   // tell the two contexts apart on load.
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
@@ -884,7 +966,7 @@
   // The current restaurant's profile — name/tagline/logo/address shown to
   // customers. Populated on login (or session restore) from the server's
   // response, not fetched separately.
-  let restaurantProfile = { name: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false };
+  let restaurantProfile = { name: '', handle: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false };
 
   // Working state for the category drawer while it's open.
   let catDraft = null; // { editIndex, name, icon, sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null }
@@ -953,6 +1035,7 @@
       logoUrl: restaurant.logoUrl || '',
       address: restaurant.address || '',
       locationPin: restaurant.locationPin || '',
+      handle: restaurant.handle || '',
       // Only an explicit false hides the restaurant — an older server that
       // doesn't send this field must not make everyone look unpublished.
       isPublished: restaurant.isPublished !== false
@@ -1036,7 +1119,7 @@
       document.getElementById('pin-error').textContent = '';
       document.getElementById('login-restaurant-name').textContent = 'No restaurant specified';
       document.getElementById('pin-gate-intro').textContent =
-        'Add ?r=<restaurant-id> to the URL to test a specific restaurant, or open this page from the bot\'s "🏬 Open My Restaurant" button.';
+        'Add ?r=<restaurant-id> to the URL to test a specific restaurant, or open this page from the bot\'s "Open My Restaurant" button.';
       document.getElementById('pin-input').style.display = 'none';
       document.querySelector('#pin-gate .btn-primary').style.display = 'none';
       document.getElementById('pin-gate').style.display = 'flex';
@@ -1127,6 +1210,7 @@
     }
   }
 
+  let lastSaveError = '';
   async function saveRestaurantProfile(profile) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/restaurant-info`, {
@@ -1137,13 +1221,121 @@
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
       restaurantProfile = Object.assign({}, restaurantProfile, profile);
+      lastSaveError = '';
       return true;
     } catch (err) {
-      showToast('Could not save restaurant profile: ' + err.message);
+      lastSaveError = err.message;
+      showToast('Could not save: ' + err.message);
       return false;
     }
   }
 
+  /* ---------- Restaurant ID (unique handle) ---------- */
+  const handleStatus = { setup: 'idle', settings: 'idle' };
+  const handleTimers = {};
+  function setHandleStatus(prefix, state, text) {
+    handleStatus[prefix] = state;
+    const el = document.getElementById(prefix + '-handle-status');
+    el.className = 'handle-status' + (state === 'ok' ? ' ok' : state === 'bad' ? ' bad' : '');
+    el.innerHTML = (state === 'ok' ? icon('check') + ' ' : '') + escapeHtml(text || '');
+  }
+  function handleLocked() { return !!restaurantProfile.handle; }
+  function onHandleInput(prefix) {
+    const input = document.getElementById(prefix + '-handle-input');
+    const cleaned = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+    if (input.value !== cleaned) input.value = cleaned;
+    document.getElementById(prefix + '-handle-count').textContent = cleaned.length + '/20';
+    clearTimeout(handleTimers[prefix]);
+    if (!cleaned) setHandleStatus(prefix, 'idle', prefix === 'setup' ? "Letters, numbers and underscore only. It can't be changed later." : '');
+    else if (cleaned.length < 3) setHandleStatus(prefix, 'bad', 'Use at least 3 characters.');
+    else {
+      setHandleStatus(prefix, 'checking', 'Checking…');
+      handleTimers[prefix] = setTimeout(() => checkHandle(prefix, cleaned), 400);
+    }
+    if (prefix === 'setup') updateSetupNextState();
+  }
+  async function checkHandle(prefix, value) {
+    let state = 'bad', text = "Couldn't check right now — check your connection.";
+    try {
+      const res = await fetch(`${API_BASE}/api/restaurant-handle/check?handle=${encodeURIComponent(value)}&restaurantId=${encodeURIComponent(currentRestaurantId)}`);
+      const d = await res.json();
+      if (d.available) { state = 'ok'; text = 'Available'; }
+      else text = d.reason || 'Not available.';
+    } catch (e) { /* keep the connection message */ }
+    if (document.getElementById(prefix + '-handle-input').value !== value) return;   // typed on since — stale answer
+    setHandleStatus(prefix, state, text);
+    if (prefix === 'setup') updateSetupNextState();
+  }
+  // Shows the ID field for a restaurant that already has one: read-only, with a short note.
+  function lockHandleField(prefix) {
+    const input = document.getElementById(prefix + '-handle-input');
+    input.value = restaurantProfile.handle;
+    input.readOnly = true;
+    document.getElementById(prefix + '-handle-count').textContent = restaurantProfile.handle.length + '/20';
+    setHandleStatus(prefix, 'idle', "This ID can't be changed — your shared links use it.");
+  }
+  function unlockHandleField(prefix) {
+    const input = document.getElementById(prefix + '-handle-input');
+    input.readOnly = false; input.value = '';
+    document.getElementById(prefix + '-handle-count').textContent = '0/20';
+    setHandleStatus(prefix, 'idle', prefix === 'setup' ? "Letters, numbers and underscore only. It can't be changed later." : 'Pick a unique ID (3–20 letters, numbers or underscore). It can\'t be changed later.');
+  }
+
+  /* ---------- Map picker (Leaflet + OpenStreetMap) ---------- */
+  const pickers = {};
+  const DEFAULT_MAP_CENTER = [19.75, 96.1];   // central Myanmar until we know where the restaurant is
+  function parsePin(v) {
+    const m = /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(v || '');
+    return m ? [parseFloat(m[1]), parseFloat(m[2])] : null;
+  }
+  function pickerIds(key) { return { map: key + '-map', input: key + '-pin-input', status: key + '-pin-status' }; }
+  function initPicker(key) {
+    const ids = pickerIds(key);
+    const el = document.getElementById(ids.map);
+    if (!window.L) {
+      el.innerHTML = '<div class="map-fallback">The map preview couldn\'t load. Check your connection — you can still skip this step.</div>';
+      return;
+    }
+    let p = pickers[key];
+    if (!p) {
+      const map = L.map(el, { zoomControl: true, attributionControl: true }).setView(DEFAULT_MAP_CENTER, 5);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+      map.attributionControl.setPrefix(false);
+      p = pickers[key] = { map, marker: null };
+      map.on('click', e => setPickerPoint(key, e.latlng.lat, e.latlng.lng, false));
+    }
+    // The container was hidden until now, so Leaflet needs to re-measure it before drawing.
+    setTimeout(() => {
+      p.map.invalidateSize();
+      const pin = parsePin(document.getElementById(ids.input).value);
+      if (pin) setPickerPoint(key, pin[0], pin[1], true, true);
+    }, 60);
+  }
+  function setPickerPoint(key, lat, lng, recenter, quiet) {
+    const p = pickers[key]; if (!p) return;
+    const ids = pickerIds(key);
+    if (!p.marker) {
+      p.marker = L.marker([lat, lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div class="map-pin"></div>', iconSize: [28, 28], iconAnchor: [14, 28] }) }).addTo(p.map);
+      p.marker.on('dragend', () => { const ll = p.marker.getLatLng(); setPickerPoint(key, ll.lat, ll.lng, false); });
+    } else p.marker.setLatLng([lat, lng]);
+    if (recenter) p.map.setView([lat, lng], 17);
+    document.getElementById(ids.input).value = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    document.getElementById(ids.status).textContent = quiet ? 'Drag the pin or tap the map to change it.' : 'Pin set — drag it or tap the map to fine-tune.';
+    if (key === 'setup') updateSetupPinState();
+  }
+  function useMyLocation(key) {
+    const ids = pickerIds(key);
+    const status = document.getElementById(ids.status);
+    if (!navigator.geolocation) { status.textContent = "This device can't share its location — you can tap the map instead, or skip."; return; }
+    status.textContent = 'Getting your location…';
+    navigator.geolocation.getCurrentPosition(
+      pos => setPickerPoint(key, pos.coords.latitude, pos.coords.longitude, true),
+      () => { status.textContent = "Couldn't get your location. Allow location access, tap the map instead, or skip for now."; },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  /* ---------- Setup (full-screen) ---------- */
   function showSetupGate() {
     document.getElementById('setup-name-input').value = restaurantProfile.name;
     document.getElementById('setup-tagline-input').value = restaurantProfile.tagline;
@@ -1153,24 +1345,27 @@
     document.getElementById('setup-logo-upload-status').textContent = '';
     document.getElementById('setup-logo-upload-status').classList.remove('error');
     document.getElementById('setup-error').textContent = '';
+    if (handleLocked()) lockHandleField('setup'); else unlockHandleField('setup');
     updateSetupLogoPreview();
     updateSetupNextState();
     updateSetupPinState();
-    document.getElementById('setup-step-1').style.display = 'block';
+    document.getElementById('setup-step-1').style.display = 'flex';
     document.getElementById('setup-step-2').style.display = 'none';
     document.getElementById('app').style.display = 'none';
     document.getElementById('setup-gate').style.display = 'flex';
+    document.getElementById('setup-gate').scrollTop = 0;
   }
 
   function updateSetupLogoPreview() {
     document.getElementById('setup-logo-preview').src = document.getElementById('setup-logo-input').value.trim();
   }
 
-  // "Next" stays disabled until every field on step 1 is filled in.
+  // "Next" stays disabled until every field is filled in AND the restaurant ID is confirmed free.
   function updateSetupNextState() {
     const filled = ['setup-name-input', 'setup-tagline-input', 'setup-logo-input', 'setup-address-input']
       .every(id => document.getElementById(id).value.trim() !== '');
-    document.getElementById('setup-next-btn').disabled = !filled;
+    const handleOk = handleLocked() || handleStatus.setup === 'ok';
+    document.getElementById('setup-next-btn').disabled = !(filled && handleOk);
   }
   ['setup-name-input', 'setup-tagline-input', 'setup-logo-input', 'setup-address-input'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSetupNextState);
@@ -1190,7 +1385,8 @@
       address: document.getElementById('setup-address-input').value.trim(),
       locationPin: restaurantProfile.locationPin || ''
     };
-    if (!profile.name || !profile.tagline || !profile.logoUrl || !profile.address) {
+    if (!handleLocked()) profile.handle = document.getElementById('setup-handle-input').value.trim();
+    if (!profile.name || !profile.tagline || !profile.logoUrl || !profile.address || (!handleLocked() && !profile.handle)) {
       document.getElementById('setup-error').textContent = 'Please fill in every field.';
       return;
     }
@@ -1198,21 +1394,25 @@
     btn.disabled = true;
     const ok = await saveRestaurantProfile(profile);
     if (!ok) {
-      document.getElementById('setup-error').textContent = 'Could not save — check your connection and try again.';
-      btn.disabled = false;
+      document.getElementById('setup-error').textContent = lastSaveError || 'Could not save — check your connection and try again.';
+      if (/taken|already/i.test(lastSaveError)) setHandleStatus('setup', 'bad', lastSaveError);
+      updateSetupNextState();
       return;
     }
     document.getElementById('setup-error').textContent = '';
     applyBrandHeader();
     renderSettingsProfileFields();
     document.getElementById('setup-step-1').style.display = 'none';
-    document.getElementById('setup-step-2').style.display = 'block';
+    document.getElementById('setup-step-2').style.display = 'flex';
+    document.getElementById('setup-gate').scrollTop = 0;
     updateSetupPinState();
+    initPicker('setup');
   }
 
   function backToStep1() {
     document.getElementById('setup-step-2').style.display = 'none';
-    document.getElementById('setup-step-1').style.display = 'block';
+    document.getElementById('setup-step-1').style.display = 'flex';
+    if (handleLocked()) lockHandleField('setup');
     updateSetupNextState();
   }
 
@@ -1227,26 +1427,9 @@
     }
     document.getElementById('setup-gate').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    switchView('items');
     renderLaunchCard();
-    showToast('Profile saved — now add your menu. You can launch from Settings once you have 5 items.');
-  }
-
-  // Fills a field with a Google Maps link for the device's current position.
-  // Needs the person to allow location access; fails gracefully if they don't.
-  function useCurrentLocation(inputId, statusId, onChange) {
-    const status = document.getElementById(statusId);
-    if (!navigator.geolocation) { status.textContent = "This device can't share its location — you can skip this step."; return; }
-    status.textContent = 'Getting your location…';
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
-        document.getElementById(inputId).value = `https://maps.google.com/?q=${lat},${lng}`;
-        status.textContent = '✓ Pin dropped at your current location.';
-        if (onChange) onChange();
-      },
-      () => { status.textContent = "Couldn't get your location. Allow location access and try again, or skip for now."; },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
+    showToast('Profile saved — now add at least 5 menu items to launch.');
   }
 
   /* ================= LAUNCH (publish) ================= */
@@ -1254,22 +1437,26 @@
   function countMenuItems() {
     return menuCategories.reduce((n, c) => n + ((c.items || []).length), 0);
   }
+  // Lives at the bottom of the Menu tab and is redrawn every time the menu changes
+  // (see renderItemsView / renderItemGrid), so the count is always current.
   function renderLaunchCard() {
     const card = document.getElementById('launch-card');
     if (!card) return;
-    if (restaurantProfile.isPublished) {
-      card.classList.add('live');
-      card.innerHTML = `<h3>✅ Your restaurant is live</h3><p style="margin:0;">Customers can see it on the home screen and place orders.</p>`;
+    if (restaurantProfile.isPublished) {      // already live: nothing to show, ever
+      card.style.display = 'none';
+      card.innerHTML = '';
       return;
     }
-    card.classList.remove('live');
     const n = countMenuItems();
     const ready = n >= MIN_ITEMS_TO_PUBLISH;
+    const pct = Math.min(100, Math.round(n / MIN_ITEMS_TO_PUBLISH * 100));
+    card.style.display = 'block';
     card.innerHTML = `
-      <h3>🚧 Your restaurant is not published yet</h3>
-      <p>Customers can't see it until you launch. Add at least ${MIN_ITEMS_TO_PUBLISH} items to your menu first.</p>
+      <h3>${icon('send')} Your restaurant isn't published yet</h3>
+      <p>Customers can't see it until you launch. Add at least ${MIN_ITEMS_TO_PUBLISH} menu items first.</p>
+      <div class="launch-bar"><i style="width:${pct}%"></i></div>
       <div class="launch-progress">${Math.min(n, MIN_ITEMS_TO_PUBLISH)} of ${MIN_ITEMS_TO_PUBLISH} items added${ready ? ' — ready to launch!' : ` — add ${MIN_ITEMS_TO_PUBLISH - n} more`}</div>
-      <button class="btn btn-primary" id="launch-btn" style="width:100%; justify-content:center;" onclick="startLaunching()" ${ready ? '' : 'disabled'}>🚀 Start launching</button>`;
+      <button class="btn btn-primary btn-wide" id="launch-btn" onclick="startLaunching()" ${ready ? '' : 'disabled'}>Start launching</button>`;
   }
   async function startLaunching() {
     if (countMenuItems() < MIN_ITEMS_TO_PUBLISH) { showToast(`Add at least ${MIN_ITEMS_TO_PUBLISH} items first.`); return; }
@@ -1285,7 +1472,7 @@
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
       restaurantProfile.isPublished = true;
-      renderLaunchCard();
+      renderLaunchCard();                                     // removes the card for good
       document.getElementById('launch-success').classList.add('open');
     } catch (err) {
       showToast("Couldn't launch: " + err.message);
@@ -1300,6 +1487,8 @@
     document.getElementById('settings-address-input').value = restaurantProfile.address;
     document.getElementById('settings-pin-input').value = restaurantProfile.locationPin || '';
     document.getElementById('settings-pin-status').textContent = '';
+    if (handleLocked()) lockHandleField('settings'); else unlockHandleField('settings');
+    document.getElementById('hero-handle').textContent = restaurantProfile.handle ? 'ID: ' + restaurantProfile.handle : '';
     document.getElementById('settings-logo-upload-status').textContent = '';
     document.getElementById('settings-logo-upload-status').classList.remove('error');
     updateSettingsLogoPreview();
@@ -1319,8 +1508,16 @@
       address: document.getElementById('settings-address-input').value.trim(),
       locationPin: document.getElementById('settings-pin-input').value.trim()
     };
+    if (!handleLocked()) {
+      const chosen = document.getElementById('settings-handle-input').value.trim();
+      if (chosen) {
+        if (handleStatus.settings !== 'ok') { showToast('Pick an available restaurant ID first (or leave it empty).'); return; }
+        profile.handle = chosen;
+      }
+    }
     const ok = await saveRestaurantProfile(profile);
     if (ok) {
+      renderSettingsProfileFields();
       toggleProfileEdit(false);
       applyBrandHeader();
       showToast('Restaurant profile updated.');
@@ -1535,7 +1732,7 @@
     box.innerHTML = groups.map(g => `
       <div class="group-card" onclick="openGroupDrawer('${scope}','${g.id}')">
         <div class="group-card-top">
-          <span class="group-card-icon">${g.kind === 'single' ? '🔘' : '☑️'}</span>
+          <span class="group-card-icon">${icon(g.kind === 'single' ? 'circleDot' : 'checkSquare')}</span>
           <span class="group-card-title">${escapeHtml(g.title || 'Untitled group')}</span>
           <span class="group-card-badge ${g.required ? 'badge-required' : 'badge-optional'}">${g.required ? 'Required' : 'Optional'}</span>
         </div>
@@ -1656,6 +1853,7 @@
       addBtn.disabled = true;
       document.getElementById('cat-options-hint').textContent = '';
       document.getElementById('item-grid').innerHTML = `<div class="empty-state"><div class="display">No categories yet</div>Tap “＋ Category” above to create your first one.</div>`;
+      renderLaunchCard();
       return;
     }
     addBtn.disabled = false;
@@ -1677,7 +1875,7 @@
     const cat = getSelectedCategory();
     if (!cat) { hint.textContent = ''; return; }
     const n = (cat.optionGroups || []).length;
-    hint.textContent = n > 0 ? `🔘 ${n} shared option group${n === 1 ? '' : 's'} apply to every item in "${cat.name}"` : '';
+    hint.innerHTML = n > 0 ? `${icon('circleDot')} ${n} shared option group${n === 1 ? '' : 's'} apply to every item in "${escapeHtml(cat.name)}"` : '';
   }
   function selectItemCategory(catId) {
     if (longPressed) { longPressed = false; return; }
@@ -1689,40 +1887,43 @@
     return menuCategories.find(c => c.id === activeItemCategoryId) || menuCategories[0] || null;
   }
 
+  const fmtMMK = n => Number(n || 0).toLocaleString('en-US');
   function renderItemGrid() {
     const cat = getSelectedCategory();
     const grid = document.getElementById('item-grid');
-    if (!cat) { grid.innerHTML = ''; return; }
+    if (!cat) { grid.innerHTML = ''; renderLaunchCard(); return; }
     if (cat.items.length === 0) {
       grid.innerHTML = `<div class="empty-state"><div class="display">No items in "${escapeHtml(cat.name)}" yet</div>Tap "+ New Item" above to add the first dish.</div>`;
+      renderLaunchCard();
       return;
     }
     grid.innerHTML = cat.items.map((item, i) => {
       let priceLabel;
       if (item.sizes && item.sizes.length > 0) {
         const prices = item.sizes.map(s => s.price);
-        priceLabel = `${Math.min(...prices)}–${Math.max(...prices)} MMK`;
+        priceLabel = `${fmtMMK(Math.min(...prices))}–${fmtMMK(Math.max(...prices))} MMK`;
       } else {
-        priceLabel = `${item.price} MMK`;
+        priceLabel = `${fmtMMK(item.price)} MMK`;
       }
       const optCount = (item.optionGroups || []).length;
       return `
-        <div class="item-row ${item.soldOut ? 'sold' : ''}">
+        <div class="item-row ${item.soldOut ? 'sold' : ''}" onclick="openItemDrawer(${i})">
           <div class="item-info">
-            <img class="item-thumb" src="${escapeHtml(item.image || '')}" onerror="this.style.opacity=0.25;">
-            <div>
+            ${item.image ? `<img class="item-thumb" src="${escapeHtml(item.image)}" onerror="this.style.opacity=0.25;">` : `<div class="item-thumb ph">${icon('utensils')}</div>`}
+            <div class="item-text">
               <div class="item-name">${escapeHtml(item.name)}${optCount ? `<span class="item-badge">${optCount} option group${optCount===1?'':'s'}</span>` : ''}</div>
+              ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
               <div class="item-price">${priceLabel}</div>
             </div>
           </div>
           <div class="item-actions">
-            <button class="btn btn-outline btn-icon btn-sm" title="Stock" onclick="toggleSoldOut(${i})">${item.soldOut ? '⛔' : '✅'}</button>
-            <button class="btn btn-outline btn-icon btn-sm" onclick="openItemDrawer(${i})">✏️</button>
-            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="deleteItem(${i})">🗑️</button>
+            <button class="btn btn-outline btn-icon btn-sm ${item.soldOut ? 'stock-off' : 'stock-on'}" title="${item.soldOut ? 'Sold out — tap to restock' : 'In stock — tap to mark sold out'}" onclick="event.stopPropagation(); toggleSoldOut(${i})">${icon(item.soldOut ? 'ban' : 'check')}</button>
+            <button class="btn btn-danger-ghost btn-icon btn-sm" title="Delete" onclick="event.stopPropagation(); deleteItem(${i})">${icon('trash')}</button>
           </div>
         </div>
       `;
     }).join('');
+    renderLaunchCard();
   }
 
   function deleteItem(itemIndex) {
@@ -1747,7 +1948,7 @@
       const catDefaults = cat.defaultPrices || [];
       itemDraft = {
         catId: cat.id, editIndex: null, usingCustomSizes: false, sizeNames: [...catSizeNames],
-        name: '', description: '', image: '', rating: '4.8', time: '15-20 Min',
+        name: '', description: '', image: '', time: '10-20 mins',
         price: cat.defaultFlatPrice != null ? cat.defaultFlatPrice : 0,
         sizes: catSizeNames.map((n, i) => ({ name: n, price: catDefaults[i] != null ? catDefaults[i] : 0 })),
         optionGroups: []
@@ -1760,7 +1961,7 @@
       itemDraft = {
         catId: cat.id, editIndex: itemIndex, usingCustomSizes, sizeNames: [...effectiveSizeNames],
         name: item.name, description: item.description || '', image: item.image || '',
-        rating: item.rating || '4.8', time: item.time || '15-20 Min',
+        time: item.time || '10-20 mins',
         price: item.price || 0,
         sizes: effectiveSizeNames.map(n => {
           const existing = (item.sizes || []).find(s => s.name === n);
@@ -1774,8 +1975,8 @@
     document.getElementById('item-image-input').value = itemDraft.image;
     document.getElementById('item-name-input').value = itemDraft.name;
     document.getElementById('item-desc-input').value = itemDraft.description;
-    document.getElementById('item-rating-input').value = itemDraft.rating;
-    document.getElementById('item-time-input').value = itemDraft.time;
+    setPrepTimeSelect(itemDraft.time);
+    updateDescCount();
     document.getElementById('item-new-size-input').value = '';
     document.getElementById('item-add-size-btn').disabled = true;
     document.getElementById('upload-status').textContent = '';
@@ -1789,6 +1990,24 @@
     const itemDrawerBody = document.querySelector('#item-drawer-overlay .drawer-body');
     if (itemDrawerBody) itemDrawerBody.scrollTop = 0;
     document.getElementById('item-drawer-overlay').classList.add('open');
+  }
+  // Fixed prep-time choices; an older item whose saved time isn't one of them keeps it as an extra option.
+  function setPrepTimeSelect(value) {
+    const sel = document.getElementById('item-time-input');
+    sel.querySelectorAll('option[data-extra]').forEach(o => o.remove());
+    if (value && ![...sel.options].some(o => o.value === value)) {
+      const o = document.createElement('option');
+      o.value = value; o.textContent = value + ' (current)'; o.setAttribute('data-extra', '1');
+      sel.appendChild(o);
+    }
+    sel.value = value || '10-20 mins';
+  }
+  const ITEM_DESC_MAX = 50;
+  function updateDescCount() {
+    const len = document.getElementById('item-desc-input').value.length;
+    const el = document.getElementById('item-desc-count');
+    el.textContent = len + '/' + ITEM_DESC_MAX;
+    el.style.color = len > ITEM_DESC_MAX ? 'var(--brick)' : '';
   }
   function closeItemDrawer() {
     document.getElementById('item-drawer-overlay').classList.remove('open');
@@ -1816,7 +2035,7 @@
     box.innerHTML = groups.map(g => `
       <div class="group-card group-card-readonly">
         <div class="group-card-top">
-          <span class="group-card-icon">${g.kind === 'single' ? '🔘' : '☑️'}</span>
+          <span class="group-card-icon">${icon(g.kind === 'single' ? 'circleDot' : 'checkSquare')}</span>
           <span class="group-card-title">${escapeHtml(g.title || 'Untitled group')}</span>
           <span class="group-card-badge ${g.required ? 'badge-required' : 'badge-optional'}">${g.required ? 'Required' : 'Optional'}</span>
         </div>
@@ -2007,6 +2226,8 @@
   function saveItemDrawer() {
     const name = document.getElementById('item-name-input').value.trim();
     if (!name) { showToast('Item name is required.'); return; }
+    const descText = document.getElementById('item-desc-input').value.trim();
+    if (descText.length > ITEM_DESC_MAX) { showToast(`Description must be ${ITEM_DESC_MAX} characters or fewer (now ${descText.length}).`); return; }
     const cat = menuCategories.find(c => c.id === itemDraft.catId);
     if (!cat) return;
 
@@ -2014,10 +2235,9 @@
       id: itemDraft.editIndex === null ? Date.now() : cat.items[itemDraft.editIndex].id,
       name,
       soldOut: itemDraft.editIndex === null ? false : !!cat.items[itemDraft.editIndex].soldOut,
-      description: document.getElementById('item-desc-input').value.trim(),
+      description: descText,
       image: document.getElementById('item-image-input').value.trim(),
-      rating: document.getElementById('item-rating-input').value.trim() || '4.8',
-      time: document.getElementById('item-time-input').value.trim() || '15-20 Min',
+      time: document.getElementById('item-time-input').value || '10-20 mins',
       optionGroups: itemDraft.optionGroups
     };
 
@@ -2104,7 +2324,7 @@
         <div class="option-row">
           <div class="option-row-top">
             <input type="text" value="${escapeHtml(opt.name)}" placeholder="Option name" oninput="updateGroupOptionName(${i},this.value)">
-            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeGroupOption(${i})">🗑️</button>
+            <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeGroupOption(${i})">${icon('trash')}</button>
           </div>
           ${priceInputs}
         </div>
@@ -2206,7 +2426,7 @@
       ordersData = d.orders;
       const fresh = ordersData.filter(o => o.status === 'restaurant_pending' && !seenOrders.has(o.orderId));
       fresh.forEach(o => seenOrders.add(o.orderId));
-      if (fresh.length && !ordersFirst) { beep(); tg?.HapticFeedback?.notificationOccurred('success'); showToast('🔔 New order ' + fresh[0].orderId); }
+      if (fresh.length && !ordersFirst) { beep(); tg?.HapticFeedback?.notificationOccurred('success'); showToast('New order ' + fresh[0].orderId); }
       ordersFirst = false;
       const n = ordersData.filter(o => o.status === 'restaurant_pending').length, b = document.getElementById('orders-badge');
       b.textContent = n; b.style.display = n ? 'block' : 'none';
@@ -2238,10 +2458,10 @@
   }
   function orderBody(o) {
     const items = o.items.map(i => `<div class="o-item"><b>${i.quantity}×</b> ${escapeHtml(i.name)}${i.options && i.options !== 'Standard' ? `<div class="o-opt">${escapeHtml(i.options).replace(/ \| /g, ' · ')}</div>` : ''}</div>`).join('');
-    const phone = o.customerPhone ? `<a href="tel:${escapeHtml(o.customerPhone)}">📞 ${escapeHtml(o.customerPhone)}</a>` : '';
+    const phone = o.customerPhone ? `<a href="tel:${escapeHtml(o.customerPhone)}">${icon('call')} ${escapeHtml(o.customerPhone)}</a>` : '';
     return `<div class="o-who">${escapeHtml(o.customerName)}${phone}</div>
-      <div class="o-addr">${o.address ? '📍 ' + escapeHtml(o.address) : '🏃 Pickup'}</div>${o.note ? `<div class="o-note">📝 ${escapeHtml(o.note)}</div>` : ''}${items}
-      <div class="o-foot"><span>${escapeHtml((o.paymentMethod || '').toUpperCase())}${o.riderName ? ' · 🚴 ' + escapeHtml(o.riderName) : ''}</span><b>${money(o.total)} MMK</b></div>`;
+      <div class="o-addr">${o.address ? icon('pin') + ' ' + escapeHtml(o.address) : icon('package') + ' Pickup'}</div>${o.note ? `<div class="o-note">${icon('clipboard')} ${escapeHtml(o.note)}</div>` : ''}${items}
+      <div class="o-foot"><span>${escapeHtml((o.paymentMethod || '').toUpperCase())}${o.riderName ? ' · ' + icon('bike') + ' ' + escapeHtml(o.riderName) : ''}</span><b>${money(o.total)} MMK</b></div>`;
   }
   function orderHead(o) {
     const [label, cls] = STATUS[o.status] || [o.status, 'wait'];
@@ -2254,7 +2474,7 @@
       box.innerHTML = list.length ? list.map(o => `<div class="o-card ${o.status === 'restaurant_pending' ? 'new' : ''}">${orderHead(o)}${orderBody(o)}${
         o.status === 'restaurant_pending'
           ? `<div class="o-actions"><button class="btn btn-danger-ghost" onclick="orderAction('${o.orderId}','reject')">Reject</button><button class="btn btn-primary" onclick="orderAction('${o.orderId}','accept')">Accept</button></div>`
-          : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">🍽️ Mark ready</button></div>`)}</div>`).join('')
+          : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">${icon('check')} Mark ready</button></div>`)}</div>`).join('')
         : `<div class="empty-state"><div class="display">No active orders</div>New orders appear here with a sound alert.</div>`;
       return;
     }
@@ -2299,7 +2519,7 @@
   function toggleProfileEdit(on) {
     document.getElementById('profile-edit-card').style.display = on ? 'block' : 'none';
     document.querySelector('#profile-hero .btn-ghost').style.display = on ? 'none' : '';
-    if (on) document.getElementById('profile-edit-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (on) { document.getElementById('profile-edit-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); initPicker('settings'); }
   }
 
   /* ---- long-press category menu (Telegram-style) ---- */
