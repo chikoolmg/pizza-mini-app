@@ -141,6 +141,7 @@
   .setup-actions { display: flex; gap: 10px; align-items: center; }
   .setup-actions .btn-primary { flex: 1; justify-content: center; }
   .pin-hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+  .pin-hint.error { color: var(--brick); font-weight: 600; }
   .launch-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; margin-top: 20px; }
   .launch-card h3 { font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
   .launch-card h3 .ico { color: var(--primary); font-size: 18px; }
@@ -148,6 +149,14 @@
   .launch-bar { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
   .launch-bar > i { display: block; height: 100%; background: var(--primary); border-radius: 99px; transition: width .35s ease; }
   .launch-progress { font-size: 12px; font-weight: 600; color: var(--ink); margin: 0 0 14px; }
+  .launch-card.done { border-color: var(--ok); background: var(--ok-tint); }
+  .launch-card.done .launch-bar { background: #CDEBD9; }
+  .launch-card.done .launch-bar > i { background: var(--ok); }
+  .launch-card.done .launch-progress { color: var(--ok); display: flex; align-items: center; gap: 8px; }
+  .launch-card.done h3 .ico { color: var(--ok); }
+  .launch-done-badge { width: 22px; height: 22px; border-radius: 50%; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; animation: launchPop .4s ease; }
+  .launch-done-badge .ico { font-size: 13px; color: #fff; }
+  @keyframes launchPop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
   #launch-success { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
   #launch-success.open { display: flex; }
   #launch-success .box { background: var(--card); border-radius: 20px; padding: 30px 24px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
@@ -376,7 +385,7 @@
   .group-card-badge.badge-required { background: var(--brick-tint); color: var(--brick); }
   .group-card-badge.badge-optional { background: var(--primary-tint); color: var(--primary-dark); }
   .group-card-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; margin-left: 23px; }
-  .field input[type="text"], .field input[type="number"], .field input[type="url"], .field textarea, .field select {
+  .field input[type="text"], .field input[type="number"], .field input.price-input, .field input[type="url"], .field textarea, .field select {
     width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
     font-size: 13.5px; background: #fff;
   }
@@ -439,8 +448,8 @@
   }
   .size-check-row .chk-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; flex: 1; min-width: 0; }
   .size-check-row .chk-label input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); flex-shrink: 0; }
-  .size-check-row input[type="number"] { width: 96px; flex: 0 0 auto; padding: 7px 8px; font-size: 12.5px; }
-  .size-check-row input[type="number"]:disabled { opacity: .4; }
+  .size-check-row input[type="number"], .size-check-row input.price-input { width: 96px; flex: 0 0 auto; padding: 7px 8px; font-size: 12.5px; }
+  .size-check-row input[type="number"]:disabled, .size-check-row input.price-input:disabled { opacity: .4; }
 
   .toast {
     position: fixed; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
@@ -561,19 +570,19 @@
 
       <div class="field">
         <label>Restaurant name</label>
-        <input type="text" id="setup-name-input" placeholder="e.g. Bite & Slice Pizzeria">
+        <input type="text" id="setup-name-input" placeholder="e.g. Restaurant name">
       </div>
       <div class="field">
         <label>Restaurant ID <span style="font-weight:400;">(unique — used for your shareable link)</span></label>
         <div class="handle-wrap">
-          <input type="text" id="setup-handle-input" class="mono-input" placeholder="e.g. pizza_supreme" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('setup')">
+          <input type="text" id="setup-handle-input" class="mono-input" placeholder="e.g. moon_cafe" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('setup')">
           <span class="handle-count" id="setup-handle-count">0/20</span>
         </div>
-        <div class="handle-status" id="setup-handle-status">Letters, numbers and underscore only. It can't be changed later.</div>
+        <div class="handle-status" id="setup-handle-status">4–20 characters, starts with a letter. Letters, numbers and _ only. It can't be changed later.</div>
       </div>
       <div class="field">
         <label>Tagline / title <span style="font-weight:400;">(shown under your name to customers)</span></label>
-        <input type="text" id="setup-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
+        <input type="text" id="setup-tagline-input" placeholder="e.g. A short line about your food">
       </div>
       <div class="field">
         <label>Restaurant address</label>
@@ -656,19 +665,19 @@
         <p>Shown to customers in the app.</p>
         <div class="field">
           <label>Restaurant name</label>
-          <input type="text" id="settings-name-input" placeholder="e.g. Bite & Slice Pizzeria">
+          <input type="text" id="settings-name-input" placeholder="e.g. Restaurant name">
         </div>
         <div class="field">
           <label>Restaurant ID</label>
           <div class="handle-wrap">
-            <input type="text" id="settings-handle-input" class="mono-input" placeholder="e.g. pizza_supreme" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('settings')">
+            <input type="text" id="settings-handle-input" class="mono-input" placeholder="e.g. moon_cafe" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" oninput="onHandleInput('settings')">
             <span class="handle-count" id="settings-handle-count">0/20</span>
           </div>
           <div class="handle-status" id="settings-handle-status"></div>
         </div>
         <div class="field">
           <label>Tagline / title</label>
-          <input type="text" id="settings-tagline-input" placeholder="e.g. Authentic Italian Pizzas & Cheesy Sides">
+          <input type="text" id="settings-tagline-input" placeholder="e.g. A short line about your food">
         </div>
         <div class="field">
           <label>Logo</label>
@@ -726,15 +735,9 @@
       <button class="drawer-close" onclick="closeCategoryDrawer()">×</button>
     </div>
     <div class="drawer-body">
-      <div class="field-row">
-        <div class="field" style="flex:0 0 80px;">
-          <label>Icon</label>
-          <input type="text" id="cat-icon-input" placeholder="🍕" maxlength="4">
-        </div>
-        <div class="field" style="flex:1;">
-          <label>Category name</label>
-          <input type="text" id="cat-name-input" placeholder="e.g. Premium Pizza">
-        </div>
+      <div class="field">
+        <label>Category name</label>
+        <input type="text" id="cat-name-input" placeholder="e.g. Category name">
       </div>
 
       <p class="important-note">Adding sizes and options in the category will apply to all items under this category.</p>
@@ -789,13 +792,13 @@
       </div>
       <div class="field">
         <label>Name</label>
-        <input type="text" id="item-name-input" placeholder="e.g. Cheesy Margherita">
+        <input type="text" id="item-name-input" placeholder="e.g. Food name" oninput="updateItemSaveState()">
       </div>
       <div class="field">
-        <label>Description <span style="font-weight:400;">(max 50 characters)</span></label>
+        <label>Description <span style="font-weight:400;">(max 150 characters)</span></label>
         <div class="handle-wrap">
-          <input type="text" id="item-desc-input" maxlength="50" placeholder="What's in it, what makes it good…" oninput="updateDescCount()">
-          <span class="handle-count" id="item-desc-count">0/50</span>
+          <input type="text" id="item-desc-input" maxlength="150" placeholder="What's in it, what makes it good…" oninput="updateDescCount(); updateItemSaveState()">
+          <span class="handle-count" id="item-desc-count">0/150</span>
         </div>
       </div>
       <div class="field" id="item-price-field">
@@ -840,7 +843,7 @@
     </div>
     <div class="drawer-foot">
       <button class="btn btn-outline" onclick="closeItemDrawer()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveItemDrawer()">Save Item</button>
+      <button class="btn btn-primary" id="item-save-btn" onclick="saveItemDrawer()" disabled>Save Item</button>
     </div>
   </div>
 </div>
@@ -859,7 +862,7 @@
     <div class="drawer-body">
       <div class="field">
         <label>Group title (shown to customers)</label>
-        <input type="text" id="group-title-input" placeholder="e.g. Crust Type">
+        <input type="text" id="group-title-input" placeholder="e.g. Group name">
       </div>
       <div class="field">
         <label class="chk-label" style="font-weight:700; font-size:13.5px;">
@@ -1198,7 +1201,7 @@
     const nameEl = document.getElementById('brand-restaurant-name');
     const logoImg = document.getElementById('brand-logo-img');
     const logoFallback = document.getElementById('brand-logo-fallback');
-    if (nameEl) nameEl.textContent = restaurantProfile.name || 'tgi pizza';
+    if (nameEl) nameEl.textContent = restaurantProfile.name || 'My Restaurant';
     if (restaurantProfile.logoUrl && logoImg && logoFallback) {
       logoImg.src = restaurantProfile.logoUrl;
       logoImg.style.display = 'block';
@@ -1240,14 +1243,23 @@
     el.innerHTML = (state === 'ok' ? icon('check') + ' ' : '') + escapeHtml(text || '');
   }
   function handleLocked() { return !!restaurantProfile.handle; }
+  // Same rule as the server: 4–20 chars, first character a letter, then letters / numbers / underscore.
+  // Capitals are folded to lowercase, so "Mooncafe" and "mooncafe" are always the SAME ID.
+  const HANDLE_RE = /^[a-z][a-z0-9_]{3,19}$/;
+  function handleIdleText(prefix) {
+    return prefix === 'setup'
+      ? "4–20 characters, starts with a letter. Letters, numbers and _ only. It can't be changed later."
+      : '';
+  }
   function onHandleInput(prefix) {
     const input = document.getElementById(prefix + '-handle-input');
     const cleaned = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
     if (input.value !== cleaned) input.value = cleaned;
     document.getElementById(prefix + '-handle-count').textContent = cleaned.length + '/20';
     clearTimeout(handleTimers[prefix]);
-    if (!cleaned) setHandleStatus(prefix, 'idle', prefix === 'setup' ? "Letters, numbers and underscore only. It can't be changed later." : '');
-    else if (cleaned.length < 3) setHandleStatus(prefix, 'bad', 'Use at least 3 characters.');
+    if (!cleaned) setHandleStatus(prefix, 'idle', handleIdleText(prefix));
+    else if (!/^[a-z]/.test(cleaned)) setHandleStatus(prefix, 'bad', 'The ID must start with a letter (not a number or _).');
+    else if (cleaned.length < 4) setHandleStatus(prefix, 'bad', 'Use at least 4 characters.');
     else {
       setHandleStatus(prefix, 'checking', 'Checking…');
       handleTimers[prefix] = setTimeout(() => checkHandle(prefix, cleaned), 400);
@@ -1256,6 +1268,7 @@
   }
   async function checkHandle(prefix, value) {
     let state = 'bad', text = "Couldn't check right now — check your connection.";
+    if (!HANDLE_RE.test(value)) { setHandleStatus(prefix, 'bad', 'Use 4–20 characters, starting with a letter.'); if (prefix === 'setup') updateSetupNextState(); return; }
     try {
       const res = await fetch(`${API_BASE}/api/restaurant-handle/check?handle=${encodeURIComponent(value)}&restaurantId=${encodeURIComponent(currentRestaurantId)}`);
       const d = await res.json();
@@ -1278,7 +1291,7 @@
     const input = document.getElementById(prefix + '-handle-input');
     input.readOnly = false; input.value = '';
     document.getElementById(prefix + '-handle-count').textContent = '0/20';
-    setHandleStatus(prefix, 'idle', prefix === 'setup' ? "Letters, numbers and underscore only. It can't be changed later." : 'Pick a unique ID (3–20 letters, numbers or underscore). It can\'t be changed later.');
+    setHandleStatus(prefix, 'idle', prefix === 'setup' ? "4–20 characters, starts with a letter. Letters, numbers and _ only. It can't be changed later." : 'Pick a unique ID (4–20 characters, starts with a letter; letters, numbers or _). It can\'t be changed later.');
   }
 
   /* ---------- Map picker (Leaflet + OpenStreetMap) ---------- */
@@ -1320,17 +1333,19 @@
     } else p.marker.setLatLng([lat, lng]);
     if (recenter) p.map.setView([lat, lng], 17);
     document.getElementById(ids.input).value = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    document.getElementById(ids.status).classList.remove('error');
     document.getElementById(ids.status).textContent = quiet ? 'Drag the pin or tap the map to change it.' : 'Pin set — drag it or tap the map to fine-tune.';
     if (key === 'setup') updateSetupPinState();
   }
   function useMyLocation(key) {
     const ids = pickerIds(key);
     const status = document.getElementById(ids.status);
-    if (!navigator.geolocation) { status.textContent = "This device can't share its location — you can tap the map instead, or skip."; return; }
+    status.classList.remove('error');
+    if (!navigator.geolocation) { status.textContent = "This device can't share its location — you can tap the map instead, or skip."; status.classList.add('error'); return; }
     status.textContent = 'Getting your location…';
     navigator.geolocation.getCurrentPosition(
       pos => setPickerPoint(key, pos.coords.latitude, pos.coords.longitude, true),
-      () => { status.textContent = "Couldn't get your location. Allow location access, tap the map instead, or skip for now."; },
+      () => { status.textContent = "Couldn't get your location. Allow location access, tap the map instead, or skip for now."; status.classList.add('error'); },
       { enableHighAccuracy: true, timeout: 15000 }
     );
   }
@@ -1375,33 +1390,33 @@
     document.getElementById('setup-continue-btn').disabled = !document.getElementById('setup-pin-input').value.trim();
   }
 
-  // Step 1 -> step 2. The profile is saved here, so closing the app between
-  // the two steps doesn't lose anything.
-  async function completeSetup() {
+  // Reads the whole setup form into one profile object (nothing is sent anywhere here).
+  function readSetupProfile() {
     const profile = {
       name: document.getElementById('setup-name-input').value.trim(),
       tagline: document.getElementById('setup-tagline-input').value.trim(),
       logoUrl: document.getElementById('setup-logo-input').value.trim(),
       address: document.getElementById('setup-address-input').value.trim(),
-      locationPin: restaurantProfile.locationPin || ''
+      locationPin: document.getElementById('setup-pin-input').value.trim()
     };
-    if (!handleLocked()) profile.handle = document.getElementById('setup-handle-input').value.trim();
+    if (!handleLocked()) profile.handle = document.getElementById('setup-handle-input').value.trim().toLowerCase();
+    return profile;
+  }
+
+  // Step 1 -> step 2. NOTHING is saved here — the logo, name, ID and the rest of the form
+  // stay in the form, so the owner can still come back and change any of it (including the ID).
+  // Everything is saved in one go by finishSetup(), when they leave for the menu.
+  function completeSetup() {
+    const profile = readSetupProfile();
     if (!profile.name || !profile.tagline || !profile.logoUrl || !profile.address || (!handleLocked() && !profile.handle)) {
       document.getElementById('setup-error').textContent = 'Please fill in every field.';
       return;
     }
-    const btn = document.getElementById('setup-next-btn');
-    btn.disabled = true;
-    const ok = await saveRestaurantProfile(profile);
-    if (!ok) {
-      document.getElementById('setup-error').textContent = lastSaveError || 'Could not save — check your connection and try again.';
-      if (/taken|already/i.test(lastSaveError)) setHandleStatus('setup', 'bad', lastSaveError);
-      updateSetupNextState();
+    if (!handleLocked() && (!HANDLE_RE.test(profile.handle) || handleStatus.setup !== 'ok')) {
+      document.getElementById('setup-error').textContent = 'Please choose an available restaurant ID.';
       return;
     }
     document.getElementById('setup-error').textContent = '';
-    applyBrandHeader();
-    renderSettingsProfileFields();
     document.getElementById('setup-step-1').style.display = 'none';
     document.getElementById('setup-step-2').style.display = 'flex';
     document.getElementById('setup-gate').scrollTop = 0;
@@ -1412,19 +1427,46 @@
   function backToStep1() {
     document.getElementById('setup-step-2').style.display = 'none';
     document.getElementById('setup-step-1').style.display = 'flex';
-    if (handleLocked()) lockHandleField('setup');
+    if (handleLocked()) lockHandleField('setup');   // only locks once it has really been saved
     updateSetupNextState();
   }
 
-  // Step 2 -> the menu. withPin=false is the "Skip for now" path.
+  // Step 2 -> the menu: the ONE place the setup form is saved. withPin=false is "Skip for now"
+  // (everything except the location pin is saved).
+  let setupSaving = false;
   async function finishSetup(withPin) {
+    if (setupSaving) return;
+    const profile = readSetupProfile();
     if (withPin) {
-      const pin = document.getElementById('setup-pin-input').value.trim();
-      if (!pin) return;
-      const ok = await saveRestaurantProfile(Object.assign({}, restaurantProfile, { locationPin: pin }));
-      if (!ok) return; // saveRestaurantProfile already showed the error toast
-      renderSettingsProfileFields();
+      if (!profile.locationPin) return;
+    } else {
+      profile.locationPin = restaurantProfile.locationPin || '';   // skipping must not save a pin
     }
+    if (!profile.name || !profile.tagline || !profile.logoUrl || !profile.address || (!handleLocked() && !profile.handle)) {
+      backToStep1();
+      document.getElementById('setup-error').textContent = 'Please fill in every field.';
+      return;
+    }
+    if (!handleLocked() && !HANDLE_RE.test(profile.handle)) {
+      backToStep1();
+      setHandleStatus('setup', 'bad', 'Use 4–20 characters, starting with a letter.');
+      updateSetupNextState();
+      return;
+    }
+    setupSaving = true;
+    const ok = await saveRestaurantProfile(profile);
+    setupSaving = false;
+    if (!ok) {
+      // The server is the final judge of the ID (someone may have taken it a moment ago) —
+      // if it refused, send the owner back to fix it; nothing was saved.
+      backToStep1();
+      document.getElementById('setup-error').textContent = lastSaveError || 'Could not save — check your connection and try again.';
+      if (/taken|already|ID/i.test(lastSaveError)) setHandleStatus('setup', 'bad', lastSaveError);
+      updateSetupNextState();
+      return;
+    }
+    applyBrandHeader();
+    renderSettingsProfileFields();
     document.getElementById('setup-gate').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     switchView('items');
@@ -1451,11 +1493,14 @@
     const ready = n >= MIN_ITEMS_TO_PUBLISH;
     const pct = Math.min(100, Math.round(n / MIN_ITEMS_TO_PUBLISH * 100));
     card.style.display = 'block';
+    card.classList.toggle('done', ready);
     card.innerHTML = `
-      <h3>${icon('send')} Your restaurant isn't published yet</h3>
-      <p>Customers can't see it until you launch. Add at least ${MIN_ITEMS_TO_PUBLISH} menu items first.</p>
+      <h3>${icon(ready ? 'check' : 'send')} ${ready ? 'Congratulations! Your menu is ready' : "Your restaurant isn't published yet"}</h3>
+      <p>${ready ? 'You added all the items you need. Tap below to go live — customers will be able to see your restaurant.' : `Customers can't see it until you launch. Add at least ${MIN_ITEMS_TO_PUBLISH} menu items first.`}</p>
       <div class="launch-bar"><i style="width:${pct}%"></i></div>
-      <div class="launch-progress">${Math.min(n, MIN_ITEMS_TO_PUBLISH)} of ${MIN_ITEMS_TO_PUBLISH} items added${ready ? ' — ready to launch!' : ` — add ${MIN_ITEMS_TO_PUBLISH - n} more`}</div>
+      <div class="launch-progress">${ready
+        ? `<span class="launch-done-badge">${icon('check')}</span><span>${MIN_ITEMS_TO_PUBLISH} of ${MIN_ITEMS_TO_PUBLISH} items added — ready to launch!</span>`
+        : `${Math.min(n, MIN_ITEMS_TO_PUBLISH)} of ${MIN_ITEMS_TO_PUBLISH} items added — add ${MIN_ITEMS_TO_PUBLISH - n} more`}</div>
       <button class="btn btn-primary btn-wide" id="launch-btn" onclick="startLaunching()" ${ready ? '' : 'disabled'}>Start launching</button>`;
   }
   async function startLaunching() {
@@ -1611,7 +1656,7 @@
   /* ---- Category drawer ---- */
   function openCategoryDrawer(index = null) {
     if (index === null) {
-      catDraft = { editIndex: null, name: '', icon: '🍕', sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null };
+      catDraft = { editIndex: null, name: '', icon: '🍽️', sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null };
       document.getElementById('cat-drawer-title').textContent = 'New Category';
     } else {
       const cat = menuCategories[index];
@@ -1627,7 +1672,6 @@
       document.getElementById('cat-drawer-title').textContent = `Edit "${cat.name}"`;
     }
     document.getElementById('cat-name-input').value = catDraft.name;
-    document.getElementById('cat-icon-input').value = catDraft.icon;
     document.getElementById('cat-new-size-input').value = '';
     document.getElementById('cat-add-size-btn').disabled = true;
     renderCatSizeChips();
@@ -1650,7 +1694,6 @@
   function collectCategoryFormState() {
     return {
       name: document.getElementById('cat-name-input').value.trim(),
-      icon: document.getElementById('cat-icon-input').value.trim(),
       sizeNames: catDraft.sizeNames,
       defaultPrices: catDraft.defaultPrices,
       defaultFlatPrice: catDraft.defaultFlatPrice,
@@ -1748,7 +1791,7 @@
   function commitCategoryDraft() {
     const name = document.getElementById('cat-name-input').value.trim();
     if (!name) { showToast('Category name is required.'); return null; }
-    const icon = document.getElementById('cat-icon-input').value.trim() || '🍽️';
+    const icon = (catDraft.editIndex !== null && menuCategories[catDraft.editIndex] && menuCategories[catDraft.editIndex].icon) || '🍽️';   // no icon field any more: keep whatever an old category already has
 
     let cat;
     if (catDraft.editIndex === null) {
@@ -1814,7 +1857,7 @@
       box.innerHTML = `
         <div class="size-check-row">
           <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatFlatPriceChk(this.checked)">Starting price for every item</label>
-          <input type="number" id="cat-bulk-flat-price" placeholder="Not set" value="${checked ? catDraft.defaultFlatPrice : ''}" ${checked ? '' : 'disabled'} oninput="updateCatFlatPrice(this.value)">
+          <input type="text" inputmode="numeric" class="price-input" id="cat-bulk-flat-price" placeholder="MMK" value="${checked ? priceText(catDraft.defaultFlatPrice) : ''}" ${checked ? '' : 'disabled'} oninput="updateCatFlatPrice(this.value)">
         </div>`;
     } else {
       box.innerHTML = catDraft.sizeNames.map((n, i) => {
@@ -1823,7 +1866,7 @@
         return `
           <div class="size-check-row">
             <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCatSizePriceChk(${i},this.checked)">${escapeHtml(n)}</label>
-            <input type="number" class="cat-bulk-size-price" data-size-index="${i}" placeholder="Not set" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateCatDefaultPrice(${i},this.value)">
+            <input type="text" inputmode="numeric" class="price-input cat-bulk-size-price" data-size-index="${i}" placeholder="MMK" value="${checked ? priceText(val) : ''}" ${checked ? '' : 'disabled'} oninput="updateCatDefaultPrice(${i},this.value)">
           </div>`;
       }).join('');
     }
@@ -1833,7 +1876,7 @@
     renderCatBulkPriceInputs();
   }
   function updateCatFlatPrice(value) {
-    catDraft.defaultFlatPrice = value === '' ? 0 : (parseFloat(value) || 0);
+    catDraft.defaultFlatPrice = value === '' ? 0 : (parseInt(value, 10) || 0);
   }
   function toggleCatSizePriceChk(i, on) {
     if (!catDraft.defaultPrices) catDraft.defaultPrices = catDraft.sizeNames.map(() => null);
@@ -1841,7 +1884,7 @@
     renderCatBulkPriceInputs();
   }
   function updateCatDefaultPrice(i, value) {
-    catDraft.defaultPrices[i] = value === '' ? 0 : (parseFloat(value) || 0);
+    catDraft.defaultPrices[i] = value === '' ? 0 : (parseInt(value, 10) || 0);
   }
 
   /* ================= ITEMS VIEW ================= */
@@ -1863,7 +1906,7 @@
       activeItemCategoryId = menuCategories[0].id;
     }
     tabsEl.innerHTML = menuCategories.map(c => `
-      <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" data-id="${c.id}" onclick="selectItemCategory('${c.id}')">${c.icon || ''} ${escapeHtml(c.name)}</button>
+      <button class="cat-chip-tab ${c.id === activeItemCategoryId ? 'active' : ''}" data-id="${c.id}" onclick="selectItemCategory('${c.id}')">${escapeHtml(c.name)}</button>
     `).join('') + ADD_CHIP;
     renderCatOptionsHint();
     renderItemGrid();
@@ -1935,6 +1978,18 @@
     renderItemGrid();
   }
 
+  /* ---- Price fields: digits only, never starting with 0, always an "MMK" placeholder ---- */
+  // 0 / empty is shown as an empty box (the "MMK" placeholder) so a price can never be displayed starting with 0.
+  function priceText(v) { return v ? String(v) : ''; }
+  // Runs in the capture phase, i.e. BEFORE each field's own oninput, so those handlers always read the cleaned value.
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (!el || !el.classList || !el.classList.contains('price-input')) return;
+    const cleaned = el.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 9);
+    if (el.value !== cleaned) el.value = cleaned;
+  }, true);
+  const PRICE_OK = /^[1-9]\d{0,8}$/;
+
   /* ---- Item drawer ---- */
   function openItemDrawer(itemIndex) {
     const cat = getSelectedCategory();
@@ -2002,13 +2057,25 @@
     }
     sel.value = value || '10-20 mins';
   }
-  const ITEM_DESC_MAX = 50;
+  const ITEM_DESC_MAX = 150;
   function updateDescCount() {
     const len = document.getElementById('item-desc-input').value.length;
     const el = document.getElementById('item-desc-count');
     el.textContent = len + '/' + ITEM_DESC_MAX;
     el.style.color = len > ITEM_DESC_MAX ? 'var(--brick)' : '';
   }
+  // "Save Item" stays disabled until the name, the description and EVERY price box are filled in.
+  function itemFormComplete() {
+    if (!document.getElementById('item-name-input').value.trim()) return false;
+    if (!document.getElementById('item-desc-input').value.trim()) return false;
+    const prices = [...document.querySelectorAll('#item-price-inputs .price-input')];
+    return prices.length > 0 && prices.every(inp => PRICE_OK.test(inp.value.trim()));
+  }
+  function updateItemSaveState() {
+    const btn = document.getElementById('item-save-btn');
+    if (btn) btn.disabled = !itemFormComplete();
+  }
+  document.getElementById('item-price-inputs').addEventListener('input', updateItemSaveState);
   function closeItemDrawer() {
     document.getElementById('item-drawer-overlay').classList.remove('open');
     itemDraft = null;
@@ -2076,10 +2143,10 @@
   function captureItemPricingFromDom() {
     if (itemDraft.sizeNames.length === 0) {
       const flat = document.getElementById('item-flat-price');
-      if (flat) itemDraft.price = parseFloat(flat.value) || 0;
+      if (flat) itemDraft.price = parseInt(flat.value, 10) || 0;
     } else {
       document.querySelectorAll('.item-size-price').forEach((inp, i) => {
-        if (itemDraft.sizes[i]) itemDraft.sizes[i].price = parseFloat(inp.value) || 0;
+        if (itemDraft.sizes[i]) itemDraft.sizes[i].price = parseInt(inp.value, 10) || 0;
       });
     }
   }
@@ -2211,21 +2278,23 @@
     const box = document.getElementById('item-price-inputs');
     if (itemDraft.sizeNames.length === 0) {
       label.textContent = 'Price (MMK)';
-      box.innerHTML = `<input type="number" id="item-flat-price" value="${itemDraft.price}">`;
+      box.innerHTML = `<input type="text" inputmode="numeric" class="price-input" id="item-flat-price" placeholder="MMK" autocomplete="off" value="${priceText(itemDraft.price)}">`;
     } else {
       label.textContent = 'Price per size (MMK)';
       box.innerHTML = `<div class="size-price-grid">` + itemDraft.sizeNames.map((n, i) => `
         <div class="size-price-cell">
           <label>${escapeHtml(n)}</label>
-          <input type="number" data-size-index="${i}" class="item-size-price" value="${itemDraft.sizes[i].price}">
+          <input type="text" inputmode="numeric" data-size-index="${i}" class="price-input item-size-price" placeholder="MMK" autocomplete="off" value="${priceText(itemDraft.sizes[i].price)}">
         </div>
       `).join('') + `</div>`;
     }
+    updateItemSaveState();
   }
 
   function saveItemDrawer() {
     const name = document.getElementById('item-name-input').value.trim();
     if (!name) { showToast('Item name is required.'); return; }
+    if (!itemFormComplete()) { showToast('Fill in the name, description and price first.'); return; }
     const descText = document.getElementById('item-desc-input').value.trim();
     if (descText.length > ITEM_DESC_MAX) { showToast(`Description must be ${ITEM_DESC_MAX} characters or fewer (now ${descText.length}).`); return; }
     const cat = menuCategories.find(c => c.id === itemDraft.catId);
@@ -2249,11 +2318,11 @@
     }
 
     if (itemDraft.sizeNames.length === 0) {
-      item.price = parseFloat(document.getElementById('item-flat-price').value) || 0;
+      item.price = parseInt(document.getElementById('item-flat-price').value, 10) || 0;
       item.sizes = [];
     } else {
       const sizeInputs = document.querySelectorAll('.item-size-price');
-      const sizes = itemDraft.sizeNames.map((n, i) => ({ name: n, price: parseFloat(sizeInputs[i].value) || 0 }));
+      const sizes = itemDraft.sizeNames.map((n, i) => ({ name: n, price: parseInt(sizeInputs[i].value, 10) || 0 }));
       item.sizes = sizes;
       item.price = sizes[0].price;
     }
@@ -2316,10 +2385,10 @@
             return `
               <div class="size-check-row">
                 <label class="chk-label"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleGroupOptionSizeChk(${i},${si},this.checked)">${escapeHtml(n)}</label>
-                <input type="number" placeholder="Not available" value="${checked ? val : ''}" ${checked ? '' : 'disabled'} oninput="updateGroupOptionPrice(${i},${si},this.value)">
+                <input type="text" inputmode="numeric" class="price-input" placeholder="MMK" value="${checked ? priceText(val) : ''}" ${checked ? '' : 'disabled'} oninput="updateGroupOptionPrice(${i},${si},this.value)">
               </div>`;
           }).join('') + `</div>`
-        : `<div class="option-price-grid"><div><label>Price (MMK)</label><input type="number" value="${opt.price || 0}" oninput="updateGroupOptionFlatPrice(${i},this.value)"></div></div>`;
+        : `<div class="option-price-grid"><div><label>Price (MMK)</label><input type="text" inputmode="numeric" class="price-input" placeholder="MMK" value="${priceText(opt.price)}" oninput="updateGroupOptionFlatPrice(${i},this.value)"></div></div>`;
       return `
         <div class="option-row">
           <div class="option-row-top">
@@ -2337,7 +2406,7 @@
     renderGroupOptionsList();
   }
   function updateGroupOptionName(i, value) { groupDraft.options[i].name = value; }
-  function updateGroupOptionFlatPrice(i, value) { groupDraft.options[i].price = parseFloat(value) || 0; }
+  function updateGroupOptionFlatPrice(i, value) { groupDraft.options[i].price = parseInt(value, 10) || 0; }
   function toggleGroupOptionSizeChk(i, si, on) {
     const opt = groupDraft.options[i];
     if (!opt.prices) opt.prices = groupDraftSizeNames().map(() => null);
@@ -2347,7 +2416,7 @@
   function updateGroupOptionPrice(i, si, value) {
     const opt = groupDraft.options[i];
     if (!opt.prices) opt.prices = groupDraftSizeNames().map(() => null);
-    opt.prices[si] = value === '' ? 0 : (parseFloat(value) || 0);
+    opt.prices[si] = value === '' ? 0 : (parseInt(value, 10) || 0);
   }
   function removeGroupOption(i) {
     groupDraft.options.splice(i, 1);
