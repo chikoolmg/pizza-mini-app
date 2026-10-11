@@ -1746,6 +1746,38 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     // ================= TELEGRAM BACKEND CONNECTION =================
 const SERVER_URL = 'https://chitkool.pythonanywhere.com';
 
+// ================= 5% GOVERNMENT COMMERCIAL TAX =================
+// Each restaurant's owner sets this in admin.html (saved as enableTax + taxMode and served by
+// GET /api/restaurant-info). It is read per restaurant because the cart can hold several of them.
+//   inclusive: the 5% is already inside the menu prices → checkout only shows an "(incl. …)" note.
+//   exclusive: the 5% is added on top of the subtotal as a separate "Gov Tax" line.
+// The server re-calculates the tax on every order from the restaurant's saved settings, so this is
+// what the customer SEES; the amount actually charged can't go stale. Whole MMK, rounded half up —
+// keep in sync with compute_tax() in the Python backend.
+const TAX_RATE_PERCENT = 5;
+const taxSettingsByRestaurant = {};   // restaurantId -> { enableTax, taxMode }
+async function loadTaxSettings(restaurantId) {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/restaurant-info?restaurant=${encodeURIComponent(restaurantId)}`);
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const info = await res.json();
+        taxSettingsByRestaurant[restaurantId] = {
+            enableTax: info.enableTax === true,
+            taxMode: info.taxMode === 'exclusive' ? 'exclusive' : 'inclusive'
+        };
+    } catch (e) {
+        console.warn('Could not load tax settings:', e);   // keep whatever we had; the server still applies the right tax
+    }
+}
+function computeTax(restaurantId, subtotal) {
+    const t = taxSettingsByRestaurant[restaurantId] || { enableTax: false, taxMode: 'inclusive' };
+    if (!t.enableTax || subtotal <= 0) return { enabled: false, mode: '', tax: 0, extra: 0 };
+    const tax = t.taxMode === 'exclusive'
+        ? Math.floor((subtotal + 10) / 20)        // 5% on top of the subtotal
+        : Math.floor((2 * subtotal + 21) / 42);   // the 5% already inside the subtotal (subtotal × 5/105)
+    return { enabled: true, mode: t.taxMode, tax, extra: t.taxMode === 'exclusive' ? tax : 0 };
+}
+
 async function submitFinalOrder() {
     if (isSubmittingOrder) return; // Prevent double/rapid taps from firing multiple orders
     const items = cartItems.filter(i => i.restaurantId === activeCartRestaurantId);
@@ -1760,7 +1792,8 @@ async function submitFinalOrder() {
     let subtotal = items.reduce((a, b) => a + (b.unitPrice * b.quantity), 0);
     let fee = 0;
     let delivery = 0;
-    let grandTotal = subtotal + fee + delivery;
+    const taxInfo = computeTax(activeCartRestaurantId, subtotal);
+    let grandTotal = subtotal + fee + delivery + taxInfo.extra;
 
     const orderData = {
         initData: tg?.initData || '',
@@ -1770,7 +1803,7 @@ async function submitFinalOrder() {
         paymentMethod: selectedPaymentMethod,
         comment: (orderComment || '').trim().slice(0, 300),
         items: items,
-        pricing: { subtotal, fee, delivery, total: grandTotal },
+        pricing: { subtotal, fee, delivery, tax: taxInfo.tax, taxMode: taxInfo.mode, taxRate: taxInfo.enabled ? TAX_RATE_PERCENT : 0, total: grandTotal },
         restaurantId: activeCartRestaurantId,
         orderId: pendingOrderRef || undefined // the id already shown on the Checkout page — server reuses it as-is if valid
     };
@@ -3477,6 +3510,7 @@ async function submitFinalOrder() {
             // Real, server-issued id — reused as-is by submitFinalOrder() below,
             // so what's shown here is exactly what the order is created under.
             pendingOrderRef = result.orderId;
+            await loadTaxSettings(activeCartRestaurantId);   // the owner may have changed it since the menu loaded
             switchNavTab('checkout');
         } catch (e) {
             console.error(e);
@@ -3507,6 +3541,8 @@ async function submitFinalOrder() {
         // A future "Costing" section in the developer dashboard can add taxes
         // and fees here; pricing.fees below is where they'd be summed in.
         const fees = []; // [{ label, amount }, …] — populated from the dashboard later
+        const taxInfo = computeTax(activeCartRestaurantId, items.reduce((a, b) => a + (b.unitPrice * b.quantity), 0));
+        if (taxInfo.enabled && taxInfo.mode === 'exclusive') fees.push({ label: `Gov Tax (${TAX_RATE_PERCENT}%)`, amount: taxInfo.tax });
 
         let itemsHtml = '';
         let itemsTotal = 0;
@@ -3542,6 +3578,7 @@ async function submitFinalOrder() {
                 <div style="margin-bottom: 8px;">${itemsHtml}</div>
                 ${fees.map(f => `<div class="summary-row" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>${escPay(f.label)}</span><span>${f.amount} MMK</span></div>`).join('')}
                 <div class="summary-row grand-total" style="border-top: 1px dashed var(--border-light); padding-top: 10px;"><span>Total</span><span style="color: var(--text-main); font-weight: 800;">${grandTotal} MMK</span></div>
+                ${taxInfo.enabled && taxInfo.mode === 'inclusive' ? `<div style="text-align:right; font-size:11.5px; color:var(--text-muted); margin-top:6px;">(incl. ${TAX_RATE_PERCENT}% commercial tax: ${taxInfo.tax} MMK)</div>` : ''}
             </div>
 
             <div style="margin-top: 20px; margin-bottom: 24px;">
