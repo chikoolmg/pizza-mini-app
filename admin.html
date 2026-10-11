@@ -328,7 +328,33 @@
   }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; font-weight: 600; }
   .settings-card p { font-size: 12px; color: var(--muted); margin: 0 0 14px; line-height: 1.5; }
-  .settings-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .settings-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* ---- Tax settings ---- */
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; padding: 4px 0 2px; }
+  .switch-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .switch-text b { font-size: 13.5px; font-weight: 700; }
+  .switch-text small { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+  .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+  .switch i { position: absolute; inset: 0; background: #D5D8DE; border-radius: 99px; transition: background .2s; }
+  .switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .switch input:checked + i { background: var(--primary); }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  .switch input:focus-visible + i { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .tax-mode-wrap { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .tax-mode-wrap.off { opacity: .45; pointer-events: none; }
+  .tax-mode-opt { display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; cursor: pointer; background: var(--card); }
+  .tax-mode-opt input { margin-top: 3px; accent-color: var(--primary); width: 17px; height: 17px; flex-shrink: 0; }
+  .tax-mode-opt.selected { border-color: var(--primary); background: var(--primary-tint); }
+  .tax-mode-opt span { display: flex; flex-direction: column; gap: 2px; }
+  .tax-mode-opt b { font-size: 13px; font-weight: 700; }
+  .tax-mode-opt small { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+  .tax-example { font-size: 12px; background: var(--paper); border-radius: 10px; padding: 10px 12px; line-height: 1.6; color: var(--ink); }
+  .tax-example .dim { color: var(--muted); }
+  #tax-save-status { font-size: 12px; color: var(--muted); }
+  #tax-save-status.ok { color: var(--ok); font-weight: 600; }
+  #tax-save-status.bad { color: var(--brick); font-weight: 600; }
 
   /* ============ DRAWER (slide-over form) ============ */
   .drawer-overlay {
@@ -706,6 +732,36 @@
         </div>
       </div>
 
+      <div class="settings-card" id="tax-card">
+        <h3><i class="ico ico-accent" data-icon="receipt"></i> Government commercial tax</h3>
+        <p>Turn this on if your restaurant charges the 5% Government Commercial Tax. Customers see it at checkout.</p>
+
+        <label class="switch-row" for="tax-enable-input">
+          <span class="switch-text">
+            <b>Enable 5% Government Commercial Tax</b>
+            <small>When off, checkout shows no tax at all.</small>
+          </span>
+          <span class="switch"><input type="checkbox" id="tax-enable-input" onchange="onTaxFormChange()"><i></i></span>
+        </label>
+
+        <div class="tax-mode-wrap off" id="tax-mode-wrap">
+          <label class="tax-mode-opt" id="tax-opt-inclusive">
+            <input type="radio" name="tax-mode" value="inclusive" onchange="onTaxFormChange()">
+            <span><b>Tax Inclusive</b><small>The 5% is already built into your menu prices. Checkout shows "(incl. 5% commercial tax: … MMK)" and the total doesn't change.</small></span>
+          </label>
+          <label class="tax-mode-opt" id="tax-opt-exclusive">
+            <input type="radio" name="tax-mode" value="exclusive" onchange="onTaxFormChange()">
+            <span><b>Tax Exclusive</b><small>The 5% is added on top of the subtotal at checkout as a separate "Gov Tax" line.</small></span>
+          </label>
+          <div class="tax-example" id="tax-example"></div>
+        </div>
+
+        <div class="settings-row" style="margin-top:14px;">
+          <button class="btn btn-primary btn-sm" id="tax-save-btn" onclick="saveTaxSettings()" disabled>Save tax settings</button>
+          <span id="tax-save-status"></span>
+        </div>
+      </div>
+
       <div class="settings-card">
         <h3><i class="ico ico-accent" data-icon="download"></i> Backup &amp; restore</h3>
         <p>Export the full menu as a JSON file, or paste one back in to restore it. Useful before making big changes, or to copy a menu between restaurants later.</p>
@@ -907,6 +963,7 @@
 
   // ================= ICONS (inline SVG — replaces the old emojis) =================
   const ICONS = {
+    receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
     lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
     ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
     clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
@@ -969,7 +1026,7 @@
   // The current restaurant's profile — name/tagline/logo/address shown to
   // customers. Populated on login (or session restore) from the server's
   // response, not fetched separately.
-  let restaurantProfile = { name: '', handle: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false };
+  let restaurantProfile = { name: '', handle: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false, enableTax: false, taxMode: 'inclusive' };
 
   // Working state for the category drawer while it's open.
   let catDraft = null; // { editIndex, name, icon, sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null }
@@ -1039,6 +1096,9 @@
       address: restaurant.address || '',
       locationPin: restaurant.locationPin || '',
       handle: restaurant.handle || '',
+      // Tax: off unless the server explicitly says on; an older server that doesn't send these = no tax.
+      enableTax: restaurant.enableTax === true,
+      taxMode: restaurant.taxMode === 'exclusive' ? 'exclusive' : 'inclusive',
       // Only an explicit false hides the restaurant — an older server that
       // doesn't send this field must not make everyone look unpublished.
       isPublished: restaurant.isPublished !== false
@@ -1173,6 +1233,7 @@
     document.getElementById('not-approved-gate').style.display = 'none';
     applyBrandHeader();
     renderSettingsProfileFields(); // keep Settings tab in sync regardless of which screen shows first
+    renderTaxSettings();
     renderLaunchCard();
 
     if (isFreshRestaurant()) {
@@ -1472,6 +1533,74 @@
     switchView('items');
     renderLaunchCard();
     showToast('Profile saved — now add at least 5 menu items to launch.');
+  }
+
+  /* ================= TAX SETTINGS (5% Government Commercial Tax) ================= */
+  // Saved on the restaurant as { enableTax: boolean, taxMode: 'inclusive' | 'exclusive' }.
+  // index.html reads them from GET /api/restaurant-info, and the server re-calculates the tax on every
+  // order from these same saved values, so the customer app can never charge a stale amount.
+  const TAX_RATE = 5;
+  function taxFormValues() {
+    const checked = document.querySelector('input[name="tax-mode"]:checked');
+    return {
+      enableTax: document.getElementById('tax-enable-input').checked,
+      taxMode: checked ? checked.value : 'inclusive'
+    };
+  }
+  // Same whole-MMK rounding as the server and index.html.
+  function calcTax(subtotal, mode) {
+    return mode === 'exclusive' ? Math.floor((subtotal + 10) / 20) : Math.floor((2 * subtotal + 21) / 42);
+  }
+  function setTaxStatus(text, state) {
+    const el = document.getElementById('tax-save-status');
+    el.textContent = text || '';
+    el.className = state || '';
+  }
+  // Fills the form from what is saved (also discards unsaved edits).
+  function renderTaxSettings() {
+    document.getElementById('tax-enable-input').checked = !!restaurantProfile.enableTax;
+    document.querySelectorAll('input[name="tax-mode"]').forEach(r => { r.checked = r.value === (restaurantProfile.taxMode || 'inclusive'); });
+    setTaxStatus('');
+    refreshTaxForm();
+  }
+  // Re-draws everything that depends on the current form values (mode cards, example, Save button).
+  function refreshTaxForm() {
+    const v = taxFormValues();
+    document.getElementById('tax-mode-wrap').classList.toggle('off', !v.enableTax);
+    document.querySelectorAll('input[name="tax-mode"]').forEach(r => { r.disabled = !v.enableTax; });
+    document.getElementById('tax-opt-inclusive').classList.toggle('selected', v.taxMode === 'inclusive');
+    document.getElementById('tax-opt-exclusive').classList.toggle('selected', v.taxMode === 'exclusive');
+    const sample = 10000, tax = calcTax(sample, v.taxMode);
+    document.getElementById('tax-example').innerHTML = v.taxMode === 'exclusive'
+      ? `<span class="dim">Example — items 10,000 MMK</span><br>Gov Tax (5%): ${fmtMMK(tax)} MMK<br><b>Total: ${fmtMMK(sample + tax)} MMK</b>`
+      : `<span class="dim">Example — items 10,000 MMK</span><br>(incl. 5% commercial tax: ${fmtMMK(tax)} MMK)<br><b>Total: ${fmtMMK(sample)} MMK</b>`;
+    const saved = { enableTax: !!restaurantProfile.enableTax, taxMode: restaurantProfile.taxMode || 'inclusive' };
+    document.getElementById('tax-save-btn').disabled = (v.enableTax === saved.enableTax && v.taxMode === saved.taxMode);
+  }
+  function onTaxFormChange() { setTaxStatus(''); refreshTaxForm(); }
+
+  async function saveTaxSettings() {
+    const v = taxFormValues();
+    const btn = document.getElementById('tax-save-btn');
+    btn.disabled = true;
+    setTaxStatus('Saving…');
+    // /api/admin/restaurant-info always wants the name; the other profile fields are sent back
+    // unchanged, so saving tax never alters the profile.
+    const ok = await saveRestaurantProfile({
+      name: restaurantProfile.name,
+      tagline: restaurantProfile.tagline,
+      logoUrl: restaurantProfile.logoUrl,
+      address: restaurantProfile.address,
+      enableTax: v.enableTax,
+      taxMode: v.taxMode
+    });
+    if (ok) {
+      setTaxStatus(v.enableTax ? `Saved — ${v.taxMode === 'exclusive' ? 'tax added at checkout' : 'tax included in prices'}.` : 'Saved — tax is off.', 'ok');
+      showToast('Tax settings saved.');
+    } else {
+      setTaxStatus(lastSaveError || 'Could not save — check your connection.', 'bad');
+    }
+    refreshTaxForm();
   }
 
   /* ================= LAUNCH (publish) ================= */
