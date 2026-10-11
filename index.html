@@ -974,19 +974,85 @@
             border: 1px solid var(--border-light);
         }
 
-        /* --- PROFILE PAGE: order stats + order history list --- */
-        .profile-stats-row {
-            display: flex;
-            justify-content: space-around;
-            background: var(--bg-card);
-            border-radius: 18px;
-            padding: 16px 8px;
-            margin-top: 14px;
-            border: 1px solid var(--border-light);
-        }
-        .profile-stat-item { flex: 1; text-align: center; }
-        .profile-stat-value { font-size: 18px; font-weight: 800; color: var(--text-main); }
-        .profile-stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        /* ================= PROFILE PAGE (redesign) ================= */
+        .pf-card { position: relative; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 24px; padding: 0 16px 20px; text-align: center; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.05); }
+        .pf-card::before { content: ''; display: block; height: 76px; margin: 0 -16px; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); }
+        .pf-avatar { position: relative; width: 88px; height: 88px; border-radius: 50%; margin: -44px auto 0; border: 4px solid var(--bg-card); background: var(--primary-tint); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 38px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+        .pf-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .pf-name { margin-top: 12px; font-size: 19px; font-weight: 800; color: var(--text-main); letter-spacing: -0.2px; }
+        .pf-handle { margin-top: 2px; font-size: 13.5px; font-weight: 600; color: var(--primary); }
+        .pf-id { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 6px 14px; border-radius: 999px; background: var(--bg-main); border: 1px solid var(--border-light); font-size: 12px; font-weight: 600; color: var(--text-muted); }
+        .pf-id b { color: var(--text-main); font-weight: 700; letter-spacing: 0.2px; }
+
+        .pf-stats { display: flex; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 20px; margin-top: 14px; padding: 14px 4px; }
+        .pf-stat { flex: 1; text-align: center; min-width: 0; }
+        .pf-stat + .pf-stat { border-left: 1px solid var(--border-light); }
+        .pf-stat-value { font-size: 22px; font-weight: 800; line-height: 1.1; color: var(--text-main); }
+        .pf-stat.active .pf-stat-value { color: var(--primary); }
+        .pf-stat.delivered .pf-stat-value { color: var(--success-green); }
+        .pf-stat-label { margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+        .pf-section-head { display: flex; align-items: center; justify-content: space-between; margin: 24px 2px 12px; }
+        .pf-section-head h2 { font-size: 17px; font-weight: 700; color: var(--text-main); }
+        .pf-viewall { display: inline-flex; align-items: center; gap: 2px; background: none; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; color: var(--primary); cursor: pointer; padding: 6px 0 6px 12px; }
+        .pf-viewall .ico { font-size: 15px; margin: 0; }
+        .pf-viewall:active { opacity: 0.6; }
+        .pf-empty { text-align: center; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 20px; padding: 28px 20px; }
+        .pf-empty .ico { font-size: 34px; color: var(--primary); }
+        .pf-empty-title { margin-top: 8px; font-size: 14.5px; font-weight: 700; color: var(--text-main); }
+        .pf-empty-sub { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+
+        /* Active order card */
+        .ao-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 20px; padding: 14px 14px 10px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .ao-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .ao-rest { font-size: 15px; font-weight: 700; color: var(--text-main); }
+        .ao-sub { margin-top: 2px; font-size: 11.5px; color: var(--text-muted); }
+        .ao-est { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--primary-tint); color: var(--primary-hover); font-size: 13px; font-weight: 700; }
+        .ao-est .ico { font-size: 18px; }
+        .ao-track { margin-top: 8px; }
+
+        /* Order tracker ring (SVG). Orange up to the current stage, grey after, green once delivered. */
+        .trk { display: block; width: 100%; height: auto; --trk-on: var(--primary); --trk-off: #DADDE3; }
+        .trk.done { --trk-on: var(--success-green); }
+        .trk-seg { fill: none; stroke: var(--trk-off); stroke-width: 6; }
+        .trk-seg.on { stroke: var(--trk-on); }
+        .trk-arrow { fill: #FFFFFF; }
+        .trk-dot { fill: #FFFFFF; stroke: var(--trk-off); stroke-width: 3.5; }
+        .trk-dot.on { fill: var(--trk-on); stroke: var(--trk-on); }
+        .trk-pulse { fill: var(--trk-on); }
+        .trk-check { fill: none; stroke: #FFFFFF; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+        .trk-inner { fill: #FFFFFF; }
+        .trk-label { font-size: 12px; font-weight: 600; fill: #9AA0AA; }
+        .trk-label.on { fill: var(--text-main); }
+        .trk-time { font-size: 10.5px; font-weight: 600; fill: var(--trk-on); }
+        .trk-start { stroke: var(--trk-on); stroke-width: 5; stroke-linecap: round; }
+        .trk-start-text { font-size: 9.5px; font-weight: 800; letter-spacing: 1.2px; fill: var(--trk-on); }
+        .trk-cap { font-size: 9.5px; font-weight: 700; letter-spacing: 0.8px; fill: var(--text-muted); }
+        .trk-title { font-size: 12.5px; font-weight: 800; fill: var(--text-main); }
+        .trk.done .trk-title { fill: var(--success-green); }
+        .trk-goal { fill: var(--success-green); }
+
+        /* Full-screen order history */
+        .hist-modal { position: absolute; inset: 0; z-index: 120; display: flex; flex-direction: column; background: var(--bg-main); padding-top: var(--app-top-inset); transform: translateX(100%); visibility: hidden; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s linear .3s; }
+        .hist-modal.open { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s; }
+        .hist-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg-card); border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
+        .hist-back { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--bg-main); color: var(--text-main); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        .hist-back .ico { transform: rotate(180deg); margin: 0; }
+        .hist-title { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        .hist-tabs { display: flex; gap: 8px; padding: 12px 16px; background: var(--bg-card); flex-shrink: 0; }
+        .hist-tab { flex: 1; padding: 9px 4px; border-radius: 12px; border: 1.5px solid var(--border-light); background: var(--bg-card); font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+        .hist-tab small { font-size: 11px; font-weight: 600; opacity: .8; }
+        .hist-tab.on { background: var(--primary); border-color: var(--primary); color: #FFFFFF; }
+        .hist-list { flex: 1; overflow-y: auto; padding: 14px 16px calc(24px + var(--app-bottom-inset)); }
+        .hist-row { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 16px; margin-bottom: 10px; overflow: hidden; }
+        .hist-row-main { display: flex; align-items: center; gap: 12px; padding: 14px; }
+        .hist-row.expandable .hist-row-main { cursor: pointer; }
+        .hist-detail { display: none; padding: 0 12px 10px; border-top: 1px dashed var(--border-light); }
+        .hist-row.open .hist-detail { display: block; }
+        .hist-row .order-history-info { flex: 1; min-width: 0; }
+        .hist-chev { font-size: 14px; color: var(--text-muted); transition: transform .2s; flex-shrink: 0; }
+        .hist-chev .ico { margin: 0; }
+        .hist-row.open .hist-chev { transform: rotate(90deg); }
 
         .order-history-item {
             display: flex;
@@ -1329,43 +1395,47 @@
             <h1>My Profile <i class="ico" data-icon="user"></i></h1>
         </header>
         <div class="scrollable-view-content" style="padding: 16px;">
-            <div class="simple-card-view" style="padding: 20px;">
-                <div id="profile-avatar-fallback" style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; overflow: hidden;"><i class="ico" data-icon="user" style="font-size:34px;"></i></div>
-                <img id="profile-avatar-img" src="" alt="Profile photo" style="display:none; width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 2px solid var(--primary-tint);">
-                <h3 id="profile-display-name" style="font-size: 16px; color: var(--text-main); text-align: center;">
-    Guest Customer
-</h3>
-
-<p id="telegram-user-info"
-   style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;">
-    Telegram information loading...
-</p>
-<p id="app-diag"
-   style="font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 6px; opacity:.8;"></p>
-<p id="telegram-username-info"
-   style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 2px; display:none;">
-</p>
-                <button class="btn-browse" style="width: 100%; margin-top: 14px; font-size: 12px;" onclick="switchNavTab('cart')">Edit Saved Profile Info</button>
+            <div class="pf-card">
+                <div class="pf-avatar">
+                    <img id="profile-avatar-img" src="" alt="Profile photo" style="display:none;">
+                    <span id="profile-avatar-fallback" style="display:flex;"><i class="ico" data-icon="user"></i></span>
+                </div>
+                <div class="pf-name" id="profile-display-name">Guest Customer</div>
+                <div class="pf-handle" id="telegram-username-info" style="display:none;"></div>
+                <div class="pf-id" id="pf-id-pill" style="display:none;">Telegram ID <b id="telegram-user-info"></b></div>
             </div>
 
-            <div class="profile-stats-row" id="profile-stats-row">
-                <div class="profile-stat-item">
-                    <div class="profile-stat-value" id="stat-pending-orders">0</div>
-                    <div class="profile-stat-label">Pending</div>
+            <div class="pf-stats">
+                <div class="pf-stat active">
+                    <div class="pf-stat-value" id="stat-active-orders">0</div>
+                    <div class="pf-stat-label">Active Orders</div>
                 </div>
-                <div class="profile-stat-item">
-                    <div class="profile-stat-value" id="stat-succeeded-orders">0</div>
-                    <div class="profile-stat-label">Succeeded</div>
+                <div class="pf-stat delivered">
+                    <div class="pf-stat-value" id="stat-delivered-orders">0</div>
+                    <div class="pf-stat-label">Delivered Orders</div>
                 </div>
-                <div class="profile-stat-item">
-                    <div class="profile-stat-value" id="stat-saved-addresses">0</div>
-                    <div class="profile-stat-label">Addresses</div>
+                <div class="pf-stat">
+                    <div class="pf-stat-value" id="stat-saved-addresses">0</div>
+                    <div class="pf-stat-label">Saved Addresses</div>
                 </div>
             </div>
 
-            <div class="cart-section-title" style="margin-top: 22px;"><i class="ico ico-accent" data-icon="package"></i> Order History</div>
-            <div id="profile-order-history-list"></div>
+            <div class="pf-section-head">
+                <h2>Active Orders</h2>
+                <button class="pf-viewall" onclick="openOrderHistory()">View All <i class="ico" data-icon="chevronRight"></i></button>
+            </div>
+            <div id="profile-active-orders"></div>
         </div>
+    </div>
+
+    <!-- FULL-SCREEN ORDER HISTORY (opened by "View All >" on the Profile page) -->
+    <div class="hist-modal" id="order-history-modal" aria-hidden="true">
+        <div class="hist-head">
+            <button class="hist-back" onclick="closeOrderHistory()" aria-label="Back"><i class="ico" data-icon="chevronRight"></i></button>
+            <div class="hist-title">Order History</div>
+        </div>
+        <div class="hist-tabs" id="hist-tabs"></div>
+        <div class="hist-list" id="hist-list"></div>
     </div>
 
 
@@ -1549,85 +1619,50 @@ if (tg) {
     applyTelegramInsets();
 }
 
-// Small status line at the bottom of the Profile card (build + what Telegram reports), so it is
-// obvious whether the newest file is running and why fullscreen did or didn't switch on.
-let fullscreenFailReason = '';
-function updateDiag() {
-    const el = document.getElementById('app-diag');
-    if (!el) return;
-    if (!tg) { el.textContent = 'build fs2 · not inside Telegram'; return; }
-    el.textContent = `build fs2 · ${tg.platform} · API ${tg.version} · fullscreen: ${tg.isFullscreen ? 'on' : 'off'}`
-        + (fullscreenFailReason ? ` (${fullscreenFailReason})` : '')
-        + ` · top ${document.documentElement.style.getPropertyValue('--app-top-inset') || '0px'}`;
-}
-if (tg) {
-    try {
-        tg.onEvent('fullscreenChanged', updateDiag);
-        tg.onEvent('fullscreenFailed', (e) => { fullscreenFailReason = (e && e.error) || 'failed'; updateDiag(); });
-        tg.onEvent('safeAreaChanged', updateDiag);
-        tg.onEvent('contentSafeAreaChanged', updateDiag);
-    } catch (e) {}
-}
-document.addEventListener('DOMContentLoaded', () => { updateDiag(); setTimeout(updateDiag, 1500); });
-
 const telegramUser = tg?.initDataUnsafe?.user || null;
     function displayTelegramUser() {
+        const nameEl = document.getElementById('profile-display-name');
+        const idEl = document.getElementById('telegram-user-info');
+        const idPill = document.getElementById('pf-id-pill');
+        const handleEl = document.getElementById('telegram-username-info');
+        const avatarImg = document.getElementById('profile-avatar-img');
+        const avatarFallback = document.getElementById('profile-avatar-fallback');
+        if (!nameEl || !idEl) return;
 
-    const nameElement = document.getElementById('profile-display-name');
-    const infoElement = document.getElementById('telegram-user-info');
-    const usernameElement = document.getElementById('telegram-username-info');
-    const avatarImg = document.getElementById('profile-avatar-img');
-    const avatarFallback = document.getElementById('profile-avatar-fallback');
+        if (!telegramUser) {
+            nameEl.innerText = 'Guest Customer';
+            if (idPill) idPill.style.display = 'none';
+            if (handleEl) handleEl.style.display = 'none';
+            return;
+        }
 
-    if (!nameElement || !infoElement) return;
+        nameEl.innerText = getTelegramFullName() || telegramUser.first_name || 'Telegram User';
+        idEl.innerText = telegramUser.id;
+        if (idPill) idPill.style.display = 'inline-flex';
 
-    if (!telegramUser) {
-        nameElement.innerText = "Guest Customer";
-        infoElement.innerText = "Not opened from Telegram";
-        if (usernameElement) usernameElement.style.display = 'none';
-        return;
-    }
+        // @handle under the name (only when the user has set a Telegram username).
+        if (handleEl) {
+            if (telegramUser.username) {
+                handleEl.innerText = `@${telegramUser.username}`;
+                handleEl.style.display = 'block';
+            } else {
+                handleEl.style.display = 'none';
+            }
+        }
 
-    nameElement.innerText = getTelegramFullName() || telegramUser.first_name || "Telegram User";
-
-    infoElement.innerText =
-    `Telegram ID: ${telegramUser.id}`;
-
-    // Telegram username, shown right under the ID (only when the user has one set).
-    if (usernameElement) {
-        if (telegramUser.username) {
-            usernameElement.innerText = `@${telegramUser.username}`;
-            usernameElement.style.display = 'block';
-        } else {
-            usernameElement.style.display = 'none';
+        // Telegram only sends a photo_url in limited cases — otherwise the icon avatar stays.
+        if (avatarImg && avatarFallback) {
+            if (telegramUser.photo_url) {
+                avatarImg.src = telegramUser.photo_url;
+                avatarImg.style.display = 'block';
+                avatarFallback.style.display = 'none';
+                avatarImg.onerror = () => { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; };
+            } else {
+                avatarImg.style.display = 'none';
+                avatarFallback.style.display = 'flex';
+            }
         }
     }
-
-    // Telegram's WebApp initData only includes a `photo_url` for the user in limited
-    // cases (mainly Premium accounts) — use it when present, otherwise keep the emoji
-    // avatar fallback rather than failing silently.
-    if (avatarImg && avatarFallback) {
-        if (telegramUser.photo_url) {
-            avatarImg.src = telegramUser.photo_url;
-            avatarImg.style.display = 'block';
-            avatarFallback.style.display = 'none';
-            avatarImg.onerror = () => { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; };
-        } else {
-            avatarImg.style.display = 'none';
-            avatarFallback.style.display = 'flex';
-        }
-    }
-
-    console.log("Telegram Mini App started.");
-
-    if (telegramUser) {
-        console.log("Telegram User ID:", telegramUser.id);
-        console.log("Telegram First Name:", telegramUser.first_name);
-        console.log("Telegram Username:", telegramUser.username);
-    } else {
-        console.log("Not opened inside Telegram.");
-    }
-}
 
     // Returns the user's Telegram display name (first + last), used to lock the
     // checkout name field. Empty string when not opened inside Telegram.
@@ -1636,88 +1671,275 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         return [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ');
     }
 
-    // Populates the Profile page's Pending/Succeeded/Addresses stats and the
-    // Order History list from GET /api/orders/<telegramUser.id>. Called every
-    // time the Profile tab is opened so it reflects any admin confirm/cancel
-    // action taken in Telegram since the last visit.
-    async function renderProfileOrders() {
-        const listEl = document.getElementById('profile-order-history-list');
-        const pendingStat = document.getElementById('stat-pending-orders');
-        const succeededStat = document.getElementById('stat-succeeded-orders');
-        const addressesStat = document.getElementById('stat-saved-addresses');
+    /* ================= PROFILE: active orders, order tracker, full history ================= */
 
+    // Every status the bot can put an order in, with its label + colour. The last three are legacy
+    // statuses from before the multi-stage flow, kept so older orders still render.
+    const ORDER_STATUS_META = {
+        payment_pending:    { icon: icon('clock'),       label: 'Verifying Payment',      css: 'pending' },
+        payment_failed:     { icon: icon('xCircle'),     label: 'Payment Failed',         css: 'canceled' },
+        restaurant_pending: { icon: icon('clock'),       label: 'Waiting for Restaurant', css: 'pending' },
+        order_rejected:     { icon: icon('xCircle'),     label: 'Rejected',               css: 'canceled' },
+        awaiting_rider:     { icon: icon('chef'),        label: 'Preparing',              css: 'pending' },
+        rider_assigned:     { icon: icon('bike'),        label: 'Out for Delivery',       css: 'pending' },
+        delivered:          { icon: icon('checkCircle'), label: 'Delivered',              css: 'confirmed' },
+        user_canceled:      { icon: icon('xCircle'),     label: 'Canceled',               css: 'canceled' },
+        pending:            { icon: icon('clock'),       label: 'Pending',                css: 'pending' },
+        confirmed:          { icon: icon('checkCircle'), label: 'Succeeded',              css: 'confirmed' },
+        canceled:           { icon: icon('xCircle'),     label: 'Canceled',               css: 'canceled' },
+    };
+    const ORDER_ACTIVE    = new Set(['payment_pending', 'restaurant_pending', 'awaiting_rider', 'rider_assigned', 'pending']);
+    const ORDER_SUCCEEDED = new Set(['delivered', 'confirmed']);
+    const ORDER_CANCELLED = new Set(['payment_failed', 'order_rejected', 'user_canceled', 'canceled']);
+
+    // --- Tracker ring ---------------------------------------------------------------------------
+    // Four stage dots sit where their labels are drawn: top-right, right, bottom, left (angles are
+    // measured clockwise from the top). The "start line" is the bar at the very top; the ring runs
+    // from it through the four dots and back to it, where the order is Succeed.
+    // Set TRACKER_MIRROR = true to run the ring the other way round (everything flipped left↔right,
+    // so the flow becomes counter-clockwise on screen).
+    const TRACKER_MIRROR = false;
+    const TRACKER_STAGES = [
+        { key: 'payment_pending',    label: 'Pending',             angle: 45  },
+        { key: 'restaurant_pending', label: 'Payment verified',    angle: 90  },
+        { key: 'awaiting_rider',     label: 'Restaurant accepted', angle: 180 },
+        { key: 'rider_assigned',     label: 'Out for delivery',    angle: 270 },
+    ];
+    const TRACKER_SEG_ANGLES = [0, 45, 90, 180, 270, 360];   // start → dot 1 → dot 2 → dot 3 → dot 4 → back to start
+    const ORDER_STAGE_OF = { payment_pending: 0, pending: 0, restaurant_pending: 1, awaiting_rider: 2, rider_assigned: 3, delivered: 4, confirmed: 4 };
+
+    function fmtClock(ts) {
+        return ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+    }
+    function trkPoint(cx, cy, r, deg) {
+        const a = deg * Math.PI / 180, dx = Math.sin(a) * r;
+        return { x: cx + (TRACKER_MIRROR ? -dx : dx), y: cy - Math.cos(a) * r };
+    }
+    function trkArc(cx, cy, r, a1, a2) {
+        const p1 = trkPoint(cx, cy, r, a1), p2 = trkPoint(cx, cy, r, a2);
+        return `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} A ${r} ${r} 0 ${(a2 - a1) > 180 ? 1 : 0} ${TRACKER_MIRROR ? 0 : 1} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    // When each stage was reached (unix seconds), or 0 if unknown (orders from before times were recorded).
+    function trkStageTime(order, i) {
+        const t = (order.statusTimes || {})[TRACKER_STAGES[i].key];
+        if (t) return t;
+        if (i === 0) return order.createdAt || 0;
+        if (i === 1 && order.paymentVerify === false) return order.createdAt || 0;
+        return 0;
+    }
+
+    function buildOrderTracker(order) {
+        const stage = ORDER_STAGE_OF[order.status] ?? 0;     // 0–3 = the current stage, 4 = delivered
+        const done = stage >= 4;
+        const cx = 180, cy = 94, r = 52;
+        // Cash-on-delivery style methods have no payment check, so that step is worded differently.
+        const labels = TRACKER_STAGES.map((s, i) => (i === 1 && order.paymentVerify === false) ? 'Order confirmed' : s.label);
+        let g = '';
+
+        // Ring segments, with a small direction chevron on each.
+        for (let k = 0; k < 5; k++) {
+            const a1 = TRACKER_SEG_ANGLES[k], a2 = TRACKER_SEG_ANGLES[k + 1];
+            g += `<path class="trk-seg${k <= stage ? ' on' : ''}" d="${trkArc(cx, cy, r, a1, a2)}"/>`;
+            const mid = (a1 + a2) / 2, m = trkPoint(cx, cy, r, mid), rad = mid * Math.PI / 180;
+            const rot = Math.atan2(Math.sin(rad), (TRACKER_MIRROR ? -1 : 1) * Math.cos(rad)) * 180 / Math.PI;
+            g += `<path class="trk-arrow" d="M 4.5 0 L -3 -3.6 L -3 3.6 Z" transform="translate(${m.x.toFixed(1)} ${m.y.toFixed(1)}) rotate(${rot.toFixed(1)})"/>`;
+        }
+
+        // Start line at the top, where the flow begins.
+        g += `<line class="trk-start" x1="${cx}" y1="${cy - r - 14}" x2="${cx}" y2="${cy - r + 14}"/>`;
+        g += `<text class="trk-start-text" x="${cx}" y="${cy - r - 20}" text-anchor="middle">START</text>`;
+
+        // Stage dots, labels and the time each completed stage was reached.
+        TRACKER_STAGES.forEach((s, i) => {
+            const p = trkPoint(cx, cy, r, s.angle);
+            const reached = i <= stage, current = i === stage;
+            const side = p.x > cx + 1 ? 1 : (p.x < cx - 1 ? -1 : 0);
+            const anchor = side > 0 ? 'start' : (side < 0 ? 'end' : 'middle');
+            const tx = side === 0 ? p.x : p.x + side * 13;
+            const ly = side === 0 ? p.y + 29 : (s.angle === 45 || s.angle === 315 ? p.y - 2 : p.y - 1);
+            const ty = ly + 13;
+            if (current) {
+                g += `<circle class="trk-pulse" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9" opacity=".3"><animate attributeName="r" values="9;17;9" dur="1.9s" repeatCount="indefinite"/><animate attributeName="opacity" values=".35;0;.35" dur="1.9s" repeatCount="indefinite"/></circle>`;
+            }
+            g += `<circle class="trk-dot${reached ? ' on' : ''}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9"/>`;
+            if (reached && !current) g += `<path class="trk-check" d="M -3.6 0.4 L -1 3 L 3.8 -2.6" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"/>`;
+            if (current) g += `<circle class="trk-inner" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3"/>`;
+            g += `<text class="trk-label${reached ? ' on' : ''}" x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}">${escPay(labels[i])}</text>`;
+            const t = reached ? fmtClock(trkStageTime(order, i)) : '';
+            if (t) g += `<text class="trk-time" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${t}</text>`;
+        });
+
+        // Centre: the current stage — or a green "Succeed" once delivered (no "pending" text then).
+        if (done) {
+            g += `<circle class="trk-goal" cx="${cx}" cy="${cy - 10}" r="16"/>`;
+            g += `<path class="trk-check" style="stroke-width:3" d="M -7 0 L -2 5 L 8 -6" transform="translate(${cx} ${cy - 10})"/>`;
+            g += `<text class="trk-title" x="${cx}" y="${cy + 24}" text-anchor="middle">Succeed</text>`;
+            const dt = fmtClock((order.statusTimes || {}).delivered);
+            if (dt) g += `<text class="trk-time" x="${cx}" y="${cy + 38}" text-anchor="middle">${dt}</text>`;
+        } else {
+            const words = labels[stage].split(' ');
+            const lines = words.length === 3 ? [words[0] + ' ' + words[1], words[2]] : words;
+            g += `<text class="trk-cap" x="${cx}" y="${cy - 13}" text-anchor="middle">STEP ${stage + 1} OF 4</text>`;
+            lines.forEach((ln, j) => {
+                g += `<text class="trk-title" x="${cx}" y="${cy + 8 + j * 16 + (lines.length === 1 ? 4 : 0)}" text-anchor="middle">${escPay(ln)}</text>`;
+            });
+        }
+
+        const summary = done ? 'Succeed' : labels[stage];
+        return `<svg class="trk${done ? ' done' : ''}" viewBox="0 0 360 200" role="img" aria-label="Order progress: ${escPay(summary)}">${g}</svg>`;
+    }
+
+    // --- Cards ----------------------------------------------------------------------------------
+    function orderSubLine(order) {
+        const n = order.itemCount || 0;
+        return `${escPay(order.orderId)} · ${n} item${n === 1 ? '' : 's'} · ${Number(order.total || 0).toLocaleString('en-US')} MMK`;
+    }
+    function renderActiveOrderCard(order) {
+        const meta = ORDER_STATUS_META[order.status] || ORDER_STATUS_META.pending;
+        const est = order.deliveryMethod === 'pickup' ? 'Est. Pickup: 15–25 mins' : 'Est. Delivery: 15–25 mins';
+        return `
+            <div class="ao-card">
+                <div class="ao-head">
+                    <div style="min-width:0;">
+                        <div class="ao-rest">${escPay(order.restaurantName || 'Restaurant')}</div>
+                        <div class="ao-sub">${orderSubLine(order)}</div>
+                    </div>
+                    <div class="order-history-status ${meta.css}">${meta.label}</div>
+                </div>
+                <div class="ao-est">${icon('bike')} ${est}</div>
+                <div class="ao-track">${buildOrderTracker(order)}</div>
+            </div>`;
+    }
+    function profileEmpty(iconName, title, sub, withButton) {
+        return `<div class="pf-empty">${icon(iconName)}<div class="pf-empty-title">${title}</div><div class="pf-empty-sub">${sub}</div>`
+            + (withButton ? `<button class="btn-browse" style="margin-top:14px; font-size:13px; padding:10px 18px;" onclick="switchNavTab('home')">Browse restaurants</button>` : '')
+            + `</div>`;
+    }
+
+    // --- Data + main Profile screen -------------------------------------------------------------
+    let profileOrders = [];
+    let historyTab = 'all';
+
+    // Fetches this customer's orders from GET /api/orders/<id> and paints the stats + Active Orders.
+    // Runs whenever the Profile tab opens (and every 20 s while it stays open, silently).
+    async function renderProfileOrders(silent) {
+        const listEl = document.getElementById('profile-active-orders');
+        const addressesStat = document.getElementById('stat-saved-addresses');
         if (addressesStat) addressesStat.innerText = savedAddresses.length;
         if (!listEl) return;
 
         if (!telegramUser || !telegramUser.id) {
-            listEl.innerHTML = `<div class="order-history-empty">Open this Mini App from Telegram to see your order history.</div>`;
-            if (pendingStat) pendingStat.innerText = '0';
-            if (succeededStat) succeededStat.innerText = '0';
+            document.getElementById('stat-active-orders').innerText = '0';
+            document.getElementById('stat-delivered-orders').innerText = '0';
+            listEl.innerHTML = profileEmpty('package', 'Open from Telegram', 'Open this Mini App from Telegram to see your orders.', false);
             return;
         }
 
-        listEl.innerHTML = `<div class="order-history-empty">Loading your orders...</div>`;
-
+        if (!silent && !profileOrders.length) {
+            listEl.innerHTML = `<div class="order-history-empty">Loading your orders...</div>`;
+        }
         try {
             const res = await fetch(`${API_BASE}/api/orders/${telegramUser.id}`);
             const result = await res.json();
-            const userOrders = (result && result.orders) || [];
-
-            // Every stage the bot's order flow can put an order in — Transaction,
-            // Restaurant, then Delivery — mapped to an icon/label and one of the
-            // three existing status colors (pending=amber, confirmed=green,
-            // canceled=red). The last three keys are legacy statuses from before
-            // the multi-stage flow, kept so older orders still render correctly.
-            const STATUS_META = {
-                payment_pending:    { icon: icon('clock'), label: 'Verifying Payment',     css: 'pending' },
-                payment_failed:     { icon: icon('xCircle'), label: 'Payment Failed',        css: 'canceled' },
-                restaurant_pending: { icon: icon('clock'), label: 'Waiting for Restaurant', css: 'pending' },
-                order_rejected:     { icon: icon('xCircle'), label: 'Rejected',              css: 'canceled' },
-                awaiting_rider:     { icon: icon('chef'), label: 'Preparing',             css: 'pending' },
-                rider_assigned:     { icon: icon('bike'), label: 'Out for Delivery',      css: 'pending' },
-                delivered:          { icon: icon('checkCircle'), label: 'Delivered',             css: 'confirmed' },
-                user_canceled:      { icon: icon('xCircle'), label: 'Canceled',              css: 'canceled' },
-                pending:            { icon: icon('clock'), label: 'Pending',               css: 'pending' },
-                confirmed:          { icon: icon('checkCircle'), label: 'Succeeded',             css: 'confirmed' },
-                canceled:           { icon: icon('xCircle'), label: 'Canceled',              css: 'canceled' },
-            };
-            const TERMINAL_SUCCESS = new Set(['delivered', 'confirmed']);
-            const TERMINAL_END = new Set(['delivered', 'confirmed', 'payment_failed', 'order_rejected', 'user_canceled', 'canceled']);
-
-            const pendingCount = userOrders.filter(o => !TERMINAL_END.has(o.status || 'pending')).length;
-            const succeededCount = userOrders.filter(o => TERMINAL_SUCCESS.has(o.status)).length;
-            if (pendingStat) pendingStat.innerText = pendingCount;
-            if (succeededStat) succeededStat.innerText = succeededCount;
-
-            if (!userOrders.length) {
-                listEl.innerHTML = `<div class="order-history-empty">No orders yet — your placed orders will show up here.</div>`;
-                return;
+            profileOrders = (result && result.orders) || [];
+        } catch (e) {
+            console.error('Could not load orders:', e);
+            if (!silent || !profileOrders.length) {
+                listEl.innerHTML = `<div class="order-history-empty">Could not load your orders. Check your connection and try again.</div>`;
             }
+            return;
+        }
+        paintProfileOrders();
+    }
 
-            listEl.innerHTML = userOrders.map(order => {
-                const status = order.status || 'pending';
-                const meta = STATUS_META[status] || STATUS_META.pending;
-                const dateText = order.createdAt ? new Date(order.createdAt * 1000).toLocaleDateString() : '';
-                const metaParts = [`${order.itemCount || 0} item(s)`, `${order.total || 0} MMK`];
-                if (dateText) metaParts.push(dateText);
-                const restaurantLine = order.restaurantName ? `<div class="order-history-restaurant">${order.restaurantName}</div>` : '';
+    function paintProfileOrders() {
+        const listEl = document.getElementById('profile-active-orders');
+        if (!listEl) return;
+        const active = profileOrders.filter(o => ORDER_ACTIVE.has(o.status || 'pending'));
+        const delivered = profileOrders.filter(o => ORDER_SUCCEEDED.has(o.status)).length;
+        document.getElementById('stat-active-orders').innerText = active.length;
+        document.getElementById('stat-delivered-orders').innerText = delivered;
+        document.getElementById('stat-saved-addresses').innerText = savedAddresses.length;
 
-                return `
-                    <div class="order-history-item">
+        listEl.innerHTML = active.length
+            ? active.map(renderActiveOrderCard).join('')
+            : profileEmpty('package', 'No active orders right now', 'When you place an order you can follow it here, step by step.', true);
+
+        if (document.getElementById('order-history-modal').classList.contains('open')) paintHistory();
+    }
+
+    setInterval(() => {
+        if (currentTabId === 'profile' && !document.hidden) renderProfileOrders(true);
+    }, 20000);
+
+    // --- Full-screen history (the "View All >" link) --------------------------------------------
+    function openOrderHistory() {
+        const modal = document.getElementById('order-history-modal');
+        if (modal.classList.contains('open')) return;
+        historyTab = 'all';
+        paintHistory();
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.getElementById('hist-list').scrollTop = 0;
+        if (!history.state || history.state.type !== 'modal') {
+            history.pushState({ ...history.state, type: 'modal' }, '');
+        }
+        updateTelegramBackButton();
+    }
+    function closeOrderHistory(fromPopState) {
+        const modal = document.getElementById('order-history-modal');
+        if (!modal.classList.contains('open')) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        if (!fromPopState) history.back();
+        updateTelegramBackButton();
+    }
+    function setHistoryTab(tab) { historyTab = tab; paintHistory(); document.getElementById('hist-list').scrollTop = 0; }
+
+    function historyFilter(tab) {
+        if (tab === 'succeeded') return profileOrders.filter(o => ORDER_SUCCEEDED.has(o.status));
+        if (tab === 'cancelled') return profileOrders.filter(o => ORDER_CANCELLED.has(o.status));
+        return profileOrders;
+    }
+    function paintHistory() {
+        const tabs = [['all', 'All'], ['succeeded', 'Succeeded'], ['cancelled', 'Cancelled']];
+        document.getElementById('hist-tabs').innerHTML = tabs.map(([id, name]) =>
+            `<button class="hist-tab${historyTab === id ? ' on' : ''}" onclick="setHistoryTab('${id}')">${name} <small>${historyFilter(id).length}</small></button>`).join('');
+
+        const rows = historyFilter(historyTab);
+        const listEl = document.getElementById('hist-list');
+        if (!rows.length) {
+            const msg = { all: ['No orders yet', 'Your placed orders will show up here.'],
+                          succeeded: ['No delivered orders yet', 'Orders that reach you will be listed here.'],
+                          cancelled: ['No cancelled orders', 'Cancelled or rejected orders will be listed here.'] }[historyTab];
+            listEl.innerHTML = profileEmpty('package', msg[0], msg[1], false);
+            return;
+        }
+        listEl.innerHTML = rows.map(order => {
+            const status = order.status || 'pending';
+            const meta = ORDER_STATUS_META[status] || ORDER_STATUS_META.pending;
+            const expandable = !ORDER_CANCELLED.has(status);
+            const when = order.createdAt
+                ? new Date(order.createdAt * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + fmtClock(order.createdAt) : '';
+            return `
+                <div class="hist-row${expandable ? ' expandable' : ''}" id="hist-${escPay(order.orderId)}">
+                    <div class="hist-row-main" ${expandable ? `onclick="toggleHistoryRow('${escPay(order.orderId)}')"` : ''}>
                         <div class="order-history-icon ${meta.css}">${meta.icon}</div>
                         <div class="order-history-info">
-                            <div class="order-history-id">${order.orderId}</div>
-                            ${restaurantLine}
-                            <div class="order-history-meta">${metaParts.join(' • ')}</div>
+                            <div class="order-history-id">${escPay(order.restaurantName || 'Restaurant')}</div>
+                            <div class="order-history-meta">${orderSubLine(order)}</div>
+                            ${when ? `<div class="order-history-meta">${when}</div>` : ''}
                         </div>
                         <div class="order-history-status ${meta.css}">${meta.label}</div>
+                        ${expandable ? `<span class="hist-chev">${icon('chevronRight')}</span>` : ''}
                     </div>
-                `;
-            }).join('');
-        } catch (e) {
-            console.error('Could not load order history:', e);
-            listEl.innerHTML = `<div class="order-history-empty">Could not load order history. Check your connection and try again.</div>`;
-        }
+                    ${expandable ? `<div class="hist-detail">${buildOrderTracker(order)}</div>` : ''}
+                </div>`;
+        }).join('');
+    }
+    function toggleHistoryRow(orderId) {
+        const el = document.getElementById('hist-' + orderId);
+        if (el) el.classList.toggle('open');
     }
 
     // ================= TELEGRAM BACK BUTTON =================
@@ -1737,7 +1959,9 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         const addrModal = document.getElementById('address-modal');
         const modalOpen = modal && modal.classList.contains('open');
         const addrModalOpen = addrModal && addrModal.classList.contains('open');
-        const shouldShow = modalOpen || addrModalOpen || currentTabId !== 'home';
+        const histModal = document.getElementById('order-history-modal');
+        const histOpen = histModal && histModal.classList.contains('open');
+        const shouldShow = modalOpen || addrModalOpen || histOpen || currentTabId !== 'home';
         if (shouldShow) tg.BackButton.show();
         else tg.BackButton.hide();
     }
@@ -2410,6 +2634,7 @@ async function submitFinalOrder() {
         if (addrModal.classList.contains('open')) {
             closeAddressModal();
         }
+        closeOrderHistory(true);   // the "View All" history screen closes on back, like the other modals
         if (e.state && e.state.tab) {
             switchNavTab(e.state.tab, true);
         } else {
