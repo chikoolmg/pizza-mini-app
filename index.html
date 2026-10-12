@@ -548,6 +548,11 @@
             transition: transform 0.1s;
         }
         .btn-place-order:active { transform: scale(0.98); }
+        .btn-place-order:disabled { opacity: 0.45; box-shadow: none; cursor: default; pointer-events: none; }
+        .cart-alert { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; background: #FDECEC; border: 1px solid #F7C9C9; color: #B42318; font-size: 12.5px; font-weight: 600; line-height: 1.45; }
+        .cart-alert button { flex-shrink: 0; border: none; border-radius: 10px; background: #E5484D; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; }
+        .cart-group-alert { margin-top: 8px; font-size: 12px; font-weight: 700; color: #E5484D; }
+        .cart-group-remove { border: none; background: none; color: #E5484D; font-family: inherit; font-size: 12px; font-weight: 800; text-decoration: underline; cursor: pointer; margin-left: 6px; padding: 0; }
         .btn-primary-orange {
             background: var(--primary);
             box-shadow: 0 8px 20px rgba(255, 106, 31, 0.35);
@@ -1011,26 +1016,24 @@
         .ao-est .ico { font-size: 18px; }
         .ao-track { margin-top: 8px; }
 
-        /* Order tracker ring (SVG). Orange up to the current stage, grey after, green once delivered. */
-        .trk { display: block; width: 100%; height: auto; --trk-on: var(--primary); --trk-off: #DADDE3; }
-        .trk.done { --trk-on: var(--success-green); }
-        .trk-seg { fill: none; stroke: var(--trk-off); stroke-width: 6; }
-        .trk-seg.on { stroke: var(--trk-on); }
-        .trk-arrow { fill: #FFFFFF; }
-        .trk-dot { fill: #FFFFFF; stroke: var(--trk-off); stroke-width: 3.5; }
-        .trk-dot.on { fill: var(--trk-on); stroke: var(--trk-on); }
-        .trk-pulse { fill: var(--trk-on); }
-        .trk-check { fill: none; stroke: #FFFFFF; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-        .trk-inner { fill: #FFFFFF; }
-        .trk-label { font-size: 12px; font-weight: 600; fill: #9AA0AA; }
-        .trk-label.on { fill: var(--text-main); }
-        .trk-time { font-size: 10.5px; font-weight: 600; fill: var(--trk-on); }
-        .trk-start { stroke: var(--trk-on); stroke-width: 5; stroke-linecap: round; }
-        .trk-start-text { font-size: 9.5px; font-weight: 800; letter-spacing: 1.2px; fill: var(--trk-on); }
-        .trk-cap { font-size: 9.5px; font-weight: 700; letter-spacing: 0.8px; fill: var(--text-muted); }
-        .trk-title { font-size: 12.5px; font-weight: 800; fill: var(--text-main); }
-        .trk.done .trk-title { fill: var(--success-green); }
-        .trk-goal { fill: var(--success-green); }
+        /* Order tracker: one horizontal line — orange up to the current step, grey after, green once delivered. */
+        .hz { display: flex; align-items: flex-start; padding: 8px 0 2px; --hz-on: var(--primary); --hz-off: #DADDE3; }
+        .hz.done { --hz-on: var(--success-green); }
+        .hz-step { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .hz-step::before { content: ''; position: absolute; top: 11px; right: 50%; width: 100%; height: 4px; border-radius: 2px; background: var(--hz-off); }
+        .hz-step:first-child::before { display: none; }
+        .hz-step.on::before { background: var(--hz-on); }
+        .hz-dot { position: relative; z-index: 1; width: 26px; height: 26px; border-radius: 50%; box-sizing: border-box; background: #FFFFFF; border: 3px solid var(--hz-off); display: flex; align-items: center; justify-content: center; }
+        .hz-step.on .hz-dot { background: var(--hz-on); border-color: var(--hz-on); }
+        .hz-step.cur .hz-dot { animation: hzPulse 1.9s ease-in-out infinite; }
+        .hz-step.cur .hz-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF; }
+        .hz-dot svg { width: 14px; height: 14px; }
+        .hz-label { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 0 2px; font-size: 10.5px; font-weight: 600; line-height: 1.25; color: #9AA0AA; }
+        .hz-step.on .hz-label { color: var(--text-main); }
+        .hz-step.goal.on .hz-label { color: var(--success-green); font-weight: 800; }
+        .hz-time { margin-top: 2px; font-size: 10px; font-weight: 700; color: var(--hz-on); }
+        @keyframes hzPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(244,119,33,.45); } 50% { box-shadow: 0 0 0 6px rgba(244,119,33,0); } }
+        @media (prefers-reduced-motion: reduce) { .hz-step.cur .hz-dot { animation: none; } }
 
         /* Full-screen order history */
         .hist-modal { position: absolute; inset: 0; z-index: 120; display: flex; flex-direction: column; background: var(--bg-main); padding-top: var(--app-top-inset); transform: translateX(100%); visibility: hidden; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s linear .3s; }
@@ -1692,32 +1695,20 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     const ORDER_SUCCEEDED = new Set(['delivered', 'confirmed']);
     const ORDER_CANCELLED = new Set(['payment_failed', 'order_rejected', 'user_canceled', 'canceled']);
 
-    // --- Tracker ring ---------------------------------------------------------------------------
-    // Four stage dots sit where their labels are drawn: top-right, right, bottom, left (angles are
-    // measured clockwise from the top). The "start line" is the bar at the very top; the ring runs
-    // from it through the four dots and back to it, where the order is Succeed.
-    // Set TRACKER_MIRROR = true to run the ring the other way round (everything flipped left↔right,
-    // so the flow becomes counter-clockwise on screen).
-    const TRACKER_MIRROR = false;
+    // --- Tracker: one horizontal line ------------------------------------------------------------
+    // Five steps left to right: the four stages, then "Succeed" (the goal, lit up green once delivered).
+    // The line fills orange up to the current step; a time sits under every step already reached.
     const TRACKER_STAGES = [
-        { key: 'payment_pending',    label: 'Pending',             angle: 45  },
-        { key: 'restaurant_pending', label: 'Payment verified',    angle: 90  },
-        { key: 'awaiting_rider',     label: 'Restaurant accepted', angle: 180 },
-        { key: 'rider_assigned',     label: 'Out for delivery',    angle: 270 },
+        { key: 'payment_pending',    label: 'Pending' },
+        { key: 'restaurant_pending', label: 'Payment verified' },
+        { key: 'awaiting_rider',     label: 'Restaurant accepted' },
+        { key: 'rider_assigned',     label: 'Out for delivery' },
     ];
-    const TRACKER_SEG_ANGLES = [0, 45, 90, 180, 270, 360];   // start → dot 1 → dot 2 → dot 3 → dot 4 → back to start
     const ORDER_STAGE_OF = { payment_pending: 0, pending: 0, restaurant_pending: 1, awaiting_rider: 2, rider_assigned: 3, delivered: 4, confirmed: 4 };
+    const HZ_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
     function fmtClock(ts) {
         return ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-    }
-    function trkPoint(cx, cy, r, deg) {
-        const a = deg * Math.PI / 180, dx = Math.sin(a) * r;
-        return { x: cx + (TRACKER_MIRROR ? -dx : dx), y: cy - Math.cos(a) * r };
-    }
-    function trkArc(cx, cy, r, a1, a2) {
-        const p1 = trkPoint(cx, cy, r, a1), p2 = trkPoint(cx, cy, r, a2);
-        return `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} A ${r} ${r} 0 ${(a2 - a1) > 180 ? 1 : 0} ${TRACKER_MIRROR ? 0 : 1} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
     }
     // When each stage was reached (unix seconds), or 0 if unknown (orders from before times were recorded).
     function trkStageTime(order, i) {
@@ -1731,62 +1722,22 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
     function buildOrderTracker(order) {
         const stage = ORDER_STAGE_OF[order.status] ?? 0;     // 0–3 = the current stage, 4 = delivered
         const done = stage >= 4;
-        const cx = 180, cy = 94, r = 52;
         // Cash-on-delivery style methods have no payment check, so that step is worded differently.
-        const labels = TRACKER_STAGES.map((s, i) => (i === 1 && order.paymentVerify === false) ? 'Order confirmed' : s.label);
-        let g = '';
+        const steps = TRACKER_STAGES.map((s, i) => ({
+            label: (i === 1 && order.paymentVerify === false) ? 'Order confirmed' : s.label,
+            time: i <= stage ? fmtClock(trkStageTime(order, i)) : '',
+        }));
+        steps.push({ label: 'Succeed', time: done ? fmtClock((order.statusTimes || {}).delivered) : '', goal: true });
 
-        // Ring segments, with a small direction chevron on each.
-        for (let k = 0; k < 5; k++) {
-            const a1 = TRACKER_SEG_ANGLES[k], a2 = TRACKER_SEG_ANGLES[k + 1];
-            g += `<path class="trk-seg${k <= stage ? ' on' : ''}" d="${trkArc(cx, cy, r, a1, a2)}"/>`;
-            const mid = (a1 + a2) / 2, m = trkPoint(cx, cy, r, mid), rad = mid * Math.PI / 180;
-            const rot = Math.atan2(Math.sin(rad), (TRACKER_MIRROR ? -1 : 1) * Math.cos(rad)) * 180 / Math.PI;
-            g += `<path class="trk-arrow" d="M 4.5 0 L -3 -3.6 L -3 3.6 Z" transform="translate(${m.x.toFixed(1)} ${m.y.toFixed(1)}) rotate(${rot.toFixed(1)})"/>`;
-        }
-
-        // Start line at the top, where the flow begins.
-        g += `<line class="trk-start" x1="${cx}" y1="${cy - r - 14}" x2="${cx}" y2="${cy - r + 14}"/>`;
-        g += `<text class="trk-start-text" x="${cx}" y="${cy - r - 20}" text-anchor="middle">START</text>`;
-
-        // Stage dots, labels and the time each completed stage was reached.
-        TRACKER_STAGES.forEach((s, i) => {
-            const p = trkPoint(cx, cy, r, s.angle);
-            const reached = i <= stage, current = i === stage;
-            const side = p.x > cx + 1 ? 1 : (p.x < cx - 1 ? -1 : 0);
-            const anchor = side > 0 ? 'start' : (side < 0 ? 'end' : 'middle');
-            const tx = side === 0 ? p.x : p.x + side * 13;
-            const ly = side === 0 ? p.y + 29 : (s.angle === 45 || s.angle === 315 ? p.y - 2 : p.y - 1);
-            const ty = ly + 13;
-            if (current) {
-                g += `<circle class="trk-pulse" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9" opacity=".3"><animate attributeName="r" values="9;17;9" dur="1.9s" repeatCount="indefinite"/><animate attributeName="opacity" values=".35;0;.35" dur="1.9s" repeatCount="indefinite"/></circle>`;
-            }
-            g += `<circle class="trk-dot${reached ? ' on' : ''}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9"/>`;
-            if (reached && !current) g += `<path class="trk-check" d="M -3.6 0.4 L -1 3 L 3.8 -2.6" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"/>`;
-            if (current) g += `<circle class="trk-inner" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3"/>`;
-            g += `<text class="trk-label${reached ? ' on' : ''}" x="${tx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}">${escPay(labels[i])}</text>`;
-            const t = reached ? fmtClock(trkStageTime(order, i)) : '';
-            if (t) g += `<text class="trk-time" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${t}</text>`;
-        });
-
-        // Centre: the current stage — or a green "Succeed" once delivered (no "pending" text then).
-        if (done) {
-            g += `<circle class="trk-goal" cx="${cx}" cy="${cy - 10}" r="16"/>`;
-            g += `<path class="trk-check" style="stroke-width:3" d="M -7 0 L -2 5 L 8 -6" transform="translate(${cx} ${cy - 10})"/>`;
-            g += `<text class="trk-title" x="${cx}" y="${cy + 24}" text-anchor="middle">Succeed</text>`;
-            const dt = fmtClock((order.statusTimes || {}).delivered);
-            if (dt) g += `<text class="trk-time" x="${cx}" y="${cy + 38}" text-anchor="middle">${dt}</text>`;
-        } else {
-            const words = labels[stage].split(' ');
-            const lines = words.length === 3 ? [words[0] + ' ' + words[1], words[2]] : words;
-            g += `<text class="trk-cap" x="${cx}" y="${cy - 13}" text-anchor="middle">STEP ${stage + 1} OF 4</text>`;
-            lines.forEach((ln, j) => {
-                g += `<text class="trk-title" x="${cx}" y="${cy + 8 + j * 16 + (lines.length === 1 ? 4 : 0)}" text-anchor="middle">${escPay(ln)}</text>`;
-            });
-        }
-
-        const summary = done ? 'Succeed' : labels[stage];
-        return `<svg class="trk${done ? ' done' : ''}" viewBox="0 0 360 200" role="img" aria-label="Order progress: ${escPay(summary)}">${g}</svg>`;
+        const html = steps.map((st, i) => {
+            const reached = i <= stage, current = i === stage && !done;
+            return `<div class="hz-step${reached ? ' on' : ''}${current ? ' cur' : ''}${st.goal ? ' goal' : ''}">
+                        <div class="hz-dot">${reached && !current ? HZ_CHECK : ''}</div>
+                        <div class="hz-label">${escPay(st.label)}</div>
+                        ${st.time ? `<div class="hz-time">${st.time}</div>` : ''}
+                    </div>`;
+        }).join('');
+        return `<div class="hz${done ? ' done' : ''}" role="img" aria-label="Order progress: ${escPay(done ? 'Succeed' : steps[stage].label)}">${html}</div>`;
     }
 
     // --- Cards ----------------------------------------------------------------------------------
@@ -1982,7 +1933,7 @@ const TAX_RATE_PERCENT = 5;
 const taxSettingsByRestaurant = {};   // restaurantId -> { enableTax, taxMode }
 async function loadTaxSettings(restaurantId) {
     try {
-        const res = await fetch(`${SERVER_URL}/api/restaurant-info?restaurant=${encodeURIComponent(restaurantId)}`);
+        const res = await fetch(`${SERVER_URL}/api/restaurant-info?restaurant=${encodeURIComponent(restaurantId)}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const info = await res.json();
         taxSettingsByRestaurant[restaurantId] = {
@@ -2010,6 +1961,24 @@ async function submitFinalOrder() {
     if (!deliveryMethod || !selectedPaymentMethod) return alert('Please choose a delivery and payment method');
     const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
     if (!activeAddr) return alert('Please select your address first');
+
+    // Last look at the latest data before any money moves: restaurant, items, prices, payment and delivery options.
+    isSubmittingOrder = true;
+    const checkBtn = document.getElementById('place-order-btn');
+    const checkLabel = checkBtn ? checkBtn.innerText : '';
+    if (checkBtn) { checkBtn.disabled = true; checkBtn.innerText = 'Checking…'; }
+    const latest = await syncCart(activeCartRestaurantId, { fresh: true });
+    isSubmittingOrder = false;
+    const payBtnNow = document.getElementById('place-order-btn');
+    if (payBtnNow) { payBtnNow.disabled = !!cartBlockReason(activeCartRestaurantId); payBtnNow.innerText = checkLabel || 'Make Payment'; }
+    if (!latest) return alert('Could not verify your order with the server — check your connection and try again.');
+    if (currentTabId !== 'checkout') return;   // the check itself already sent the customer back (e.g. their payment method was removed)
+    const stale = cartBlockReason(activeCartRestaurantId);
+    if (stale || !selectedPaymentMethod || !deliveryMethod) {
+        alert(stale || 'Something changed — please review your delivery and payment choices.');
+        returnToCartSummary();
+        return;
+    }
 
     // Kept in sync with renderCheckoutPage()'s totals — no fees are charged
     // until the developer dashboard has a way to configure them.
@@ -2081,6 +2050,13 @@ async function submitFinalOrder() {
             return; // Leave the button locked/disabled while we transition away
         } else {
             alert('Order Submission Failed: ' + (result.error || 'Server error'));
+            // The server compares the order with the latest saved data; when it says something changed,
+            // refresh the cart and take the customer back to fix it.
+            if (['cart_changed', 'restaurant_unavailable', 'delivery_unavailable', 'payment_unavailable'].includes(result.code)) {
+                isSubmittingOrder = false;
+                await syncCart(activeCartRestaurantId, { fresh: true });
+                returnToCartSummary();
+            }
         }
     } catch (e) {
         console.error(e);
@@ -2189,7 +2165,7 @@ async function submitFinalOrder() {
     async function loadPaymentMethods() {
         try {
             const tid = telegramUser?.id ? `?telegramId=${encodeURIComponent(telegramUser.id)}` : '';
-            const res = await fetch(`${API_BASE}/api/payment-methods${tid}`);
+            const res = await fetch(`${API_BASE}/api/payment-methods${tid}`, { cache: 'no-store' });
             const d = await res.json();
             paymentMethods = (d.success && Array.isArray(d.methods)) ? d.methods : [];
         } catch (e) {
@@ -2277,10 +2253,10 @@ async function submitFinalOrder() {
             document.querySelectorAll('.bottom-nav .nav-item')[tabIcons[tabName]].classList.add('active');
         }
 
-        if (tabName === 'cart') renderCartPage();
+        if (tabName === 'cart') { renderCartPage(); syncAllCarts(); }
         if (tabName === 'saved') renderSavedView();
         if (tabName === 'restaurant-cart') refreshCartStockAndRender();
-        if (tabName === 'checkout') renderCheckoutPage(); // Added Checkout render trigger
+        if (tabName === 'checkout') { renderCheckoutPage(); syncCart(activeCartRestaurantId); }
         if (tabName === 'profile') renderProfileOrders(); // Refresh pending/succeeded orders + history each visit
         if (tabName === 'home') renderHomeBrowseView(); // Refresh restaurant directory + previews each visit
 
@@ -2358,7 +2334,7 @@ async function submitFinalOrder() {
             // Menus are fetched in parallel — one request per restaurant — so a
             // slow/broken menu for one restaurant doesn't hold up the others.
             const menus = await Promise.all(restaurants.map(r =>
-                fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(r.id)}`)
+                fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(r.id)}&sig=1`, { cache: 'no-store' })
                     .then(res => res.ok ? res.json() : [])
                     .catch(() => [])
             ));
@@ -2649,7 +2625,7 @@ async function submitFinalOrder() {
     // fallback in case the server can't be reached when the app opens.
     async function initData() {
         try {
-            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(currentRestaurantId)}`);
+            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(currentRestaurantId)}&sig=1`, { cache: 'no-store' });
             if (res.ok) {
                 const parsed = await res.json();
                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
@@ -3056,6 +3032,7 @@ async function submitFinalOrder() {
             name: currentModalDish.name,
             image: currentModalDish.image,
             unitPrice,
+            priceSig: currentModalDish.priceSig || '',   // lets the server spot a later price/option edit
             quantity: modalQuantityValue,
             options: optionsDetails.length ? optionsDetails.join(' | ') : 'Standard',
             restaurantId: currentRestaurantId,
@@ -3137,7 +3114,7 @@ async function submitFinalOrder() {
             createdAt: Date.now(),
             restaurantId: items[0].restaurantId,
             restaurantName: items[0].restaurantName,
-            items: items.map(i => ({ dishId: i.dishId, name: i.name, image: i.image, unitPrice: i.unitPrice, quantity: i.quantity, options: i.options }))
+            items: items.map(i => ({ dishId: i.dishId, name: i.name, image: i.image, unitPrice: i.unitPrice, priceSig: i.priceSig || '', quantity: i.quantity, options: i.options }))
         });
         try { localStorage.setItem(STORAGE_KEY_SAVED_CARTS, JSON.stringify(savedCarts)); } catch (e) {}
         showToast('Saved! Find it under the Saved tab.');
@@ -3155,7 +3132,7 @@ async function submitFinalOrder() {
         if (!cart) return;
         let dishMap = {};
         try {
-            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(cart.restaurantId)}`);
+            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(cart.restaurantId)}&sig=1`, { cache: 'no-store' });
             const menu = res.ok ? await res.json() : [];
             (menu || []).forEach(cat => (cat.items || []).forEach(i => { dishMap[i.id] = i; }));
         } catch (e) {
@@ -3167,12 +3144,18 @@ async function submitFinalOrder() {
         cart.items.forEach(i => {
             const dish = dishMap[i.dishId];
             if (!dish || dish.soldOut) { skipped.push(i.name); return; }
+            // Price or options edited since this cart was saved? Never re-add it at the old price.
+            const priceStillValid = i.priceSig
+                ? i.priceSig === dish.priceSig
+                : ((i.options || 'Standard') === 'Standard' && !(dish.sizes && dish.sizes.length) && Math.round(dish.price) === Math.round(i.unitPrice));
+            if (!priceStillValid) { skipped.push(i.name); return; }
             cartItems.push({
                 id: Date.now() + Math.random(),
                 dishId: i.dishId,
                 name: i.name,
                 image: i.image,
                 unitPrice: i.unitPrice,
+                priceSig: dish.priceSig || '',
                 quantity: i.quantity,
                 options: i.options,
                 restaurantId: cart.restaurantId,
@@ -3182,7 +3165,7 @@ async function submitFinalOrder() {
         });
         updateCartBadge(); // persists cartItems too
         if (addedCount) {
-            showToast(skipped.length ? `Added ${addedCount} item(s) — ${skipped.length} unavailable, skipped.` : `Added ${addedCount} item(s) to cart.`);
+            showToast(skipped.length ? `Added ${addedCount} item(s) — ${skipped.length} unavailable or changed, skipped.` : `Added ${addedCount} item(s) to cart.`);
         } else {
             showToast('None of these items are available right now.');
         }
@@ -3348,7 +3331,7 @@ async function submitFinalOrder() {
         if (existingLine) {
             existingLine.quantity += 1;
         } else {
-            cartItems.push({ id: Date.now(), dishId: dish.id, name: dish.name, image: dish.image, unitPrice: Math.round(dish.price), quantity: 1, options: 'Standard', restaurantId: currentRestaurantId, restaurantName: currentRestaurantName });
+            cartItems.push({ id: Date.now(), dishId: dish.id, name: dish.name, image: dish.image, unitPrice: Math.round(dish.price), priceSig: dish.priceSig || '', quantity: 1, options: 'Standard', restaurantId: currentRestaurantId, restaurantName: currentRestaurantName });
         }
 
         updateCartBadge();
@@ -3486,6 +3469,12 @@ async function submitFinalOrder() {
             const previewNames = group.items.slice(0, 3).map(i => i.name).join(', ');
             const moreCount = group.items.length > 3 ? ` +${group.items.length - 3} more` : '';
             const subtotal = group.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+            const sync = cartSyncByRestaurant[group.restaurantId];
+            const rs = (sync && sync.restaurant) || {};
+            const badCount = group.items.filter(i => cartLineStatus(i)).length;
+            const alertLine = (rs.status && rs.status !== 'ok')
+                ? `<div class="cart-group-alert">${escPay(rs.message || "Can't take orders right now.")}${rs.status === 'missing' ? ` <button class="cart-group-remove" onclick="event.stopPropagation(); removeRestaurantFromCart('${group.restaurantId}')">Remove</button>` : ''}</div>`
+                : (badCount ? `<div class="cart-group-alert">${badCount} item${badCount === 1 ? '' : 's'} need${badCount === 1 ? 's' : ''} attention</div>` : '');
 
             return `
                 <div class="cart-restaurant-group" onclick="openRestaurantCart('${group.restaurantId}')">
@@ -3494,6 +3483,7 @@ async function submitFinalOrder() {
                         <span class="cart-restaurant-group-arrow">›</span>
                     </div>
                     <p class="cart-restaurant-group-preview">${previewNames}${moreCount}</p>
+                    ${alertLine}
                     <div class="cart-restaurant-group-footer">
                         <span>${itemCount} item${itemCount === 1 ? '' : 's'}</span>
                         <span class="cart-restaurant-group-subtotal">${subtotal} MMK</span>
@@ -3527,23 +3517,161 @@ async function submitFinalOrder() {
     // Quantities can still be changed by going back to this restaurant's
     // menu (Explore tab) — the qty steppers there read/write the same
     // cartItems array — there just isn't a second set of steppers here too.
-    let cartUnavailableDishIds = new Set(); // refreshed by refreshCartStockAndRender() whenever the cart-summary screen is opened
-
-    // Re-checks stock for the active restaurant's cart against its current
-    // menu (soldOut flags can change any time from the restaurant's side),
-    // then re-renders with any newly-unavailable items marked disabled.
-    async function refreshCartStockAndRender() {
-        renderRestaurantCartPage(); // paint immediately with whatever we knew last, then refresh
-        if (!activeCartRestaurantId) return;
-        try {
-            const res = await fetch(`${API_BASE}/api/menu?restaurant=${encodeURIComponent(activeCartRestaurantId)}`);
-            const menu = res.ok ? await res.json() : [];
-            const soldOutIds = new Set();
-            (menu || []).forEach(cat => (cat.items || []).forEach(i => { if (i.soldOut) soldOutIds.add(i.id); }));
-            cartUnavailableDishIds = soldOutIds;
-        } catch (e) { /* keep whatever we had */ }
-        if (currentTabId === 'restaurant-cart') renderRestaurantCartPage();
+    // ================= CART / CHECKOUT FRESHNESS =================
+    // Everything the cart screens show can go stale while the customer looks at it: a payment method
+    // removed, a dish deleted / sold out / re-priced, the restaurant closed, suspended or deleted,
+    // delivery switched off, tax settings changed. So the app asks the server (POST /api/cart/check)
+    //   - when the Cart tab, the cart summary or Checkout opens,
+    //   - after every tap on those screens (picking a payment / delivery method / address, changing a quantity),
+    //   - every 12 s while one of them stays open, and when the app comes back to the foreground,
+    //   - and, as a hard gate, before "Continue to Checkout" and before "Make Payment".
+    // The server then re-checks the very same things when the order itself arrives, so a stale screen can
+    // never place an order that no longer matches the latest data.
+    let cartSyncByRestaurant = {};   // restaurantId -> { restaurant: {status, message, …}, lines: { [dishId]: 'removed'|'sold_out'|'changed' }, sig }
+    let cartSyncInflight = {};       // restaurantId -> Promise, so overlapping checks share one request
+    const CART_LINE_LABEL = {
+        removed: 'No longer on the menu',
+        sold_out: 'Sold out',
+        changed: 'Price or options changed — remove and re-add',
+    };
+    function cartLineStatus(item) {
+        const sync = cartSyncByRestaurant[item.restaurantId];
+        return (sync && item.dishId !== undefined && sync.lines[item.dishId]) || '';
     }
+    // Why this restaurant's cart can't be ordered right now ('' = it can).
+    function cartBlockReason(restaurantId) {
+        const sync = cartSyncByRestaurant[restaurantId];
+        if (!sync) return '';
+        const rs = sync.restaurant || {};
+        if (rs.status && rs.status !== 'ok') return rs.message || "This restaurant can't take orders right now.";
+        if (cartItems.some(i => i.restaurantId === restaurantId && cartLineStatus(i))) return 'Some items in your cart are no longer available.';
+        return '';
+    }
+    function cartAlertHtml(restaurantId) {
+        const sync = cartSyncByRestaurant[restaurantId];
+        if (!sync) return '';
+        const rs = sync.restaurant || {};
+        const msgs = [];
+        if (rs.status && rs.status !== 'ok') msgs.push(escPay(rs.message || "This restaurant can't take orders right now."));
+        const bad = cartItems.filter(i => i.restaurantId === restaurantId && cartLineStatus(i)).length;
+        if (bad) msgs.push(`${bad} item${bad === 1 ? '' : 's'} in your cart ${bad === 1 ? 'is' : 'are'} no longer available as added — remove ${bad === 1 ? 'it' : 'them'} to continue.`);
+        if (!msgs.length) return '';
+        const canRemove = bad > 0 || rs.status === 'missing';
+        return `<div class="cart-alert"><div>${msgs.join('<br>')}</div>${canRemove ? `<button onclick="removeUnavailableCartItems()">${rs.status === 'missing' ? 'Remove from cart' : 'Remove unavailable items'}</button>` : ''}</div>`;
+    }
+
+    async function syncCart(restaurantId, opts = {}) {
+        if (!restaurantId) return null;
+        if (cartSyncInflight[restaurantId]) {
+            if (!opts.fresh) return cartSyncInflight[restaurantId];
+            try { await cartSyncInflight[restaurantId]; } catch (e) {}   // "fresh" = never reuse an answer that was already in flight
+        }
+        const lines = cartItems
+            .filter(i => i.restaurantId === restaurantId && i.dishId !== undefined)
+            .map(i => ({ dishId: i.dishId, name: i.name, unitPrice: i.unitPrice, options: i.options, priceSig: i.priceSig || '' }));
+        if (!lines.length) return null;
+        const p = (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/cart/check`, {
+                    method: 'POST',
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ restaurantId, items: lines, deliveryMethod: deliveryMethod || undefined, telegramId: telegramUser?.id || undefined })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || `Server returned ${res.status}`);
+                applyCartSync(restaurantId, d);
+                return d;
+            } catch (e) {
+                console.warn('Cart check failed:', e);
+                return null;
+            } finally {
+                delete cartSyncInflight[restaurantId];
+            }
+        })();
+        cartSyncInflight[restaurantId] = p;
+        return p;
+    }
+    function syncAllCarts() {
+        [...new Set(cartItems.map(i => i.restaurantId))].forEach(id => syncCart(id));
+    }
+
+    function applyCartSync(restaurantId, d) {
+        const lines = {};
+        (d.lines || []).forEach(l => { if (l.status !== 'ok') lines[l.dishId] = l.status; });
+        const restaurant = d.restaurant || { status: 'ok' };
+        let leaveCheckout = false;
+
+        // Payment methods: the list is replaced by the latest one; a choice that no longer exists is cleared.
+        if (Array.isArray(d.paymentMethods)) { paymentMethods = d.paymentMethods; paymentMethodsLoaded = true; }
+        if (selectedPaymentMethod && !paymentMethods.some(p => p.id === selectedPaymentMethod)) {
+            selectedPaymentMethod = null;
+            leaveCheckout = true;
+            showToast('That payment method is no longer available — please choose another.');
+        }
+        // Delivery: switched off since the customer picked it.
+        if (deliveryMethod === 'delivery' && restaurant.deliveryAvailable === false) {
+            deliveryMethod = null;
+            leaveCheckout = true;
+            showToast("Delivery isn't available right now — please choose Self-pick up.");
+        }
+        // Tax settings used by the checkout totals.
+        if (restaurant.enableTax !== undefined) {
+            taxSettingsByRestaurant[restaurantId] = { enableTax: restaurant.enableTax === true, taxMode: restaurant.taxMode === 'exclusive' ? 'exclusive' : 'inclusive' };
+        }
+
+        // Only repaint when something actually changed, so a background check never disturbs typing.
+        const sig = JSON.stringify([restaurant, lines, paymentMethods.map(p => p.id + p.name + p.logoUrl), selectedPaymentMethod, deliveryMethod]);
+        const changed = !cartSyncByRestaurant[restaurantId] || cartSyncByRestaurant[restaurantId].sig !== sig;
+        cartSyncByRestaurant[restaurantId] = { restaurant, lines, sig };
+
+        if (leaveCheckout && currentTabId === 'checkout') { returnToCartSummary(); return; }
+        if (changed) repaintCartScreens();
+    }
+    function repaintCartScreens() {
+        if (currentTabId === 'cart') renderCartPage();
+        else if (currentTabId === 'restaurant-cart') renderRestaurantCartPage();
+        else if (currentTabId === 'checkout') renderCheckoutPage();
+    }
+    // Checkout was reached from the cart summary, so "back" is the history step before it.
+    function returnToCartSummary() {
+        if (currentTabId === 'checkout') history.back();
+    }
+
+    // The "Remove unavailable items" button on the cart summary.
+    function removeUnavailableCartItems() {
+        const rid = activeCartRestaurantId;
+        if (!rid) return;
+        const sync = cartSyncByRestaurant[rid];
+        const everything = sync && sync.restaurant && sync.restaurant.status === 'missing';
+        cartItems = cartItems.filter(i => !(i.restaurantId === rid && (everything || cartLineStatus(i))));
+        updateCartBadge();
+        renderRestaurantCartPage();   // bounces to the Cart tab by itself if nothing is left
+        syncCart(rid);
+        showToast('Removed from your cart.');
+    }
+    function removeRestaurantFromCart(restaurantId) {
+        cartItems = cartItems.filter(i => i.restaurantId !== restaurantId);
+        delete cartSyncByRestaurant[restaurantId];
+        updateCartBadge();
+        renderCartPage();
+    }
+
+    async function refreshCartStockAndRender() {
+        renderRestaurantCartPage();   // paint at once with what we knew, then bring it up to date
+        await syncCart(activeCartRestaurantId);
+    }
+
+    // Keep whichever cart screen is open up to date while it stays open.
+    function syncVisibleCartScreen() {
+        if (document.hidden) return;
+        if (currentTabId === 'cart') syncAllCarts();
+        else if (currentTabId === 'restaurant-cart' || currentTabId === 'checkout') syncCart(activeCartRestaurantId);
+    }
+    setInterval(syncVisibleCartScreen, 12000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncVisibleCartScreen(); });
+    window.addEventListener('focus', syncVisibleCartScreen);
+    try { tg?.onEvent?.('activated', syncVisibleCartScreen); } catch (e) {}
 
     function renderRestaurantCartPage() {
         const container = document.getElementById('restaurant-cart-content');
@@ -3565,14 +3693,15 @@ async function submitFinalOrder() {
         cartItems.forEach((item, index) => {
             if (item.restaurantId !== activeCartRestaurantId) return;
             const itemTotal = item.unitPrice * item.quantity;
-            const unavailable = item.dishId !== undefined && cartUnavailableDishIds.has(item.dishId);
+            const lineProblem = cartLineStatus(item);
+            const unavailable = !!lineProblem;
             itemsHtml += `
                 <div class="cart-item-row ${unavailable ? 'cart-item-unavailable' : ''}" data-dish-id="${item.dishId !== undefined ? item.dishId : ''}" onclick="if(!event.target.closest('.qty-control')) openSavedDish('${item.restaurantId}', ${item.dishId !== undefined ? item.dishId : 'undefined'})">
                     <img src="${item.image}" class="cart-item-img" alt="food" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop'">
                     <div class="cart-item-info">
                         <div class="cart-item-title">${item.name}</div>
                         <div class="cart-item-options">${item.options}</div>
-                        ${unavailable ? `<div class="cart-item-unavailable-badge">Currently unavailable</div>` : `<div class="cart-item-price">${itemTotal} MMK</div>`}
+                        ${unavailable ? `<div class="cart-item-unavailable-badge">${CART_LINE_LABEL[lineProblem] || 'Currently unavailable'}</div>` : `<div class="cart-item-price">${itemTotal} MMK</div>`}
                     </div>
                     <div class="qty-control" style="transform: scale(0.85);">
                         <button class="qty-btn" onclick="event.stopPropagation(); updateCartItemQty(${index}, -1)">-</button>
@@ -3631,7 +3760,9 @@ async function submitFinalOrder() {
             }
         }
 
+        const blockReason = cartBlockReason(activeCartRestaurantId);
         container.innerHTML = `
+            ${cartAlertHtml(activeCartRestaurantId)}
             <div class="cart-section-card">
                 <div class="cart-section-title"><span>${icon("clipboard", 18, "ico-accent")}</span> <span>Order Items</span><button class="save-cart-icon-btn" title="Save this cart" onclick="promptSaveCart()">${icon("bookmark")}</button></div>
                 <div class="cart-items-list">${itemsHtml}</div>
@@ -3665,7 +3796,7 @@ async function submitFinalOrder() {
             </div>
 
             <div style="margin-top: 20px; margin-bottom: 30px;">
-                <button class="btn-place-order btn-primary-orange" id="continue-checkout-btn" onclick="goToCheckout()">Continue to Checkout</button>
+                <button class="btn-place-order btn-primary-orange" id="continue-checkout-btn" ${blockReason ? 'disabled' : ''} onclick="goToCheckout()">Continue to Checkout</button>
             </div>
         `;
     }
@@ -3679,6 +3810,7 @@ async function submitFinalOrder() {
         updateCartBadge();
         renderRestaurantCartPage();
         if (dishId !== undefined) refreshCardQtyZone(dishId, delta > 0);
+        syncCart(activeCartRestaurantId);
     }
 
     /* ================= CHECKOUT LOGIC (NEW SECTION) ================= */
@@ -3702,46 +3834,49 @@ async function submitFinalOrder() {
             if (savedAddresses.length === 0) openAddressModal();
             return;
         }
-        if (items.some(i => i.dishId !== undefined && cartUnavailableDishIds.has(i.dishId))) {
-            showToast('Please remove the unavailable item(s) first.');
-            return;
-        }
-
-        // Asks the server for a real order id (and one last stock check)
-        // before showing Checkout — this can take a moment, which is fine;
-        // the button just shows it's working.
+        // Hard gate: look at the LATEST data for everything that can have changed (restaurant, every
+        // item and its price, payment methods, delivery, tax) before moving on, then ask the server for
+        // a real order id. This can take a moment, which is fine; the button just shows it's working.
+        const rid = activeCartRestaurantId;
         const btn = document.getElementById('continue-checkout-btn');
         const originalText = btn ? btn.innerText : '';
         if (btn) { btn.disabled = true; btn.innerText = 'Checking…'; }
         try {
+            const latest = await syncCart(rid, { fresh: true });
+            if (!latest) { showToast('Could not verify your cart — check your connection and try again.'); return; }
+            const reason = cartBlockReason(rid);
+            if (reason) { showToast(reason); return; }
+            // The check may just have cleared a choice that isn't offered any more.
+            if (!deliveryMethod) { showToast('Please choose a delivery method.'); return; }
+            if (!selectedPaymentMethod) { showToast('Please choose a payment method.'); return; }
+
             const res = await fetch(`${API_BASE}/api/order/reserve`, {
                 method: 'POST',
+                cache: 'no-store',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    restaurantId: activeCartRestaurantId,
-                    items: items.map(i => ({ dishId: i.dishId }))
+                    restaurantId: rid,
+                    items: cartItems.filter(i => i.restaurantId === rid).map(i => ({ dishId: i.dishId }))
                 })
             });
             const result = await res.json();
             if (!res.ok || !result.success) throw new Error(result.error || 'Server error');
 
-            if (result.unavailableDishIds && result.unavailableDishIds.length) {
-                cartUnavailableDishIds = new Set([...cartUnavailableDishIds, ...result.unavailableDishIds]);
-                renderRestaurantCartPage();
-                showToast('One of your items just went out of stock — please remove it to continue.');
+            if ((result.unavailableDishIds && result.unavailableDishIds.length) || (result.restaurantStatus && result.restaurantStatus !== 'ok')) {
+                await syncCart(rid, { fresh: true });
+                showToast('Something in your cart just changed — please review it.');
                 return;
             }
 
             // Real, server-issued id — reused as-is by submitFinalOrder() below,
             // so what's shown here is exactly what the order is created under.
             pendingOrderRef = result.orderId;
-            await loadTaxSettings(activeCartRestaurantId);   // the owner may have changed it since the menu loaded
             switchNavTab('checkout');
         } catch (e) {
             console.error(e);
             showToast('Could not reach the server — please try again.');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerText = originalText || 'Continue to Checkout'; }
+            if (btn) { btn.disabled = !!cartBlockReason(rid); btn.innerText = originalText || 'Continue to Checkout'; }
         }
     }
 
@@ -3785,10 +3920,12 @@ async function submitFinalOrder() {
         const addressText = activeAddr ? `${activeAddr.name} (${activeAddr.phone}) — ${activeAddr.address}` : 'No address selected';
 
         const deliveryLabel = deliveryMethod === 'pickup' ? 'Self-pick up' : 'Delivery';
-        const paymentLabel = (paymentMethods.find(p => p.id === selectedPaymentMethod) || {}).name || selectedPaymentMethod;
+        const paymentLabel = escPay((paymentMethods.find(p => p.id === selectedPaymentMethod) || {}).name || selectedPaymentMethod || '—');
         const noteText = orderComment && orderComment.trim() ? escPay(orderComment.trim()) : 'No note added';
 
+        const blockReason = cartBlockReason(activeCartRestaurantId);
         container.innerHTML = `
+            ${blockReason ? `<div class="cart-alert"><div>${escPay(blockReason)} Go back to review your cart.</div></div>` : ''}
             <div class="cart-section-card" style="margin-bottom: 16px;">
                 <div class="cart-section-title" style="margin-bottom: 14px;">${restaurantName}</div>
                 <div class="summary-row"><span>Order ID</span><span>#${pendingOrderRef || '—'}</span></div>
@@ -3807,7 +3944,7 @@ async function submitFinalOrder() {
             </div>
 
             <div style="margin-top: 20px; margin-bottom: 24px;">
-                <button class="btn-place-order" id="place-order-btn" onclick="submitFinalOrder()">Make Payment</button>
+                <button class="btn-place-order" id="place-order-btn" ${blockReason ? 'disabled' : ''} onclick="submitFinalOrder()">Make Payment</button>
             </div>
         `;
     }
@@ -3815,16 +3952,19 @@ async function submitFinalOrder() {
     function selectAddress(id) {
         activeAddressId = id;
         renderRestaurantCartPage(); // Re-render — these controls now live on the cart summary page
+        syncCart(activeCartRestaurantId);
     }
 
     function selectPayment(method) {
         selectedPaymentMethod = method;
         renderRestaurantCartPage();
+        syncCart(activeCartRestaurantId);   // if this method was just removed, it is cleared again with a message
     }
 
     function selectDeliveryMethod(method) {
         deliveryMethod = method;
         renderRestaurantCartPage(); // Re-render: toggles the address section and updates the shipping fee
+        syncCart(activeCartRestaurantId);
     }
 
     const MAX_SAVED_ADDRESSES = 2;
