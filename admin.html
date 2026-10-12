@@ -538,6 +538,52 @@
   .o-foot b{color:var(--ink);font-size:14px}
   .o-actions{display:flex;gap:8px;margin-top:12px}
   .o-actions .btn{flex:1;justify-content:center;padding:12px}
+
+  /* ============ RESTAURANT STATUS (open / closed) ============ */
+  .status-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--ok);border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);transition:border-color .2s,background .2s}
+  .status-card.closed{border-color:var(--brick);background:var(--brick-tint)}
+  .status-dot{width:12px;height:12px;border-radius:50%;background:var(--ok);flex-shrink:0;box-shadow:0 0 0 4px var(--ok-tint)}
+  .status-card.closed .status-dot{background:var(--brick);box-shadow:0 0 0 4px #fff}
+  .status-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .status-text b{font-size:15px;font-weight:700}
+  .status-text small{font-size:11.5px;color:var(--muted);line-height:1.4}
+  .status-card .switch{width:64px;height:36px}
+  .status-card .switch i::after{top:4px;left:4px;width:28px;height:28px}
+  .status-card .switch input:checked + i{background:var(--ok)}
+  .status-card .switch input:checked + i::after{transform:translateX(28px)}
+  .status-card .switch input:disabled{cursor:wait}
+  .closed-banner{display:none;align-items:center;gap:10px;background:var(--brick);color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;line-height:1.4}
+  .closed-banner .ico{font-size:18px}
+  .closed-banner span{flex:1}
+  .closed-banner button{background:#fff;color:var(--brick);border:0;border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+
+  /* ============ PREP COUNTDOWN RING ============ */
+  .o-prep{margin:12px 0 4px;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:8px 10px}
+  .prep-main{display:flex;align-items:center;gap:12px}
+  .prep-ring{position:relative;width:56px;height:56px;padding:0;border:0;background:none;border-radius:50%;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .prep-ring:disabled{cursor:default}
+  .prep-ring:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  .prep-ring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+  .prep-ring .trk{fill:#fff;stroke:var(--line);stroke-width:5}
+  .prep-ring .arc{fill:none;stroke:var(--primary);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+  .prep-ring.warn .arc{stroke:var(--mustard)}
+  .prep-ring.late .arc{stroke:var(--brick)}
+  .prep-ring.done .arc{stroke:var(--ok)}
+  .prep-ring.late{animation:prepPulse 1.4s ease-in-out infinite}
+  .prep-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;pointer-events:none}
+  .prep-txt b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+  .prep-txt small{font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .prep-ring.late .prep-txt b,.prep-ring.late .prep-txt small{color:var(--brick)}
+  .prep-ring.done .prep-txt .ico{font-size:22px;color:var(--ok)}
+  .prep-label{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .prep-label b{font-size:13px;font-weight:600}
+  .prep-label small{font-size:11.5px;color:var(--muted)}
+  .prep-pop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);animation:popIn .16s ease-out}
+  .prep-pop button{flex:1;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);border-radius:12px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation}
+  .prep-pop button:active{background:var(--primary-tint)}
+  .prep-pop .prep-now{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  @keyframes prepPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  @keyframes popIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -651,8 +697,25 @@
   </nav>
 
   <main>
+    <!-- CLOSED BANNER (all tabs) -->
+    <div class="closed-banner" id="closed-banner" role="alert">
+      <i class="ico" data-icon="ban"></i>
+      <span><b>Your restaurant is closed.</b> Customers can't place new orders. Orders you already accepted carry on as normal.</span>
+      <button type="button" onclick="reopenRestaurant()">Reopen</button>
+    </div>
     <!-- ITEMS VIEW -->
     <div class="view active" id="view-orders">
+      <div class="status-card" id="status-card">
+        <span class="status-dot"></span>
+        <div class="status-text">
+          <b id="status-title">Open for orders</b>
+          <small id="status-sub">Customers can order from you right now.</small>
+        </div>
+        <label class="switch" title="Restaurant status">
+          <input type="checkbox" id="rest-open-input" checked onchange="onStatusToggle(this.checked)" aria-label="Restaurant open for orders">
+          <i></i>
+        </label>
+      </div>
       <div class="seg">
         <button class="active" id="seg-current" onclick="setOrdersScope('current')">Current</button>
         <button id="seg-history" onclick="setOrdersScope('history')">History</button>
@@ -876,10 +939,14 @@
       <div class="field">
         <label>Prep time</label>
         <select id="item-time-input">
-          <option value="5-10 mins">5-10 mins</option>
-          <option value="10-20 mins">10-20 mins</option>
-          <option value="20-30 mins">20-30 mins</option>
-          <option value="35-45 mins">35-45 mins</option>
+          <option value="5 mins">5 mins</option>
+          <option value="10 mins">10 mins</option>
+          <option value="15 mins">15 mins</option>
+          <option value="20 mins">20 mins</option>
+          <option value="25 mins">25 mins</option>
+          <option value="30 mins">30 mins</option>
+          <option value="40 mins">40 mins</option>
+          <option value="50+ mins">50+ mins</option>
         </select>
       </div>
 
@@ -1026,7 +1093,7 @@
   // The current restaurant's profile — name/tagline/logo/address shown to
   // customers. Populated on login (or session restore) from the server's
   // response, not fetched separately.
-  let restaurantProfile = { name: '', handle: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false, enableTax: false, taxMode: 'inclusive' };
+  let restaurantProfile = { name: '', handle: '', tagline: '', logoUrl: '', address: '', locationPin: '', isPublished: false, isOpen: true, enableTax: false, taxMode: 'inclusive' };
 
   // Working state for the category drawer while it's open.
   let catDraft = null; // { editIndex, name, icon, sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null }
@@ -1243,6 +1310,7 @@
       document.getElementById('app').style.display = 'flex';
     }
     loadMenu();
+    loadRestaurantStatus();
     startOrders();
   }
 
@@ -2132,7 +2200,7 @@
       const catDefaults = cat.defaultPrices || [];
       itemDraft = {
         catId: cat.id, editIndex: null, usingCustomSizes: false, sizeNames: [...catSizeNames],
-        name: '', description: '', image: '', time: '10-20 mins',
+        name: '', description: '', image: '', time: '15 mins',
         price: cat.defaultFlatPrice != null ? cat.defaultFlatPrice : 0,
         sizes: catSizeNames.map((n, i) => ({ name: n, price: catDefaults[i] != null ? catDefaults[i] : 0 })),
         optionGroups: []
@@ -2145,7 +2213,7 @@
       itemDraft = {
         catId: cat.id, editIndex: itemIndex, usingCustomSizes, sizeNames: [...effectiveSizeNames],
         name: item.name, description: item.description || '', image: item.image || '',
-        time: item.time || '10-20 mins',
+        time: item.time || '15 mins',
         price: item.price || 0,
         sizes: effectiveSizeNames.map(n => {
           const existing = (item.sizes || []).find(s => s.name === n);
@@ -2184,7 +2252,7 @@
       o.value = value; o.textContent = value + ' (current)'; o.setAttribute('data-extra', '1');
       sel.appendChild(o);
     }
-    sel.value = value || '10-20 mins';
+    sel.value = value || '15 mins';
   }
   const ITEM_DESC_MAX = 150;
   function updateDescCount() {
@@ -2435,7 +2503,7 @@
       soldOut: itemDraft.editIndex === null ? false : !!cat.items[itemDraft.editIndex].soldOut,
       description: descText,
       image: document.getElementById('item-image-input').value.trim(),
-      time: document.getElementById('item-time-input').value || '10-20 mins',
+      time: document.getElementById('item-time-input').value || '15 mins',
       optionGroups: itemDraft.optionGroups
     };
 
@@ -2621,7 +2689,9 @@
       const res = await fetch(`${API_BASE}/api/admin/orders?days=30`, { headers: adminHeaders() });
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      if (d.serverNow) serverOffset = d.serverNow - Date.now() / 1000;
       ordersData = d.orders;
+      reapplyPendingPrep();
       const fresh = ordersData.filter(o => o.status === 'restaurant_pending' && !seenOrders.has(o.orderId));
       fresh.forEach(o => seenOrders.add(o.orderId));
       if (fresh.length && !ordersFirst) { beep(); tg?.HapticFeedback?.notificationOccurred('success'); showToast('New order ' + fresh[0].orderId); }
@@ -2669,11 +2739,12 @@
     const box = document.getElementById('orders-list');
     if (ordersScope === 'current') {
       const list = ordersData.filter(o => CURRENT.includes(o.status)).sort((a, b) => (a.status === 'restaurant_pending' ? 0 : 1) - (b.status === 'restaurant_pending' ? 0 : 1));
-      box.innerHTML = list.length ? list.map(o => `<div class="o-card ${o.status === 'restaurant_pending' ? 'new' : ''}">${orderHead(o)}${orderBody(o)}${
+      box.innerHTML = list.length ? list.map(o => `<div class="o-card ${o.status === 'restaurant_pending' ? 'new' : ''}">${orderHead(o)}${prepTimerHtml(o)}${orderBody(o)}${
         o.status === 'restaurant_pending'
           ? `<div class="o-actions"><button class="btn btn-danger-ghost" onclick="orderAction('${o.orderId}','reject')">Reject</button><button class="btn btn-primary" onclick="orderAction('${o.orderId}','accept')">Accept</button></div>`
           : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">${icon('check')} Mark ready</button></div>`)}</div>`).join('')
         : `<div class="empty-state"><div class="display">No active orders</div>New orders appear here with a sound alert.</div>`;
+      tickPrep();
       return;
     }
     const d0 = new Date(); d0.setHours(0, 0, 0, 0);
@@ -2688,11 +2759,211 @@
   async function orderAction(id, action) {
     if (action === 'reject' && !confirm('Are you sure to reject the order?')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ orderId: id, action }) });
+      const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify(action === 'accept' ? { orderId: id, action, prepMinutes: pendingPrepMinutes(id) } : { orderId: id, action }) });
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d.error || res.status);
       showToast(action === 'accept' ? 'Order accepted.' : action === 'reject' ? 'Order rejected.' : 'Marked ready.');
     } catch (e) { showToast('Could not update: ' + e.message); }
+    loadOrders();
+  }
+
+
+  /* ================= RESTAURANT OPEN / CLOSED ================= */
+  async function loadRestaurantStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
+      const d = await res.json();
+      restaurantProfile.isOpen = d.isOpen !== false;
+    } catch (e) { /* keep the last known state */ }
+    renderRestaurantStatus();
+  }
+  function renderRestaurantStatus() {
+    const open = restaurantProfile.isOpen !== false;
+    document.getElementById('rest-open-input').checked = open;
+    document.getElementById('status-card').classList.toggle('closed', !open);
+    document.getElementById('status-title').textContent = open ? 'Open for orders' : 'Closed — not taking orders';
+    document.getElementById('status-sub').textContent = open
+      ? 'Customers can order from you right now.'
+      : 'Customers see a closed message. Flip the switch to reopen.';
+    document.getElementById('closed-banner').style.display = open ? 'none' : 'flex';
+  }
+  async function setRestaurantOpen(open) {
+    const input = document.getElementById('rest-open-input');
+    input.disabled = true;
+    // /api/admin/restaurant-info always wants the name; the other profile fields go back unchanged.
+    const ok = await saveRestaurantProfile({
+      name: restaurantProfile.name, tagline: restaurantProfile.tagline,
+      logoUrl: restaurantProfile.logoUrl, address: restaurantProfile.address, isOpen: open
+    });
+    input.disabled = false;
+    if (!ok) restaurantProfile.isOpen = !open;       // roll the switch back
+    renderRestaurantStatus();
+    if (ok) { tg?.HapticFeedback?.notificationOccurred(open ? 'success' : 'warning'); showToast(open ? 'You are open — orders can come in.' : 'Restaurant closed — new orders are paused.'); }
+  }
+  function onStatusToggle(wantOpen) {
+    if (!wantOpen && !confirm('Close the restaurant? Customers will not be able to place new orders until you reopen.')) {
+      renderRestaurantStatus();   // user backed out — put the switch back
+      return;
+    }
+    restaurantProfile.isOpen = wantOpen;
+    renderRestaurantStatus();
+    setRestaurantOpen(wantOpen);
+  }
+  function reopenRestaurant() { onStatusToggle(true); }
+
+  /* ================= PREP COUNTDOWN TIMER ================= */
+  const RING_R = 22, RING_C = 2 * Math.PI * RING_R;
+  const DEFAULT_PREP_MIN = 15, MAX_PREP_MIN = 180;
+  let serverOffset = 0;                 // server clock minus this device's clock (seconds)
+  const nowSec = () => Date.now() / 1000 + serverOffset;
+  const pendingPrep = {};               // orderId -> minutes chosen before accepting
+  const prepQueue = {};                 // orderId -> { delta, timer } adjustments not yet sent
+  let openPrepId = null, prepPopTimer = null;
+
+  // "15 mins" -> 15, "50+ mins" -> 50, old "10-20 mins" -> 20 (longest end of the range)
+  function parsePrepMinutes(text) {
+    const n = String(text || '').match(/\d+/g);
+    return n ? +n[n.length - 1] : 0;
+  }
+  // Slowest dish in the order decides the estimate.
+  function defaultPrepMinutes(o) {
+    let best = 0;
+    const lookup = {};
+    (menuCategories || []).forEach(c => (c.items || []).forEach(it => { lookup[String(it.name).trim().toLowerCase()] = it; }));
+    (o.items || []).forEach(i => {
+      const it = lookup[String(i.name).trim().toLowerCase()];
+      if (it) best = Math.max(best, parsePrepMinutes(it.time));
+    });
+    return best || DEFAULT_PREP_MIN;
+  }
+  function pendingPrepMinutes(id) {
+    const o = ordersData.find(x => x.orderId === id);
+    return pendingPrep[id] ?? (o ? defaultPrepMinutes(o) : DEFAULT_PREP_MIN);
+  }
+  const clampEnd = end => Math.max(nowSec(), Math.min(end, nowSec() + MAX_PREP_MIN * 60));
+  function applyPrepDelta(end, deltaMin) {            // same rule as the server
+    return clampEnd(Math.max(end, nowSec()) + deltaMin * 60);
+  }
+  // A poll must not wipe clicks that haven't reached the server yet.
+  function reapplyPendingPrep() {
+    Object.entries(prepQueue).forEach(([id, q]) => {
+      const o = ordersData.find(x => x.orderId === id);
+      if (o && o.prepEndsAt) o.prepEndsAt = applyPrepDelta(o.prepEndsAt, q.delta);
+    });
+  }
+
+  function prepState(o) {
+    if (o.readyAt) return { done: true };
+    if (o.status === 'restaurant_pending') {
+      const m = pendingPrepMinutes(o.orderId);
+      return { waiting: true, minutes: m };
+    }
+    if (!o.prepEndsAt) return { unset: true };
+    const total = Math.max(o.prepEndsAt - (o.prepStartedAt || o.prepEndsAt - DEFAULT_PREP_MIN * 60), 1);
+    const rem = o.prepEndsAt - nowSec();
+    return { rem, total: Math.max(total, rem) };
+  }
+  function ringText(st) {
+    if (st.waiting) return ['' + st.minutes, 'min'];
+    if (st.unset) return ['--', 'set'];
+    if (st.rem > 60) return ['' + Math.ceil(st.rem / 60), 'min'];
+    if (st.rem > 0) return ['' + Math.ceil(st.rem), 'sec'];
+    return ['' + Math.floor(-st.rem / 60), 'late'];
+  }
+  function prepTimerHtml(o) {
+    const st = prepState(o), id = escapeHtml(o.orderId);
+    if (st.done) {
+      return `<div class="o-prep"><div class="prep-main"><span class="prep-ring done"><svg viewBox="0 0 56 56"><circle class="trk" cx="28" cy="28" r="${RING_R}"/><circle class="arc" cx="28" cy="28" r="${RING_R}" stroke-dasharray="${RING_C}" stroke-dashoffset="0"/></svg><span class="prep-txt">${icon('check')}</span></span>
+        <div class="prep-label"><b>Ready</b><small>Waiting for the rider</small></div></div></div>`;
+    }
+    const open = openPrepId === o.orderId;
+    const label = st.waiting ? ['Estimated prep time', 'Tap the circle to change before accepting']
+                : st.unset   ? ['No timer yet', 'Tap the circle to start one']
+                :              ['Time left to prepare', 'Tap the circle to add or remove minutes'];
+    return `<div class="o-prep" data-oid="${id}">
+      <div class="prep-main">
+        <button type="button" class="prep-ring" data-oid="${id}" aria-label="Adjust preparation time" aria-expanded="${open}" onclick="togglePrepPop('${id}', event)">
+          <svg viewBox="0 0 56 56"><circle class="trk" cx="28" cy="28" r="${RING_R}"/><circle class="arc" cx="28" cy="28" r="${RING_R}" stroke-dasharray="${RING_C}" stroke-dashoffset="0"/></svg>
+          <span class="prep-txt"><b>--</b><small>min</small></span>
+        </button>
+        <div class="prep-label"><b>${label[0]}</b><small>${label[1]}</small></div>
+      </div>
+      ${open ? `<div class="prep-pop">
+        <button type="button" onclick="adjustPrep('${id}', -1)" aria-label="Remove one minute">−1 min</button>
+        <span class="prep-now" data-oid="${id}"></span>
+        <button type="button" onclick="adjustPrep('${id}', 1)" aria-label="Add one minute">+1 min</button>
+      </div>` : ''}
+    </div>`;
+  }
+
+  // Redraws every ring in place once a second — no re-render, so an open popover never flickers.
+  function tickPrep() {
+    document.querySelectorAll('.prep-ring[data-oid]').forEach(el => {
+      const o = ordersData.find(x => x.orderId === el.dataset.oid); if (!o) return;
+      const st = prepState(o);
+      if (st.done) return;
+      const [big, small] = ringText(st);
+      el.querySelector('.prep-txt b').textContent = big;
+      el.querySelector('.prep-txt small').textContent = small;
+      const frac = st.waiting ? 1 : st.unset ? 0 : Math.max(0, Math.min(1, st.rem / st.total));
+      el.querySelector('.arc').style.strokeDashoffset = RING_C * (1 - frac);
+      el.classList.toggle('late', !!st.rem && st.rem <= 0);
+      el.classList.toggle('warn', !!st.rem && st.rem > 0 && (st.rem <= 120 || frac <= 0.2));
+    });
+    document.querySelectorAll('.prep-now[data-oid]').forEach(el => {
+      const o = ordersData.find(x => x.orderId === el.dataset.oid); if (!o) return;
+      const st = prepState(o);
+      el.textContent = st.waiting ? st.minutes + ' min' : st.unset ? '' : st.rem > 0 ? (st.rem > 60 ? Math.ceil(st.rem / 60) + ' min left' : Math.ceil(st.rem) + ' s left') : 'overdue';
+    });
+  }
+  setInterval(() => { if (!document.hidden) tickPrep(); }, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tickPrep(); });
+
+  function togglePrepPop(id, ev) {
+    ev && ev.stopPropagation();
+    openPrepId = openPrepId === id ? null : id;
+    keepPrepPopAlive();
+    renderOrders();
+  }
+  function closePrepPop() {
+    if (!openPrepId) return;
+    openPrepId = null; clearTimeout(prepPopTimer); renderOrders();
+  }
+  function keepPrepPopAlive() {            // popover tidies itself away after 8 s of no taps
+    clearTimeout(prepPopTimer);
+    if (openPrepId) prepPopTimer = setTimeout(closePrepPop, 8000);
+  }
+  document.addEventListener('click', e => { if (openPrepId && !e.target.closest('.o-prep')) closePrepPop(); });
+
+  function adjustPrep(id, delta) {
+    const o = ordersData.find(x => x.orderId === id); if (!o) return;
+    keepPrepPopAlive();
+    tg?.HapticFeedback?.impactOccurred('light');
+    if (o.status === 'restaurant_pending') {                 // not accepted yet: just change the estimate
+      pendingPrep[id] = Math.max(1, Math.min(MAX_PREP_MIN, pendingPrepMinutes(id) + delta));
+      renderOrders();
+      return;
+    }
+    if (!o.prepEndsAt) {                                     // accepted from the bot, timer never started
+      o.prepStartedAt = nowSec();
+      o.prepEndsAt = nowSec() + defaultPrepMinutes(o) * 60;
+    }
+    o.prepEndsAt = applyPrepDelta(o.prepEndsAt, delta);      // instant feedback
+    const q = prepQueue[id] || (prepQueue[id] = { delta: 0, timer: null });
+    q.delta += delta;
+    clearTimeout(q.timer);
+    q.timer = setTimeout(() => flushPrep(id, o), 450);       // many fast taps -> one request
+    renderOrders();
+  }
+  async function flushPrep(id, o) {
+    const q = prepQueue[id]; if (!q) return;
+    delete prepQueue[id];
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(),
+        body: JSON.stringify({ orderId: id, action: 'adjust_prep', delta: q.delta, prepMinutes: defaultPrepMinutes(o) }) });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+    } catch (e) { showToast('Could not update the timer: ' + e.message); }
     loadOrders();
   }
 
