@@ -532,30 +532,51 @@
   .o-who a{color:var(--primary-dark);text-decoration:none;font-weight:500;margin-left:6px}
   .o-addr{font-size:12px;color:var(--muted);margin-bottom:8px}
   .o-note{background:var(--mustard-tint);border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:6px}
-  .o-item{font-size:13px;padding:5px 0;border-top:1px dashed var(--line)}
-  .o-opt{font-size:11.5px;color:var(--muted);margin-top:1px}
   .o-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
   .o-foot b{color:var(--ink);font-size:14px}
   .o-actions{display:flex;gap:8px;margin-top:12px}
   .o-actions .btn{flex:1;justify-content:center;padding:12px}
 
   /* ============ RESTAURANT STATUS (open / closed) ============ */
-  .status-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--ok);border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);transition:border-color .2s,background .2s}
-  .status-card.closed{border-color:var(--brick);background:var(--brick-tint)}
-  .status-dot{width:12px;height:12px;border-radius:50%;background:var(--ok);flex-shrink:0;box-shadow:0 0 0 4px var(--ok-tint)}
-  .status-card.closed .status-dot{background:var(--brick);box-shadow:0 0 0 4px #fff}
-  .status-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-  .status-text b{font-size:15px;font-weight:700}
-  .status-text small{font-size:11.5px;color:var(--muted);line-height:1.4}
-  .status-card .switch{width:64px;height:36px}
-  .status-card .switch i::after{top:4px;left:4px;width:28px;height:28px}
-  .status-card .switch input:checked + i{background:var(--ok)}
-  .status-card .switch input:checked + i::after{transform:translateX(28px)}
-  .status-card .switch input:disabled{cursor:wait}
   .closed-banner{display:none;align-items:center;gap:10px;background:var(--brick);color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;line-height:1.4}
   .closed-banner .ico{font-size:18px}
   .closed-banner span{flex:1}
   .closed-banner button{background:#fff;color:var(--brick);border:0;border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+
+
+  /* ============ TOP STATUS PILL + DROPDOWN ============ */
+  .status-bar{position:sticky;top:0;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px}
+  .status-brand{font-size:15px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;border:1.5px solid var(--ok);background:var(--ok-tint);color:var(--ok);border-radius:999px;padding:6px 11px 6px 10px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;transition:background .2s,color .2s,border-color .2s}
+  .status-pill .dot,.sm-dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .status-pill svg{width:10px;height:10px;transition:transform .15s}
+  .status-pill[aria-expanded="true"] svg{transform:rotate(180deg)}
+  .status-pill.busy{border-color:var(--mustard);background:var(--mustard-tint);color:var(--mustard)}
+  .status-pill.closed{border-color:var(--brick);background:var(--brick-tint);color:var(--brick)}
+  .status-pill:disabled{opacity:.6;cursor:wait}
+  .status-overlay{position:fixed;inset:0;z-index:80;display:none;background:rgba(0,0,0,.18)}
+  .status-overlay.open{display:block}
+  .status-menu{position:absolute;top:calc(50px + env(safe-area-inset-top,0px));right:12px;left:12px;max-width:340px;margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.22);padding:6px;animation:popIn .15s ease-out}
+  .status-menu button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;border-radius:11px;padding:12px;text-align:left;cursor:pointer;color:var(--ink)}
+  .status-menu button.active{background:var(--paper)}
+  .status-menu button:active{background:var(--paper)}
+  .sm-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .sm-text b{font-size:14px;font-weight:700}
+  .sm-text small{font-size:11.5px;color:var(--muted);line-height:1.35}
+  .sm-dot.open{color:var(--ok)} .sm-dot.busy{color:var(--mustard)} .sm-dot.closed{color:var(--brick)}
+  .sm-check{margin-left:auto;font-weight:800;color:var(--primary);opacity:0}
+  .status-menu button.active .sm-check{opacity:1}
+
+  /* ============ ORDER CARD: status stripe + item box ============ */
+  .o-card.st-new,.o-card.st-prep,.o-card.st-ready{border-left-width:6px}
+  .o-card.st-prep{border-left-color:var(--primary)}
+  .o-card.st-ready{border-left-color:var(--ok)}
+  .o-items{background:#FFF6EC;border:2px solid var(--primary);border-radius:14px;padding:4px 12px;margin:12px 0 10px}
+  .o-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px dashed #F5C9A3}
+  .o-items .o-item:first-child{border-top:0}
+  .o-qty{flex-shrink:0;min-width:34px;text-align:center;background:var(--ink);color:#fff;border-radius:8px;padding:3px 7px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+  .o-name{font-size:16px;font-weight:700;line-height:1.3;color:var(--ink)}
+  .o-opt{font-size:12.5px;color:var(--muted);margin-top:2px}
 
   /* ============ PREP COUNTDOWN RING ============ */
   .o-prep{margin:12px 0 4px;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:8px 10px}
@@ -575,6 +596,7 @@
   .prep-txt small{font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
   .prep-ring.late .prep-txt b,.prep-ring.late .prep-txt small{color:var(--brick)}
   .prep-ring.done .prep-txt .ico{font-size:22px;color:var(--ok)}
+  .prep-ring .prep-txt svg{width:26px;height:26px;transform:none;color:var(--ok)}
   .prep-label{display:flex;flex-direction:column;gap:2px;min-width:0}
   .prep-label b{font-size:13px;font-weight:600}
   .prep-label small{font-size:11.5px;color:var(--muted)}
@@ -696,6 +718,21 @@
     <button class="tab-btn" id="tab-btn-settings" onclick="switchView('settings')"><span class="tab-icon"><i class="ico " data-icon="gear"></i></span><span>Settings</span></button>
   </nav>
 
+  <div class="status-bar">
+    <div class="status-brand" id="brand-restaurant-name">My Restaurant</div>
+    <button type="button" class="status-pill open" id="status-pill" onclick="toggleStatusMenu(event)" aria-haspopup="menu" aria-expanded="false" aria-label="Restaurant status">
+      <span class="dot"></span><span id="status-pill-text">Open</span>
+      <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="status-overlay" id="status-overlay" onclick="closeStatusMenu()">
+    <div class="status-menu" role="menu" onclick="event.stopPropagation()">
+      <button type="button" role="menuitem" data-s="open" onclick="chooseStatus('open')"><span class="sm-dot open"></span><span class="sm-text"><b>Open for Orders</b><small>Taking new orders as normal</small></span><span class="sm-check">✓</span></button>
+      <button type="button" role="menuitem" data-s="busy" onclick="chooseStatus('busy')"><span class="sm-dot busy"></span><span class="sm-text"><b>Busy (+15 mins prep)</b><small>Still open — adds 15 min to prep estimates</small></span><span class="sm-check">✓</span></button>
+      <button type="button" role="menuitem" data-s="closed" onclick="chooseStatus('closed')"><span class="sm-dot closed"></span><span class="sm-text"><b>Closed / Paused</b><small>No new orders until you reopen</small></span><span class="sm-check">✓</span></button>
+    </div>
+  </div>
+
   <main>
     <!-- CLOSED BANNER (all tabs) -->
     <div class="closed-banner" id="closed-banner" role="alert">
@@ -705,17 +742,6 @@
     </div>
     <!-- ITEMS VIEW -->
     <div class="view active" id="view-orders">
-      <div class="status-card" id="status-card">
-        <span class="status-dot"></span>
-        <div class="status-text">
-          <b id="status-title">Open for orders</b>
-          <small id="status-sub">Customers can order from you right now.</small>
-        </div>
-        <label class="switch" title="Restaurant status">
-          <input type="checkbox" id="rest-open-input" checked onchange="onStatusToggle(this.checked)" aria-label="Restaurant open for orders">
-          <i></i>
-        </label>
-      </div>
       <div class="seg">
         <button class="active" id="seg-current" onclick="setOrdersScope('current')">Current</button>
         <button id="seg-history" onclick="setOrdersScope('history')">History</button>
@@ -1072,7 +1098,12 @@
   // "Open My Restaurant" button). Absent in a plain browser — that's how we
   // tell the two contexts apart on load.
   const tg = window.Telegram?.WebApp;
-  if (tg) { tg.ready(); tg.expand(); }
+  if (tg) {
+    tg.ready();
+    tg.expand();                                             // use the full Mini App height
+    try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}   // a downward swipe won't close the app
+    try { tg.onEvent('viewportChanged', () => { if (!tg.isExpanded) tg.expand(); }); } catch (e) {}
+  }
 
   // Which restaurant this admin.html instance manages. Inside Telegram this is
   // determined automatically by autoLogin() from who the user verifiably is —
@@ -2725,21 +2756,27 @@
     return new Date(ts * 1000).toLocaleDateString();
   }
   function orderBody(o) {
-    const items = o.items.map(i => `<div class="o-item"><b>${i.quantity}×</b> ${escapeHtml(i.name)}${i.options && i.options !== 'Standard' ? `<div class="o-opt">${escapeHtml(i.options).replace(/ \| /g, ' · ')}</div>` : ''}</div>`).join('');
+    const items = o.items.map(i => `<div class="o-item"><b class="o-qty">${i.quantity}×</b><div class="o-info"><span class="o-name">${escapeHtml(i.name)}</span>${i.options && i.options !== 'Standard' ? `<div class="o-opt">${escapeHtml(i.options).replace(/ \| /g, ' · ')}</div>` : ''}</div></div>`).join('');
+    const itemsBox = items ? `<div class="o-items">${items}</div>` : '';
     const phone = o.customerPhone ? `<a href="tel:${escapeHtml(o.customerPhone)}">${icon('call')} ${escapeHtml(o.customerPhone)}</a>` : '';
-    return `<div class="o-who">${escapeHtml(o.customerName)}${phone}</div>
-      <div class="o-addr">${o.address ? icon('pin') + ' ' + escapeHtml(o.address) : icon('package') + ' Pickup'}</div>${o.note ? `<div class="o-note">${icon('clipboard')} ${escapeHtml(o.note)}</div>` : ''}${items}
+    return `${itemsBox}<div class="o-who">${escapeHtml(o.customerName)}${phone}</div>
+      <div class="o-addr">${o.address ? icon('pin') + ' ' + escapeHtml(o.address) : icon('package') + ' Pickup'}</div>${o.note ? `<div class="o-note">${icon('clipboard')} ${escapeHtml(o.note)}</div>` : ''}
       <div class="o-foot"><span>${escapeHtml((o.paymentMethod || '').toUpperCase())}${o.riderName ? ' · ' + icon('bike') + ' ' + escapeHtml(o.riderName) : ''}</span><b>${money(o.total)} MMK</b></div>`;
+  }
+  // Left stripe: red = new, orange = preparing, green = ready for the rider
+  function cardState(o) {
+    if (o.status === 'restaurant_pending') return 'new st-new';
+    return o.readyAt ? 'st-ready' : 'st-prep';
   }
   function orderHead(o) {
     const [label, cls] = STATUS[o.status] || [o.status, 'wait'];
-    return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span></span><span class="pill ${cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
+    return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span></span><span class="pill ${o.readyAt && CURRENT.includes(o.status) ? 'ok' : cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
   }
   function renderOrders() {
     const box = document.getElementById('orders-list');
     if (ordersScope === 'current') {
       const list = ordersData.filter(o => CURRENT.includes(o.status)).sort((a, b) => (a.status === 'restaurant_pending' ? 0 : 1) - (b.status === 'restaurant_pending' ? 0 : 1));
-      box.innerHTML = list.length ? list.map(o => `<div class="o-card ${o.status === 'restaurant_pending' ? 'new' : ''}">${orderHead(o)}${prepTimerHtml(o)}${orderBody(o)}${
+      box.innerHTML = list.length ? list.map(o => `<div class="o-card ${cardState(o)}">${orderHead(o)}${prepTimerHtml(o)}${orderBody(o)}${
         o.status === 'restaurant_pending'
           ? `<div class="o-actions"><button class="btn btn-danger-ghost" onclick="orderAction('${o.orderId}','reject')">Reject</button><button class="btn btn-primary" onclick="orderAction('${o.orderId}','accept')">Accept</button></div>`
           : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">${icon('check')} Mark ready</button></div>`)}</div>`).join('')
@@ -2768,48 +2805,67 @@
   }
 
 
-  /* ================= RESTAURANT OPEN / CLOSED ================= */
+  /* ================= RESTAURANT STATUS: open / busy / closed ================= */
+  const BUSY_EXTRA_MIN = 15;
+  const STATUS_TEXT = { open: 'Open', busy: 'Busy', closed: 'Closed' };
+  function restaurantStatus() {
+    if (restaurantProfile.isOpen === false) return 'closed';
+    return (restaurantProfile.busyMinutes || 0) > 0 ? 'busy' : 'open';
+  }
   async function loadRestaurantStatus() {
     try {
       const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
       const d = await res.json();
       restaurantProfile.isOpen = d.isOpen !== false;
+      restaurantProfile.busyMinutes = +d.busyMinutes || 0;
     } catch (e) { /* keep the last known state */ }
     renderRestaurantStatus();
   }
   function renderRestaurantStatus() {
-    const open = restaurantProfile.isOpen !== false;
-    document.getElementById('rest-open-input').checked = open;
-    document.getElementById('status-card').classList.toggle('closed', !open);
-    document.getElementById('status-title').textContent = open ? 'Open for orders' : 'Closed — not taking orders';
-    document.getElementById('status-sub').textContent = open
-      ? 'Customers can order from you right now.'
-      : 'Customers see a closed message. Flip the switch to reopen.';
-    document.getElementById('closed-banner').style.display = open ? 'none' : 'flex';
+    const st = restaurantStatus();
+    const pill = document.getElementById('status-pill');
+    pill.className = 'status-pill ' + st;
+    document.getElementById('status-pill-text').textContent = STATUS_TEXT[st];
+    document.querySelectorAll('#status-overlay button[data-s]').forEach(b => b.classList.toggle('active', b.dataset.s === st));
+    document.getElementById('closed-banner').style.display = st === 'closed' ? 'flex' : 'none';
+    try { renderOrders(); } catch (e) {}     // estimates on new orders include the busy minutes
   }
-  async function setRestaurantOpen(open) {
-    const input = document.getElementById('rest-open-input');
-    input.disabled = true;
-    // /api/admin/restaurant-info always wants the name; the other profile fields go back unchanged.
+  function toggleStatusMenu(ev) {
+    ev && ev.stopPropagation();
+    const ov = document.getElementById('status-overlay');
+    const open = !ov.classList.contains('open');
+    ov.classList.toggle('open', open);
+    document.getElementById('status-pill').setAttribute('aria-expanded', open);
+  }
+  function closeStatusMenu() {
+    document.getElementById('status-overlay').classList.remove('open');
+    document.getElementById('status-pill').setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStatusMenu(); });
+
+  async function chooseStatus(next) {
+    closeStatusMenu();
+    if (next === restaurantStatus()) return;
+    if (next === 'closed' && !confirm('Close the restaurant? Customers will not be able to place new orders until you reopen.')) return;
+    const prev = { isOpen: restaurantProfile.isOpen, busyMinutes: restaurantProfile.busyMinutes || 0 };
+    const patch = { isOpen: next !== 'closed', busyMinutes: next === 'busy' ? BUSY_EXTRA_MIN : 0 };
+    Object.assign(restaurantProfile, patch);
+    renderRestaurantStatus();                                   // instant feedback
+    const pill = document.getElementById('status-pill');
+    pill.disabled = true;
+    // The server always wants the name; the other profile fields go back unchanged.
     const ok = await saveRestaurantProfile({
       name: restaurantProfile.name, tagline: restaurantProfile.tagline,
-      logoUrl: restaurantProfile.logoUrl, address: restaurantProfile.address, isOpen: open
+      logoUrl: restaurantProfile.logoUrl, address: restaurantProfile.address, ...patch
     });
-    input.disabled = false;
-    if (!ok) restaurantProfile.isOpen = !open;       // roll the switch back
-    renderRestaurantStatus();
-    if (ok) { tg?.HapticFeedback?.notificationOccurred(open ? 'success' : 'warning'); showToast(open ? 'You are open — orders can come in.' : 'Restaurant closed — new orders are paused.'); }
+    pill.disabled = false;
+    if (!ok) { Object.assign(restaurantProfile, prev); renderRestaurantStatus(); return; }   // roll back
+    tg?.HapticFeedback?.notificationOccurred(next === 'closed' ? 'warning' : 'success');
+    showToast(next === 'open' ? 'You are open — orders can come in.'
+            : next === 'busy' ? `Busy mode on — prep estimates are +${BUSY_EXTRA_MIN} min.`
+            : 'Restaurant closed — new orders are paused.');
   }
-  function onStatusToggle(wantOpen) {
-    if (!wantOpen && !confirm('Close the restaurant? Customers will not be able to place new orders until you reopen.')) {
-      renderRestaurantStatus();   // user backed out — put the switch back
-      return;
-    }
-    restaurantProfile.isOpen = wantOpen;
-    renderRestaurantStatus();
-    setRestaurantOpen(wantOpen);
-  }
-  function reopenRestaurant() { onStatusToggle(true); }
+  function reopenRestaurant() { chooseStatus('open'); }
 
   /* ================= PREP COUNTDOWN TIMER ================= */
   const RING_R = 22, RING_C = 2 * Math.PI * RING_R;
@@ -2834,7 +2890,7 @@
       const it = lookup[String(i.name).trim().toLowerCase()];
       if (it) best = Math.max(best, parsePrepMinutes(it.time));
     });
-    return best || DEFAULT_PREP_MIN;
+    return Math.min(MAX_PREP_MIN, (best || DEFAULT_PREP_MIN) + (restaurantProfile.busyMinutes || 0));
   }
   function pendingPrepMinutes(id) {
     const o = ordersData.find(x => x.orderId === id);
@@ -2877,7 +2933,7 @@
         <div class="prep-label"><b>Ready</b><small>Waiting for the rider</small></div></div></div>`;
     }
     const open = openPrepId === o.orderId;
-    const label = st.waiting ? ['Estimated prep time', 'Tap the circle to change before accepting']
+    const label = st.waiting ? ['Estimated prep time', (restaurantProfile.busyMinutes > 0 ? 'Includes +' + restaurantProfile.busyMinutes + ' min busy time · ' : '') + 'Tap the circle to change before accepting']
                 : st.unset   ? ['No timer yet', 'Tap the circle to start one']
                 :              ['Time left to prepare', 'Tap the circle to add or remove minutes'];
     return `<div class="o-prep" data-oid="${id}">
