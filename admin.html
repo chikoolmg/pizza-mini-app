@@ -588,6 +588,52 @@
   .o-item{font-size:14px;padding:7px 0;border-top:1px dashed var(--line)}
   .o-opt{font-size:12px;color:var(--muted);margin-top:2px}
 
+
+  /* ============ SETTLEMENTS + AUDIT BADGES ============ */
+  .o-badges{margin-top:2px}
+  .sbadge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 10px 3px 8px;border-radius:999px;margin-top:8px}
+  .sbadge i{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .sbadge.unsettled{background:var(--primary-tint);color:var(--primary-dark)}
+  .sbadge.requested{background:#EEF2FF;color:#4F46E5}
+  .sbadge.settled{background:var(--ok-tint);color:var(--ok)}
+  .o-fin{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+  .settle-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+  .settle-label{font-size:12px;font-weight:600;color:var(--muted)}
+  .settle-big{font-size:28px;font-weight:800;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+  .settle-big small{font-size:14px;font-weight:600;color:var(--muted)}
+  .settle-sub{font-size:12px;color:var(--muted);line-height:1.5}
+  .settle-notice{margin-top:10px;background:#EEF2FF;color:#4F46E5;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.4}
+  .settle-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 10px}
+  .settle-dates label{font-size:11.5px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+  .settle-dates input{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 10px;font-size:13px;color:var(--ink);font-family:inherit;min-width:0}
+  .settle-sel{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:12px;gap:8px}
+  .settle-sel b{font-variant-numeric:tabular-nums}
+  .settle-warn{color:var(--brick);font-size:12px;margin:-4px 0 10px}
+  .settle-submit{width:100%;justify-content:center;padding:13px;font-size:14px}
+  .settle-submit:disabled{opacity:.5;cursor:not-allowed}
+  .settle-h{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 10px;font-size:14px;font-weight:700}
+  .settle-search{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px;font-family:inherit;color:var(--ink)}
+  .batch{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+  .batch summary{list-style:none;cursor:pointer;padding:14px}
+  .batch summary::-webkit-details-marker{display:none}
+  .batch-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .batch-top b{font-size:14.5px}
+  .bstatus{font-size:10.5px;font-weight:700;border-radius:20px;padding:3px 9px}
+  .bstatus.settled{background:var(--ok-tint);color:var(--ok)}
+  .bstatus.requested{background:#EEF2FF;color:#4F46E5}
+  .batch-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .batch-line{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-top:8px;flex-wrap:wrap}
+  .batch-body{border-top:1px solid var(--line);padding:12px 14px 14px;background:var(--paper)}
+  .batch-pay{font-size:12.5px;margin-bottom:10px;line-height:1.5}
+  .batch-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;padding:7px 0;border-top:1px dashed var(--line)}
+  .batch-row:first-of-type{border-top:0}
+  .batch-row .oid{font-family:'IBM Plex Mono',monospace;font-size:12px}
+  .batch-row .od{color:var(--muted);font-size:11.5px;margin-left:6px}
+  .kchip{font-size:10px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;background:#fff;border:1px solid var(--line);color:var(--muted)}
+  .batch-foot{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.7}
+  .batch-foot b{color:var(--ink)}
+  .batch-cancel{margin-top:12px;width:100%;justify-content:center}
+
   /* ============ PREP COUNTDOWN RING ============ */
   .o-prep{margin:12px 0 4px;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:8px 10px}
   .prep-main{display:flex;align-items:center;gap:12px}
@@ -755,6 +801,7 @@
       <div class="seg">
         <button class="active" id="seg-current" onclick="setOrdersScope('current')">Current</button>
         <button id="seg-history" onclick="setOrdersScope('history')">History</button>
+        <button id="seg-settle" onclick="setOrdersScope('settlements')">Settlements</button>
       </div>
       <div id="history-summary" style="display:none">
         <div class="cat-chip-bar">
@@ -765,6 +812,7 @@
         <div class="stats"><div><b id="st-count">0</b><span>Delivered</span></div><div><b id="st-rev">0</b><span>Revenue (MMK)</span></div></div>
       </div>
       <div id="orders-list"></div>
+      <div id="settle-view" style="display:none"></div>
     </div>
 
     <!-- ITEMS VIEW -->
@@ -2778,6 +2826,7 @@
       const res = await fetch(`${API_BASE}/api/admin/orders?days=30`, { headers: adminHeaders() });
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      if (ordersScope === 'settlements') loadSettlements(true);
       if (d.serverNow) serverOffset = d.serverNow - Date.now() / 1000;
       ordersData = d.orders;
       reapplyPendingPrep();
@@ -2800,8 +2849,11 @@
     ordersScope = sc;
     document.getElementById('seg-current').classList.toggle('active', sc === 'current');
     document.getElementById('seg-history').classList.toggle('active', sc === 'history');
+    document.getElementById('seg-settle').classList.toggle('active', sc === 'settlements');
     document.getElementById('history-summary').style.display = sc === 'history' ? 'block' : 'none';
-    renderOrders();
+    document.getElementById('orders-list').style.display = sc === 'settlements' ? 'none' : '';
+    document.getElementById('settle-view').style.display = sc === 'settlements' ? 'block' : 'none';
+    if (sc === 'settlements') loadSettlements(); else renderOrders();
   }
   function setHistoryRange(r) {
     historyRange = r;
@@ -2830,6 +2882,7 @@
     return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span></span><span class="pill ${o.readyAt && CURRENT.includes(o.status) ? 'ok' : cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
   }
   function renderOrders() {
+    if (ordersScope === 'settlements') return;       // that tab draws itself (renderSettlements)
     const box = document.getElementById('orders-list');
     if (ordersScope === 'current') {
       const list = ordersData.filter(o => CURRENT.includes(o.status)).sort((a, b) => (a.status === 'restaurant_pending' ? 0 : 1) - (b.status === 'restaurant_pending' ? 0 : 1));
@@ -2847,9 +2900,157 @@
     const done = list.filter(o => o.status === 'delivered');
     document.getElementById('st-count').textContent = done.length;
     document.getElementById('st-rev').textContent = money(done.reduce((t, o) => t + (Number(o.total) || 0), 0));
-    box.innerHTML = list.length ? list.map(o => `<details class="o-card"><summary>${orderHead(o)}</summary>${orderBody(o)}</details>`).join('')
+    box.innerHTML = list.length ? list.map(o => `<details class="o-card"><summary>${orderHead(o)}${settleBadgeRow(o)}</summary>${orderBody(o)}${finRow(o)}</details>`).join('')
       : `<div class="empty-state"><div class="display">No orders in this period</div></div>`;
   }
+
+  /* ================= SETTLEMENTS (what the platform owes this restaurant) ================= */
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDay = ymd => { const [, m, d] = String(ymd || '').split('-'); return m ? MONTHS[+m - 1] + ' ' + d : ''; };
+  const fmtTsDay = ts => { const d = new Date(ts * 1000); return MONTHS[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0'); };
+  const payKind = k => k === 'cod' ? 'COD' : 'Digital';
+
+  // Order History: audit badge on every completed order (stops double claims, shows where the money is)
+  function settleBadgeRow(o) {
+    if (o.status !== 'delivered') return '';
+    const st = o.settlementStatus || 'unsettled', b = escapeHtml(o.settlementBatchId || '');
+    const badge = st === 'settled' ? `<span class="sbadge settled"><i></i>Settled (Batch #${b})</span>`
+                : st === 'requested' ? `<span class="sbadge requested"><i></i>Settlement Requested (Batch #${b})</span>`
+                : `<span class="sbadge unsettled"><i></i>Unsettled</span>`;
+    return `<div class="o-badges">${badge}</div>`;
+  }
+  function finRow(o) {
+    if (o.status !== 'delivered' || o.foodAmount == null) return '';
+    return `<div class="o-fin"><span>Food (yours): <b>${money(o.foodAmount)} MMK</b></span><span>${payKind(o.paymentKind)} · Delivery fee ${money(o.deliveryFee)}</span></div>`;
+  }
+
+  let settleData = null, settleSig = '', settleRange = { from: '', to: '' }, settleFilter = 'all', settleQuery = '', settleOpen = new Set(), settleBusy = false;
+
+  async function loadSettlements(quiet) {
+    const box = document.getElementById('settle-view');
+    if (quiet && document.activeElement && /^settle-/.test(document.activeElement.id || '')) return;   // don't redraw under a date picker
+    if (!quiet && !settleData) box.innerHTML = '<div class="empty-state"><div class="display">Loading…</div></div>';
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/settlements`, { headers: adminHeaders(), cache: 'no-store' });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      const sig = JSON.stringify([d.unsettled, d.batches]);
+      if (quiet && sig === settleSig) return;
+      settleSig = sig; settleData = d;
+      renderSettlements();
+    } catch (e) {
+      if (!quiet || !settleData) box.innerHTML = `<div class="empty-state"><div class="display">Couldn't load settlements</div>${escapeHtml(e.message)}<br><button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="loadSettlements()">Try again</button></div>`;
+    }
+  }
+
+  function settleSelection() {
+    const rows = (settleData && settleData.unsettled.orders) || [];
+    const { from, to } = settleRange;
+    const sel = rows.filter(r => (!from || r.completedDate >= from) && (!to || r.completedDate <= to));
+    return { rows: sel, count: sel.length, food: sel.reduce((t, r) => t + r.foodAmount, 0), bad: !!(from && to && to < from) };
+  }
+
+  function renderSettlements() {
+    const u = settleData.unsettled, rows = u.orders;
+    if (rows.length) {                                   // default range = everything waiting, clipped to what exists
+      const first = rows[0].completedDate, last = rows[rows.length - 1].completedDate;
+      if (!settleRange.from || settleRange.from < first || settleRange.from > last) settleRange.from = first;
+      if (!settleRange.to || settleRange.to > last || settleRange.to < first) settleRange.to = last;
+    } else settleRange = { from: '', to: '' };
+    const waiting = settleData.batches.filter(b => b.status === 'requested');
+    const first = rows.length ? rows[0].completedDate : '', last = rows.length ? rows[rows.length - 1].completedDate : '';
+    document.getElementById('settle-view').innerHTML = `
+      <div class="settle-card">
+        <div class="settle-label">Total Unsettled Balance</div>
+        <div class="settle-big">${money(u.foodTotal)} <small>MMK</small></div>
+        <div class="settle-sub">${u.count} completed order${u.count === 1 ? '' : 's'} · Digital ${money(u.digitalTotal)} · COD ${money(u.codTotal)}<br>Food amounts only — delivery fees are not part of your payout.</div>
+        ${waiting.length ? `<div class="settle-notice">${waiting.length === 1 ? 'Request #' + escapeHtml(waiting[0].batchId) + ' is' : waiting.length + ' requests are'} waiting for the platform to pay.</div>` : ''}
+        ${rows.length ? `
+        <div class="settle-dates">
+          <label>From<input type="date" id="settle-from" value="${settleRange.from}" min="${first}" max="${last}" onchange="settleRangeChanged()"></label>
+          <label>To<input type="date" id="settle-to" value="${settleRange.to}" min="${first}" max="${last}" onchange="settleRangeChanged()"></label>
+        </div>
+        <div class="settle-warn" id="settle-warn" style="display:none">The end date can't be before the start date.</div>
+        <div class="settle-sel"><span id="settle-sel-count"></span><b id="settle-sel-amount"></b></div>
+        <button class="btn btn-primary settle-submit" id="settle-submit" onclick="submitSettlement()">Submit Settlement Request</button>`
+        : `<div class="settle-sub" style="margin-top:12px">Nothing to settle right now. Delivered orders show up here automatically.</div>`}
+      </div>
+      <div class="settle-h"><span>Settlement Batches</span></div>
+      <div class="cat-chip-bar" id="settle-chips">
+        ${[['all', 'All'], ['requested', 'Requested'], ['settled', 'Settled']].map(([k, l]) => `<button class="cat-chip-tab ${settleFilter === k ? 'active' : ''}" onclick="setSettleFilter('${k}')">${l}</button>`).join('')}
+      </div>
+      <input class="settle-search" id="settle-search" type="search" placeholder="Search batch or order ID" value="${escapeHtml(settleQuery)}" oninput="settleQuery=this.value;renderSettleLedger()">
+      <div id="settle-ledger"></div>`;
+    updateSettleSelection();
+    renderSettleLedger();
+  }
+
+  function settleRangeChanged() {
+    settleRange.from = document.getElementById('settle-from').value;
+    settleRange.to = document.getElementById('settle-to').value;
+    updateSettleSelection();
+  }
+  function updateSettleSelection() {
+    const cnt = document.getElementById('settle-sel-count'); if (!cnt) return;
+    const sel = settleSelection();
+    cnt.textContent = sel.bad ? '' : `${sel.count} order${sel.count === 1 ? '' : 's'} selected`;
+    document.getElementById('settle-sel-amount').textContent = sel.bad ? '' : money(sel.food) + ' MMK';
+    document.getElementById('settle-warn').style.display = sel.bad ? 'block' : 'none';
+    document.getElementById('settle-submit').disabled = settleBusy || sel.bad || !sel.count;
+  }
+  function setSettleFilter(k) { settleFilter = k; document.querySelectorAll('#settle-chips .cat-chip-tab').forEach((b, i) => b.classList.toggle('active', ['all', 'requested', 'settled'][i] === k)); renderSettleLedger(); }
+
+  function renderSettleLedger() {
+    const q = settleQuery.trim().toLowerCase();
+    const list = settleData.batches.filter(b => (settleFilter === 'all' || b.status === settleFilter) &&
+      (!q || b.batchId.toLowerCase().includes(q) || b.orders.some(o => o.orderId.toLowerCase().includes(q))));
+    document.getElementById('settle-ledger').innerHTML = list.length ? list.map(batchHtml).join('')
+      : `<div class="empty-state"><div class="display">${settleData.batches.length ? 'No batches match' : 'No settlements yet'}</div>${settleData.batches.length ? '' : 'Once you request and receive a payout, it is recorded here.'}</div>`;
+  }
+  function batchHtml(b) {
+    const paid = b.status === 'settled';
+    const via = { kbzpay: 'KBZPay', wavepay: 'WavePay' }[b.payoutMethod] || 'bank / other';
+    return `<details class="batch" ${settleOpen.has(b.batchId) ? 'open' : ''} ontoggle="this.open ? settleOpen.add('${b.batchId}') : settleOpen.delete('${b.batchId}')">
+      <summary>
+        <div class="batch-top"><b>Batch #${escapeHtml(b.batchId)}</b><span class="bstatus ${b.status}">${paid ? 'Settled' : 'Requested'}</span></div>
+        <div class="batch-meta">${fmtDay(b.dateFrom)} - ${fmtDay(b.dateTo)} · ${b.orderCount} order${b.orderCount === 1 ? '' : 's'}</div>
+        <div class="batch-line"><span>${paid ? 'Total Paid' : 'Total Requested'}: <b>${money(b.foodTotal)} MMK</b></span><span>${paid ? 'Settled on ' + fmtTsDay(b.settledAt) : 'Requested on ' + fmtTsDay(b.requestedAt)}</span></div>
+      </summary>
+      <div class="batch-body">
+        <div class="batch-pay">${paid ? `Paid via <b>${via}</b>${b.payoutReference ? ' · Ref ' + escapeHtml(b.payoutReference) : ''}${b.note ? '<br>' + escapeHtml(b.note) : ''}` : 'Waiting for the platform to send your payout.'}</div>
+        ${b.orders.map(o => `<div class="batch-row"><span><span class="oid">${escapeHtml(o.orderId)}</span><span class="od">${fmtDay(o.completedDate)}</span><span class="kchip">${payKind(o.paymentMethod)}</span></span><b>${money(o.foodAmount)}</b></div>`).join('')}
+        <div class="batch-foot">Food total <b>${money(b.foodTotal)} MMK</b> · Digital ${money(b.digitalTotal)} · COD ${money(b.codTotal)}<br>Delivery fees (not part of this payout): ${money(b.deliveryFeeTotal)} MMK</div>
+        ${paid ? '' : `<button class="btn btn-outline batch-cancel" onclick="cancelSettlement('${b.batchId}')">Cancel request</button>`}
+      </div>
+    </details>`;
+  }
+
+  async function submitSettlement() {
+    const sel = settleSelection(); if (!sel.count || sel.bad || settleBusy) return;
+    if (!confirm(`Request settlement of ${money(sel.food)} MMK for ${sel.count} order${sel.count === 1 ? '' : 's'} (${fmtDay(settleRange.from)} - ${fmtDay(settleRange.to)})?\n\nThese orders are locked until the platform pays or declines the request.`)) return;
+    settleBusy = true; updateSettleSelection();
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/settlements/request`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ from: settleRange.from, to: settleRange.to }) });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      tg?.HapticFeedback?.notificationOccurred('success');
+      showToast(`Request #${d.batch.batchId} sent to the platform.`);
+      settleRange = { from: '', to: '' }; settleOpen.add(d.batch.batchId);
+    } catch (e) { showToast(e.message); }
+    settleBusy = false;
+    await loadSettlements(); loadOrders();
+  }
+  async function cancelSettlement(batchId) {
+    if (!confirm(`Cancel request #${batchId}? Its orders go back to Unsettled and you can request them again.`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/settlements/cancel`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ batchId }) });
+      const d = await res.json();
+      if (!res.ok || !d.success) throw new Error(d.error || res.status);
+      showToast('Request cancelled.');
+    } catch (e) { showToast(e.message); }
+    await loadSettlements(); loadOrders();
+  }
+
   async function orderAction(id, action) {
     if (action === 'reject' && !confirm('Are you sure to reject the order?')) return;
     try {
