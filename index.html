@@ -4333,7 +4333,41 @@ async function submitFinalOrder() {
     }
 
     // App Startup Entry Point
+
+    /* ================= DEEP LINK (shared on TikTok / Facebook / anywhere) =================
+       https://t.me/assichit_bot/tgipizza?startapp=pizza_supreme  ->  start_param = "pizza_supreme"
+       The ID is the owner-chosen Restaurant ID. The server turns it into the real restaurant and only
+       answers for restaurants that are live, so a link to an unpublished one just lands on the home page. */
+    function readStartParam() {
+        let p = tg?.initDataUnsafe?.start_param || '';
+        if (!p) {                                  // some clients only put it in the page address
+            try {
+                p = new URLSearchParams(location.hash.replace(/^#/, '')).get('tgWebAppStartParam')
+                    || new URLSearchParams(location.search).get('tgWebAppStartParam') || '';
+            } catch (e) {}
+        }
+        p = String(p || '').trim().toLowerCase();
+        return /^[a-z0-9_-]{1,64}$/.test(p) ? p : '';   // Telegram only allows A-Z a-z 0-9 _ -
+    }
+    async function resolveDeepLink() {             // -> internal restaurant id, or null (= normal home page)
+        const param = readStartParam();
+        if (!param) return null;
+        try {
+            const res = await fetch(`${API_BASE}/api/restaurant-by-handle?handle=${encodeURIComponent(param)}`, { cache: 'no-store' });
+            const d = await res.json();
+            if (d && d.found && d.restaurantId) return d.restaurantId;
+        } catch (e) { console.warn('Deep link lookup failed:', e); }
+        setTimeout(() => showToast("That restaurant isn't available right now."), 600);
+        return null;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
+        // Opened from a shared link? Point the app at that restaurant before its menu loads.
+        const linkedRestaurantId = await resolveDeepLink();
+        if (linkedRestaurantId) {
+            currentRestaurantId = linkedRestaurantId;
+            try { localStorage.setItem(STORAGE_KEY_ACTIVE_RESTAURANT, currentRestaurantId); } catch (e) {}
+        }
         await initData();
         loadRestaurantInfo(); // Home page logo/name/tagline — doesn't block the menu from rendering
         displayTelegramUser();
@@ -4354,6 +4388,8 @@ async function submitFinalOrder() {
         // there would pile up a duplicate listener on every restaurant switch.
         const menuScroll = document.getElementById('restaurant-menu-scroll');
         if (menuScroll) menuScroll.addEventListener('scroll', handleMenuScroll, { passive: true });
+
+        if (linkedRestaurantId) switchNavTab('explore');   // straight to that restaurant's menu; Back goes to the full list
     });
 </script>
 </body>
