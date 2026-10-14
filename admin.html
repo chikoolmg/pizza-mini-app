@@ -331,6 +331,19 @@
   .settings-card p { font-size: 12px; color: var(--muted); margin: 0 0 14px; line-height: 1.5; }
   .settings-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
+
+  /* ---- Shareable link box ---- */
+  .share-box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px}
+  .share-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:10px}
+  .share-title .ico{color:var(--primary);font-size:16px}
+  .share-row{display:flex;gap:8px;align-items:stretch}
+  .share-row input{flex:1;min-width:0;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--ink);font-family:'IBM Plex Mono',monospace;text-overflow:ellipsis}
+  .share-row input:focus{outline:none;border-color:var(--primary)}
+  .share-row button{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--primary);color:#fff;border-radius:12px;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation}
+  .share-row button:active{background:var(--primary-dark)}
+  .share-note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .share-note.warn{color:#B45309}
+
   /* ---- Tax settings ---- */
   .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; padding: 4px 0 2px; }
   .switch-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -772,6 +785,15 @@
         <div class="hero-handle" id="hero-handle"></div>
         <button class="btn-ghost" onclick="toggleProfileEdit(true)"><i class="ico " data-icon="edit"></i> Edit profile</button>
       </div>
+      <!-- SHAREABLE LINK (TikTok / Facebook / anywhere) -->
+      <div class="share-box" id="share-box" style="display:none">
+        <div class="share-title"><i class="ico " data-icon="link"></i> Shareable Link</div>
+        <div class="share-row">
+          <input type="text" id="share-link-input" readonly onfocus="this.select()" aria-label="Your restaurant link">
+          <button type="button" onclick="copyShareLink()"><i class="ico " data-icon="copy"></i> Copy Link</button>
+        </div>
+        <div class="share-note" id="share-note">Customers who tap this link open your menu directly in Telegram.</div>
+      </div>
       <div class="settings-card" id="profile-edit-card" style="display:none;">
         <h3>Edit profile</h3>
         <p>Shown to customers in the app.</p>
@@ -1060,6 +1082,8 @@
     utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
     gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
     camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
     locate: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
     arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
@@ -1745,12 +1769,45 @@
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || `Server returned ${res.status}`);
       restaurantProfile.isPublished = true;
+      renderShareLink();
       renderLaunchCard();                                     // removes the card for good
       document.getElementById('launch-success').classList.add('open');
     } catch (err) {
       showToast("Couldn't launch: " + err.message);
       renderLaunchCard();
     }
+  }
+
+
+  /* ================= SHAREABLE DEEP LINK ================= */
+  // Opens the Mini App straight on this restaurant: index.html reads the part after "startapp=".
+  const SHARE_LINK_BASE = 'https://t.me/assichit_bot/tgipizza?startapp=';
+  function shareLinkFor(handle) { return SHARE_LINK_BASE + encodeURIComponent(handle); }
+  function renderShareLink() {
+    const box = document.getElementById('share-box');
+    if (!box) return;
+    const handle = restaurantProfile.handle;             // the owner-chosen Restaurant ID (not the internal database ID)
+    box.style.display = handle ? 'block' : 'none';
+    if (!handle) return;
+    document.getElementById('share-link-input').value = shareLinkFor(handle);
+    const note = document.getElementById('share-note');
+    const live = restaurantProfile.isPublished !== false;
+    note.classList.toggle('warn', !live);
+    note.textContent = live
+      ? 'Customers who tap this link open your menu directly in Telegram.'
+      : "Your restaurant isn't live yet — the link will work as soon as you launch it from the Menu tab.";
+  }
+  async function copyShareLink() {
+    const input = document.getElementById('share-link-input');
+    const link = input.value;
+    if (!link) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(link); ok = true; } catch (e) {}
+    if (!ok) {                                           // some Telegram apps block the clipboard API
+      try { input.focus(); input.select(); input.setSelectionRange(0, link.length); ok = document.execCommand('copy'); } catch (e) {}
+    }
+    if (ok) { tg?.HapticFeedback?.notificationOccurred('success'); showToast('Link copied! Ready to paste in TikTok/Facebook'); }
+    else showToast('Press and hold the link to copy it.');
   }
 
   function renderSettingsProfileFields() {
@@ -1762,6 +1819,7 @@
     document.getElementById('settings-pin-status').textContent = '';
     if (handleLocked()) lockHandleField('settings'); else unlockHandleField('settings');
     document.getElementById('hero-handle').textContent = restaurantProfile.handle ? 'ID: ' + restaurantProfile.handle : '';
+    renderShareLink();
     document.getElementById('settings-logo-upload-status').textContent = '';
     document.getElementById('settings-logo-upload-status').classList.remove('error');
     updateSettingsLogoPreview();
