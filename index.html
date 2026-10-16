@@ -65,6 +65,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            overflow: clip;   /* 'clip' can't be scrolled by code either (scrollIntoView would otherwise shift the whole app sideways) */
         }
 
         @media (min-width: 600px) {
@@ -85,6 +86,7 @@
             height: calc(100% - var(--app-top-inset));
             width: 100%;
             overflow: hidden;
+            overflow: clip;
             position: absolute;
             top: var(--app-top-inset);
             left: 0;
@@ -133,6 +135,7 @@
         .scrollable-view-content {
             flex: 1;
             overflow-y: auto;
+            overscroll-behavior: contain;
             padding-bottom: calc(120px + var(--app-bottom-inset));
         }
 
@@ -162,6 +165,12 @@
         .rest-banner { position: relative; height: 88px; background: var(--primary); overflow: hidden; }
         .rest-banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
         .rest-search-btn { position: absolute; top: 12px; right: 16px; width: 38px; height: 38px; border-radius: 50%; border: none; background: #FFFFFF; color: var(--text-main); font-size: 19px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; }
+        .rest-back-btn { position: absolute; top: 12px; left: 16px; width: 38px; height: 38px; border-radius: 50%; border: none; background: #FFFFFF; color: var(--text-main); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; z-index: 3; }
+        .rest-back-btn svg { width: 20px; height: 20px; }
+        .menu-cart-bar { position: absolute; left: 16px; right: 16px; bottom: calc(16px + var(--app-bottom-inset)); z-index: 30; display: none; align-items: center; justify-content: space-between; background: var(--accent); color: #fff; border: none; border-radius: 16px; padding: 14px 18px; font-size: 14px; font-weight: 700; box-shadow: 0 6px 16px rgba(255, 106, 31, 0.35); cursor: pointer; }
+        .menu-cart-bar.show { display: flex; }
+        .menu-cart-bar .ico { font-size: 18px; }
+        .menu-cart-bar span { display: inline-flex; align-items: center; gap: 8px; }
         .rest-head { display: flex; gap: 12px; padding: 0 16px; margin-top: -30px; align-items: flex-start; }
         .restaurant-hero-logo { width: 68px; height: 68px; border-radius: 18px; object-fit: cover; flex-shrink: 0; border: 3px solid #FFFFFF; background: #FFFFFF; box-shadow: 0 2px 10px rgba(0,0,0,0.12); position: relative; z-index: 1; }
         .restaurant-hero-fallback { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--primary); background: var(--primary-tint); }
@@ -201,6 +210,7 @@
         .restaurant-menu-scroll {
             flex: 1;
             overflow-y: auto;
+            overscroll-behavior: contain;
             display: flex;
             flex-direction: column;
             scroll-behavior: smooth;
@@ -243,7 +253,12 @@
             padding: 16px 16px calc(104px + var(--app-bottom-inset)) 16px;
         }
 
-        .category-section { margin-bottom: 24px; }
+        /* padding (not margin) so sections touch — the scroll-spy line is never in a gap.
+           scroll-margin-top = height of the sticky pill bar (--cat-bar-h, set from JS), so
+           scrollIntoView({ block: 'start' }) puts the section title right below the bar. */
+        /* flow-root: stops the title's top margin from collapsing out of the section (that left a 4px gap
+           between sections where the scroll-spy line belonged to nobody when scrolling upward). */
+        .category-section { display: flow-root; padding-bottom: 24px; scroll-margin-top: calc(var(--cat-bar-h, 56px) - 2px); }
         .category-section-title {
             font-size: 16px;
             font-weight: 600;
@@ -649,21 +664,25 @@
 
         /* Bottom tab bar — Home / Saved / Cart / Profile, flat icons + labels, orange when active */
         .bottom-nav {
-            position: absolute;
+            position: fixed;
             bottom: 0;
             left: 0;
-            width: 100%;
+            right: 0;
+            z-index: 1000;
             height: calc(72px + var(--app-bottom-inset));
             padding: 0 6px var(--app-bottom-inset);
             background: var(--bg-card);
             border-radius: 28px 28px 0 0;
-            z-index: 20;
             display: flex;
             justify-content: space-around;
             align-items: center;
             box-shadow: 0 -6px 24px rgba(0,0,0,0.07);
             transition: transform 0.3s ease;
         }
+        /* Hidden on restaurant menu / cart-summary / checkout screens (switchNavTab toggles this class). */
+        .bottom-nav.hidden-nav { display: none !important; }
+        /* On a desktop browser the app is a centred 450px "phone" — keep the bar inside that frame. */
+        @media (min-width: 600px) { .bottom-nav { position: absolute; } }
         .nav-item {
             display: flex;
             flex-direction: column;
@@ -744,7 +763,7 @@
             inset: 0;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
-            z-index: 100;
+            z-index: 1100;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -958,7 +977,7 @@
             border-radius: 20px;
             font-size: 12.5px;
             font-weight: 600;
-            z-index: 200;
+            z-index: 1200;
             opacity: 0;
             visibility: hidden;
             transition: transform 0.25s ease, opacity 0.25s ease, visibility 0s linear 0.25s;
@@ -1036,7 +1055,7 @@
         @media (prefers-reduced-motion: reduce) { .hz-step.cur .hz-dot { animation: none; } }
 
         /* Full-screen order history */
-        .hist-modal { position: absolute; inset: 0; z-index: 120; display: flex; flex-direction: column; background: var(--bg-main); padding-top: var(--app-top-inset); transform: translateX(100%); visibility: hidden; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s linear .3s; }
+        .hist-modal { position: absolute; inset: 0; z-index: 1100; display: flex; flex-direction: column; background: var(--bg-main); padding-top: var(--app-top-inset); transform: translateX(100%); visibility: hidden; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s linear .3s; }
         .hist-modal.open { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.22,.9,.3,1), visibility 0s; }
         .hist-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg-card); border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
         .hist-back { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--bg-main); color: var(--text-main); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
@@ -1342,6 +1361,7 @@
             <div class="rest-top" id="restaurant-hero">
                 <div class="rest-banner" id="rest-banner">
                     <img id="rest-banner-img" src="" alt="">
+                    <button class="rest-back-btn" aria-label="Back" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
                     <button class="rest-search-btn" aria-label="Search this restaurant" onclick="toggleMenuSearch()"><i class="ico" data-icon="search"></i></button>
                 </div>
                 <div class="rest-head">
@@ -1364,6 +1384,8 @@
             <main class="grid-content" id="main-content-scroll"></main>
             <div class="menu-empty" id="menu-empty">No dishes found in this restaurant.</div>
         </div>
+        <!-- The bottom nav is hidden on this screen, so the cart stays one tap away from here. -->
+        <button class="menu-cart-bar" id="menu-cart-bar" onclick="openRestaurantCart(currentRestaurantId)"><span><i class="ico" data-icon="cart"></i><b id="menu-cart-count">0 items</b></span><span>View Cart</span></button>
     </div>
 
     <!-- CART VIEW -->
@@ -2164,8 +2186,9 @@ async function submitFinalOrder() {
 
     let menuCategories = [];
     let activeCategoryName = '';
-    let isManualClickScroll = false;
-    let manualScrollTimer = null;
+    let isTabClickScrolling = false;   // true while a tapped category tab is smooth-scrolling the menu
+    let tabScrollTimer = null, tabClickStamp = 0, lastMenuScrollAt = 0;
+    let menuSpyObserver = null, menuEndObserver = null;
 
     let currentModalDish = null;
     let modalQuantityValue = 1;
@@ -2265,20 +2288,18 @@ async function submitFinalOrder() {
         // cart-summary screen, and any future ones) — not just Checkout —
         // since none of them are meant to be reachable mid-flow via the tab
         // bar anyway.
-        if (isDrillIn) {
-            bottomNav.style.display = 'none';
-            document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = '20px');
-        } else {
-            bottomNav.style.display = 'flex';
-            document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = '120px');
-        }
+        // The restaurant's own menu page (tab 'explore') hides it too — it has its own Back arrow and
+        // a "View Cart" bar. Tapping Back / returning to Home, Saved, Cart or Profile shows it again.
+        const hideNav = isDrillIn || tabName === 'explore';
+        bottomNav.classList.toggle('hidden-nav', hideNav);
+        document.querySelectorAll('.scrollable-view-content').forEach(el => el.style.paddingBottom = hideNav ? '20px' : '120px');
 
         const targetView = document.getElementById(`${tabName}-view`);
         if (targetView) {
             // Reset scroll position so this page never appears to open already
             // part-way down, left over from a previous visit (e.g. Checkout
             // remembering a scroll position from a different restaurant's order).
-            targetView.querySelectorAll('.scrollable-view-content, #restaurant-menu-scroll').forEach(el => el.scrollTop = 0);
+            targetView.querySelectorAll('.scrollable-view-content, #restaurant-menu-scroll').forEach(el => el.scrollTo({ top: 0, behavior: 'instant' }));   // instant: the menu scroller has CSS smooth scrolling, which would visibly slide up
 
             targetView.classList.add('active-view');
 
@@ -2296,6 +2317,7 @@ async function submitFinalOrder() {
             document.querySelectorAll('.bottom-nav .nav-item')[tabIcons[tabName]].classList.add('active');
         }
 
+        if (tabName === 'explore') updateMenuCartBar();
         if (tabName === 'cart') { renderCartPage(); syncAllCarts(); }
         if (tabName === 'saved') renderSavedView();
         if (tabName === 'restaurant-cart') refreshCartStockAndRender();
@@ -2783,65 +2805,135 @@ async function submitFinalOrder() {
                 grid.appendChild(card);
             });
         });
+        const endMark = document.createElement('div');   // 1px marker after the last section (see setupMenuScrollSpy)
+        endMark.id = 'menu-end-sentinel'; endMark.style.height = '1px';
+        container.appendChild(endMark);
         renderRestaurantBadges(); // prep-time fallback comes from the dishes, so refresh once they exist
+        setupMenuScrollSpy();
     }
 
-    // Scrolls #restaurant-menu-scroll (the single scrolling element for the
-    // menu screen) so the target category's section lands just below the
-    // sticky category bar — not hidden underneath it. Uses
-    // getBoundingClientRect() rather than offsetTop math since the hero now
-    // scrolls together with the sections above the sticky bar, which offsetTop
-    // alone doesn't account for.
+    /* ================= CATEGORY TABS: tap-to-scroll + scroll-spy =================
+       Tap a tab  -> the section scrolls into view smoothly, right under the sticky pill bar
+                     (CSS scroll-margin-top = bar height). While that animation runs the scroll-spy
+                     is paused (isTabClickScrolling) so the highlight doesn't flick through every
+                     category on the way.
+       Scroll by hand -> an IntersectionObserver watches a 1px line directly under the pill bar; the
+                     moment a section crosses it (its "🍝 Pasta" title reaches the bar) that tab lights up. */
+    function syncMenuBarHeight() {
+        const sc = document.getElementById('restaurant-menu-scroll'), bar = document.getElementById('cat-scroll');
+        if (sc && bar && bar.offsetHeight) sc.style.setProperty('--cat-bar-h', bar.offsetHeight + 'px');
+    }
+
     function scrollToCategory(catName, catId) {
         activeCategoryName = catName;
-        updateActiveTabUI(catId);
-        const targetSection = document.getElementById(`cat-sec-${catId}`);
-        const scrollContainer = document.getElementById('restaurant-menu-scroll');
-        const catBar = document.getElementById('cat-scroll');
-        if (targetSection && scrollContainer) {
-            isManualClickScroll = true;
-            if (manualScrollTimer) clearTimeout(manualScrollTimer);
-            const stickyOffset = catBar ? catBar.offsetHeight : 0;
-            const targetTop = targetSection.getBoundingClientRect().top
-                - scrollContainer.getBoundingClientRect().top
-                + scrollContainer.scrollTop
-                - stickyOffset - 8;
-            scrollContainer.scrollTo({ top: targetTop, behavior: 'smooth' });
-            manualScrollTimer = setTimeout(() => { isManualClickScroll = false; }, 600);
-        }
+        updateActiveTabUI(catId);                       // highlight the tapped tab right away
+        const section = document.getElementById(`cat-sec-${catId}`);
+        if (!section) return;
+        holdSpyDuringTabScroll();
+        syncMenuBarHeight();
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function handleMenuScroll() {
-        if (isManualClickScroll) return;
-        const scrollContainer = document.getElementById('restaurant-menu-scroll');
-        const catBar = document.getElementById('cat-scroll');
-        const stickyOffset = catBar ? catBar.offsetHeight : 0;
-        const containerTop = scrollContainer.getBoundingClientRect().top;
+    // Pauses the spy until the smooth scroll has settled: at least ~500 ms, then once the menu has
+    // stopped moving for 120 ms (long jumps take longer than a fixed timer), never more than 1.5 s.
+    function holdSpyDuringTabScroll() {
+        isTabClickScrolling = true;
+        tabClickStamp = lastMenuScrollAt = performance.now();
+        clearTimeout(tabScrollTimer);
+        const check = () => {
+            const now = performance.now();
+            const settled = now - lastMenuScrollAt > 120 && now - tabClickStamp >= 500;
+            if (settled || now - tabClickStamp > 1500) isTabClickScrolling = false;
+            else tabScrollTimer = setTimeout(check, 80);
+        };
+        tabScrollTimer = setTimeout(check, 500);
+    }
+    function releaseSpyHold() { isTabClickScrolling = false; clearTimeout(tabScrollTimer); }
 
-        let currentActiveCat = menuCategories[0];
-        for (let i = 0; i < menuCategories.length; i++) {
-            const cat = menuCategories[i];
-            const section = document.getElementById(`cat-sec-${cat.id}`);
-            if (section) {
-                const sectionTop = section.getBoundingClientRect().top - containerTop;
-                if (sectionTop <= stickyOffset + 20) {
-                    currentActiveCat = cat;
-                }
-            }
-        }
-        if (currentActiveCat && currentActiveCat.name !== activeCategoryName) {
-            activeCategoryName = currentActiveCat.name;
-            updateActiveTabUI(currentActiveCat.id);
-        }
+    function handleMenuScroll() { lastMenuScrollAt = performance.now(); }   // the menu is moving (used to detect "settled")
+
+    function activateCategoryByName(name, id) {
+        if (name === activeCategoryName) return;
+        activeCategoryName = name;
+        updateActiveTabUI(id);
     }
 
+    // Two things feed the highlight: the section currently under the line (menuSpyCat) and whether the
+    // menu is scrolled to its very end (menuAtEnd — the last short section may never reach the line, so
+    // the last tab lights up there). Both observers just record their state and call applyMenuSpy(), so
+    // the result doesn't depend on which one fires first.
+    let menuSpyCat = null, menuAtEnd = false;
+    function applyMenuSpy() {
+        if (isTabClickScrolling || !menuCategories.length) return;   // ignore updates while a tab tap is scrolling
+        const sc = document.getElementById('restaurant-menu-scroll');
+        const cat = (menuAtEnd && sc && sc.scrollTop > 0) ? menuCategories[menuCategories.length - 1] : menuSpyCat;
+        if (cat) activateCategoryByName(cat.name, cat.id);
+    }
+    // Called whenever a section starts/stops crossing the line under the pill bar.
+    function onMenuSpy(entries) {
+        entries.forEach(e => {
+            if (!e.isIntersecting) return;
+            const cat = menuCategories.find(c => `cat-sec-${c.id}` === e.target.id);
+            if (cat) menuSpyCat = cat;
+        });
+        applyMenuSpy();
+    }
+    function onMenuEnd(entries) {
+        menuAtEnd = entries[entries.length - 1].isIntersecting;
+        applyMenuSpy();
+    }
+
+    // (Re)builds the observers. The "line" is the thin strip of the scroll area that starts exactly at
+    // the bottom of the sticky pill bar: rootMargin shaves the bar height off the top and everything
+    // below the strip off the bottom. Needs the menu screen to be visible (a hidden screen has height 0).
+    function setupMenuScrollSpy() {
+        const sc = document.getElementById('restaurant-menu-scroll'), bar = document.getElementById('cat-scroll');
+        if (!sc || !bar || !('IntersectionObserver' in window)) return;
+        const barH = bar.offsetHeight, rootH = sc.clientHeight;
+        if (!barH || !rootH) return;
+        syncMenuBarHeight();
+        if (menuSpyObserver) menuSpyObserver.disconnect();
+        if (menuEndObserver) menuEndObserver.disconnect();
+        menuSpyCat = null; menuAtEnd = false;
+        menuSpyObserver = new IntersectionObserver(onMenuSpy, {
+            root: sc, rootMargin: `-${barH}px 0px -${Math.max(0, rootH - barH - 1)}px 0px`, threshold: 0
+        });
+        sc.querySelectorAll('.category-section').forEach(sec => menuSpyObserver.observe(sec));
+        const end = document.getElementById('menu-end-sentinel');
+        if (end) { menuEndObserver = new IntersectionObserver(onMenuEnd, { root: sc, threshold: 0 }); menuEndObserver.observe(end); }
+    }
+
+    // The menu screen changes size when it's first shown, the phone rotates, Telegram goes full screen,
+    // or the pill bar's height changes — rebuild the line each time (batched to one frame).
+    function watchMenuSize() {
+        const sc = document.getElementById('restaurant-menu-scroll'), bar = document.getElementById('cat-scroll');
+        if (!sc || !('ResizeObserver' in window)) return;
+        let queued = false;
+        const ro = new ResizeObserver(() => {
+            if (queued) return; queued = true;
+            requestAnimationFrame(() => { queued = false; setupMenuScrollSpy(); });
+        });
+        ro.observe(sc); if (bar) ro.observe(bar);
+        // Touching or wheel-scrolling the menu yourself takes over from a running tab animation.
+        ['touchstart', 'wheel'].forEach(ev => sc.addEventListener(ev, releaseSpyHold, { passive: true }));
+    }
+
+    // Keeps the tapped/active tab visible in the horizontally scrolling pill bar.
     function updateActiveTabUI(catId) {
         document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.getElementById(`cat-tab-${catId}`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
-            activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const activeTab = document.getElementById(`cat-tab-${catId}`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
+    }
+
+    // Floating "View Cart" bar on the restaurant menu (the bottom nav is hidden there).
+    function updateMenuCartBar() {
+        const bar = document.getElementById('menu-cart-bar'); if (!bar) return;
+        const count = cartItems.filter(i => i.restaurantId === currentRestaurantId).reduce((t, i) => t + i.quantity, 0);
+        document.getElementById('menu-cart-count').textContent = count + (count === 1 ? ' item' : ' items');
+        bar.classList.toggle('show', count > 0);
     }
 
     /* ================= MODAL LOGIC (Kept exactly identical) ================= */
@@ -3465,6 +3557,7 @@ async function submitFinalOrder() {
         // so the cart survives the Mini App closing and reopening instead of
         // resetting to empty every time.
         try { localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cartItems)); } catch (e) {}
+        updateMenuCartBar();
     }
     function showToast(msg) {
         const toast = document.getElementById('toast');
@@ -4388,6 +4481,7 @@ async function submitFinalOrder() {
         // there would pile up a duplicate listener on every restaurant switch.
         const menuScroll = document.getElementById('restaurant-menu-scroll');
         if (menuScroll) menuScroll.addEventListener('scroll', handleMenuScroll, { passive: true });
+        watchMenuSize();
 
         if (linkedRestaurantId) switchNavTab('explore');   // straight to that restaurant's menu; Back goes to the full list
     });
