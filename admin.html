@@ -47,9 +47,9 @@
   input, textarea, select { font-family: inherit; }
 
   /* ============ PIN GATE ============ */
-  #pin-gate {
+  #outside-gate {
     min-height: 100vh;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 24px;
@@ -75,30 +75,6 @@
   }
   .pin-card h1 { font-size: 21px; margin: 0 0 6px; font-weight: 600; }
   .pin-card p { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; }
-  #pin-input {
-    width: 100%;
-    text-align: center;
-    letter-spacing: 2px;
-    font-size: 20px;
-    padding: 14px 10px;
-    border-radius: 12px;
-    border: 1.5px solid var(--line);
-    background: var(--paper);
-    margin-bottom: 14px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  #pin-input:focus { outline: none; border-color: var(--primary); }
-  #pin-error { color: var(--brick); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
-  .pin-note {
-    margin-top: 18px;
-    font-size: 11px;
-    color: var(--muted);
-    background: var(--mustard-tint);
-    border-radius: 10px;
-    padding: 10px 12px;
-    line-height: 1.5;
-    text-align: left;
-  }
 
   /* ============ RESTAURANT SETUP (first run for a brand-new restaurant) ============ */
   #setup-gate {
@@ -332,17 +308,6 @@
   .settings-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 
-  /* ---- Shareable link box ---- */
-  .share-box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px}
-  .share-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:10px}
-  .share-title .ico{color:var(--primary);font-size:16px}
-  .share-row{display:flex;gap:8px;align-items:stretch}
-  .share-row input{flex:1;min-width:0;border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--ink);font-family:'IBM Plex Mono',monospace;text-overflow:ellipsis}
-  .share-row input:focus{outline:none;border-color:var(--primary)}
-  .share-row button{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--primary);color:#fff;border-radius:12px;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation}
-  .share-row button:active{background:var(--primary-dark)}
-  .share-note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
-  .share-note.warn{color:#B45309}
 
   /* ---- Tax settings ---- */
   .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; padding: 4px 0 2px; }
@@ -356,19 +321,6 @@
   .switch input:checked + i { background: var(--primary); }
   .switch input:checked + i::after { transform: translateX(20px); }
   .switch input:focus-visible + i { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .tax-mode-wrap { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-  .tax-mode-wrap.off { opacity: .45; pointer-events: none; }
-  .tax-mode-opt { display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; cursor: pointer; background: var(--card); }
-  .tax-mode-opt input { margin-top: 3px; accent-color: var(--primary); width: 17px; height: 17px; flex-shrink: 0; }
-  .tax-mode-opt.selected { border-color: var(--primary); background: var(--primary-tint); }
-  .tax-mode-opt span { display: flex; flex-direction: column; gap: 2px; }
-  .tax-mode-opt b { font-size: 13px; font-weight: 700; }
-  .tax-mode-opt small { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
-  .tax-example { font-size: 12px; background: var(--paper); border-radius: 10px; padding: 10px 12px; line-height: 1.6; color: var(--ink); }
-  .tax-example .dim { color: var(--muted); }
-  #tax-save-status { font-size: 12px; color: var(--muted); }
-  #tax-save-status.ok { color: var(--ok); font-weight: 600; }
-  #tax-save-status.bad { color: var(--brick); font-weight: 600; }
 
   /* ============ DRAWER (slide-over form) ============ */
   .drawer-overlay {
@@ -397,8 +349,14 @@
   .drawer-head h3 { font-size: 16.5px; margin: 0; font-weight: 600; }
   .drawer-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; }
   .drawer-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
-  .drawer-foot {
-    padding: 14px 20px; border-top: 1px solid var(--line); background: var(--card);
+  .drawer-foot, .modal-bottom-actions {
+    position: sticky; bottom: 0; z-index: 100;
+    background: #ffffff;
+    padding: 12px 16px;
+    /* keeps the buttons clear of the Android/iOS system navigation bar (and Telegram's own bottom inset) */
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px), calc(var(--tg-safe-area-inset-bottom, 0px) + 12px));
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     display: flex; gap: 10px; flex-shrink: 0; border-radius: 0 0 20px 20px;
   }
   .drawer-foot .btn { flex: 1; justify-content: center; }
@@ -634,6 +592,29 @@
   .batch-foot b{color:var(--ink)}
   .batch-cancel{margin-top:12px;width:100%;justify-content:center}
 
+
+  /* ---- Compact share row ---- */
+  .share-row-card{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 10px 10px 14px;margin-bottom:14px}
+  .share-label{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;min-width:0}
+  .share-label .ico{color:var(--muted);font-size:17px}
+  .share-tag{font-size:10.5px;font-weight:600;color:#B45309;background:var(--mustard-tint);border-radius:20px;padding:2px 8px;white-space:nowrap}
+  .share-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--primary);color:#fff;border-radius:11px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;touch-action:manipulation}
+  .share-btn:active{background:var(--primary-dark)}
+  .share-btn .ico{font-size:15px}
+
+  /* ---- Compact tax card ---- */
+  .tax-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .tax-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+  .tax-seg{display:none;margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:3px}
+  .tax-seg.show{display:flex}
+  .tax-seg button{flex:1;border:0;background:none;padding:9px 6px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;touch-action:manipulation}
+  .tax-seg button.active{background:var(--primary);color:#fff}
+  #tax-card.saving{opacity:.65;pointer-events:none}
+
+  /* Header (restaurant name + Open/Busy) is only for the Orders tab */
+  .no-top-bar .status-bar{display:none}
+  .no-top-bar main{padding-top:calc(var(--top-inset) + 16px)}
+
   /* ============ PREP COUNTDOWN RING ============ */
   .o-prep{margin:12px 0 4px;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:8px 10px}
   .prep-main{display:flex;align-items:center;gap:12px}
@@ -669,20 +650,12 @@
 </head>
 <body>
 
-<!-- ============ DEVELOPER/TESTING LOGIN (fallback for outside Telegram) ============ -->
-<!-- Real restaurant owners never see this — they open admin.html from the bot's
-     "Open My Restaurant" button and are auto-detected (see autoLogin() below).
-     This screen only appears when admin.html is opened in a plain browser
-     (no Telegram Mini App context), so you can still test it yourself. -->
-<div id="pin-gate">
+<!-- ============ OUTSIDE TELEGRAM ============ -->
+<!-- Owners sign in automatically inside Telegram (see autoLogin()); anywhere else there's nothing to do. -->
+<div id="outside-gate">
   <div class="pin-card">
     <div class="ticket-icon"><i class="ico " data-icon="lock"></i></div>
-    <h1 id="login-restaurant-name">Menu Manager</h1>
-    <p id="pin-gate-intro">Developer/testing login — not shown inside Telegram. Enter a Telegram numeric ID to preview that restaurant's admin panel.</p>
-    <input type="text" id="pin-input" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 123456789">
-    <div id="pin-error"></div>
-    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="tryLogin()">Log In</button>
-    <div class="pin-note">Real restaurant owners should open this page from the bot's "Open My Restaurant" button instead — they won't need to type anything.</div>
+    <p style="margin:0; font-size:15px; font-weight:600; color:var(--ink); line-height:1.5;">Please open this app through the official Telegram bot.</p>
   </div>
 </div>
 
@@ -833,14 +806,10 @@
         <div class="hero-handle" id="hero-handle"></div>
         <button class="btn-ghost" onclick="toggleProfileEdit(true)"><i class="ico " data-icon="edit"></i> Edit profile</button>
       </div>
-      <!-- SHAREABLE LINK (TikTok / Facebook / anywhere) -->
-      <div class="share-box" id="share-box" style="display:none">
-        <div class="share-title"><i class="ico " data-icon="link"></i> Shareable Link</div>
-        <div class="share-row">
-          <input type="text" id="share-link-input" readonly onfocus="this.select()" aria-label="Your restaurant link">
-          <button type="button" onclick="copyShareLink()"><i class="ico " data-icon="copy"></i> Copy Link</button>
-        </div>
-        <div class="share-note" id="share-note">Customers who tap this link open your menu directly in Telegram.</div>
+      <!-- SHAREABLE LINK -->
+      <div class="share-row-card" id="share-box" style="display:none">
+        <div class="share-label"><i class="ico " data-icon="share"></i><span>Shareable Link</span><span class="share-tag" id="share-tag" style="display:none">Not live yet</span></div>
+        <button type="button" class="share-btn" onclick="shareRestaurantLink()"><i class="ico " data-icon="link"></i> Share Profile</button>
       </div>
       <div class="settings-card" id="profile-edit-card" style="display:none;">
         <h3>Edit profile</h3>
@@ -889,32 +858,13 @@
       </div>
 
       <div class="settings-card" id="tax-card">
-        <h3><i class="ico ico-accent" data-icon="receipt"></i> Government commercial tax</h3>
-        <p>Turn this on if your restaurant charges the 5% Government Commercial Tax. Customers see it at checkout.</p>
-
-        <label class="switch-row" for="tax-enable-input">
-          <span class="switch-text">
-            <b>Enable 5% Government Commercial Tax</b>
-            <small>When off, checkout shows no tax at all.</small>
-          </span>
-          <span class="switch"><input type="checkbox" id="tax-enable-input" onchange="onTaxFormChange()"><i></i></span>
-        </label>
-
-        <div class="tax-mode-wrap off" id="tax-mode-wrap">
-          <label class="tax-mode-opt" id="tax-opt-inclusive">
-            <input type="radio" name="tax-mode" value="inclusive" onchange="onTaxFormChange()">
-            <span><b>Tax Inclusive</b><small>The 5% is already built into your menu prices. Checkout shows "(incl. 5% commercial tax: … MMK)" and the total doesn't change.</small></span>
-          </label>
-          <label class="tax-mode-opt" id="tax-opt-exclusive">
-            <input type="radio" name="tax-mode" value="exclusive" onchange="onTaxFormChange()">
-            <span><b>Tax Exclusive</b><small>The 5% is added on top of the subtotal at checkout as a separate "Gov Tax" line.</small></span>
-          </label>
-          <div class="tax-example" id="tax-example"></div>
+        <div class="tax-head">
+          <span class="tax-title"><i class="ico ico-accent" data-icon="receipt"></i> 5% Commercial Tax</span>
+          <span class="switch"><input type="checkbox" id="tax-enable-input" onchange="onTaxToggle()" aria-label="5% Commercial Tax"><i></i></span>
         </div>
-
-        <div class="settings-row" style="margin-top:14px;">
-          <button class="btn btn-primary btn-sm" id="tax-save-btn" onclick="saveTaxSettings()" disabled>Save tax settings</button>
-          <span id="tax-save-status"></span>
+        <div class="tax-seg" id="tax-mode-wrap" role="group" aria-label="Tax mode">
+          <button type="button" id="tax-opt-inclusive" onclick="setTaxMode('inclusive')">Tax Inclusive</button>
+          <button type="button" id="tax-opt-exclusive" onclick="setTaxMode('exclusive')">Tax Exclusive</button>
         </div>
       </div>
 
@@ -977,7 +927,7 @@
         </div>
       </div>
     </div>
-    <div class="drawer-foot">
+    <div class="drawer-foot modal-bottom-actions">
       <button class="btn btn-outline" onclick="closeCategoryDrawer()">Cancel</button>
       <button class="btn btn-primary" onclick="saveCategoryDrawer()">Save Category</button>
     </div>
@@ -1057,7 +1007,7 @@
         </div>
       </div>
     </div>
-    <div class="drawer-foot">
+    <div class="drawer-foot modal-bottom-actions">
       <button class="btn btn-outline" onclick="closeItemDrawer()">Cancel</button>
       <button class="btn btn-primary" id="item-save-btn" onclick="saveItemDrawer()" disabled>Save Item</button>
     </div>
@@ -1091,7 +1041,7 @@
         <button class="btn btn-outline btn-sm add-option-btn" onclick="addGroupOption()"><i class="ico " data-icon="plus"></i> Add option</button>
       </div>
     </div>
-    <div class="drawer-foot">
+    <div class="drawer-foot modal-bottom-actions">
       <button class="btn btn-danger-ghost" id="group-delete-btn" style="display:none; margin-right:auto;" onclick="deleteGroupFromDrawer()">Delete</button>
       <button class="btn btn-outline" onclick="closeGroupDrawer()">Cancel</button>
       <button class="btn btn-primary" onclick="saveGroupDrawer()">Save Group</button>
@@ -1131,6 +1081,7 @@
     gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
     camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
     copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
     locate: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
@@ -1240,23 +1191,7 @@
     delete item.extrasTitle; delete item.extras;
   }
 
-  /* ================= LOGIN (per-restaurant, via Telegram ID) ================= */
-
-  // Shows "Log in to <Restaurant Name>" on the login screen before the owner
-  // even logs in — a nicety fetched from the public restaurant-info endpoint,
-  // not an auth check.
-  async function loadLoginPreview() {
-    if (!currentRestaurantId) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/restaurant-info?restaurant=${encodeURIComponent(currentRestaurantId)}`);
-      if (!res.ok) return;
-      const info = await res.json();
-      const nameEl = document.getElementById('login-restaurant-name');
-      if (info.name && nameEl) nameEl.textContent = `Log in to ${info.name}`;
-    } catch (err) {
-      // Not critical — the generic "Menu Manager" heading is a fine fallback.
-    }
-  }
+  /* ================= LOGIN (automatic, through Telegram) ================= */
 
   function applyLoginResult(restaurant) {
     restaurantProfile = {
@@ -1275,95 +1210,14 @@
     };
   }
 
-  async function tryLogin() {
-    const telegramId = document.getElementById('pin-input').value.trim();
-    const errorEl = document.getElementById('pin-error');
-    errorEl.textContent = '';
-
-    if (!currentRestaurantId) {
-      errorEl.textContent = 'No restaurant specified — add ?r=<restaurant-id> to the URL.';
-      return;
-    }
-    if (!telegramId || !/^\d+$/.test(telegramId)) {
-      errorEl.textContent = 'Enter your numeric Telegram ID.';
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restaurantId: currentRestaurantId, telegramId })
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        errorEl.textContent = result.error || 'That Telegram ID is not registered to this restaurant.';
-        return;
-      }
-      sessionStorage.setItem('admin_session', JSON.stringify({ restaurantId: currentRestaurantId, telegramId }));
-      applyLoginResult(result.restaurant);
-      showApp();
-    } catch (err) {
-      errorEl.textContent = 'Could not reach the server — check your connection and try again.';
-    }
-  }
-
-  // Re-validates a saved session against the server on page load (rather than
-  // trusting sessionStorage blindly), so access is revoked immediately if the
-  // platform owner unlinks a Telegram ID from this restaurant.
-  async function restoreSession() {
-    const saved = sessionStorage.getItem('admin_session');
-    if (!saved) return false;
-
-    let session;
-    try { session = JSON.parse(saved); } catch (e) { return false; }
-    if (!session || session.restaurantId !== currentRestaurantId) return false; // link points at a different restaurant now
-
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restaurantId: session.restaurantId, telegramId: session.telegramId })
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        sessionStorage.removeItem('admin_session');
-        return false;
-      }
-      applyLoginResult(result.restaurant);
-      return true;
-    } catch (err) {
-      return false; // offline — fall back to the login screen rather than guessing
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('pin-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') tryLogin();
-    });
-
-    if (tg && tg.initData) {
-      // Opened inside Telegram — auto-detect who they are, no typing needed.
+    // Inside Telegram: who is opening this page comes from Telegram itself (initDataUnsafe.user.id is the
+    // readable copy of it). What we SEND to the server is the signed initData, which the server checks
+    // cryptographically — a bare user id could be faked, the signed data can't.
+    if (tg && tg.initData && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
       await autoLogin();
-    } else if (!currentRestaurantId) {
-      // Opened in a plain browser with no ?r=<id> in the URL — there's no
-      // restaurant to test against and no Telegram identity to auto-detect,
-      // so there's nothing useful the pin-gate can do here.
-      document.getElementById('pin-error').textContent = '';
-      document.getElementById('login-restaurant-name').textContent = 'No restaurant specified';
-      document.getElementById('pin-gate-intro').textContent =
-        'Add ?r=<restaurant-id> to the URL to test a specific restaurant, or open this page from the bot\'s "Open My Restaurant" button.';
-      document.getElementById('pin-input').style.display = 'none';
-      document.querySelector('#pin-gate .btn-primary').style.display = 'none';
-      document.getElementById('pin-gate').style.display = 'flex';
     } else {
-      // Opened in a plain browser outside Telegram with a ?r=<id> — no
-      // Telegram identity to detect, so fall back to the developer/testing
-      // login screen for that specific restaurant.
-      loadLoginPreview();
-      if (!(await restoreSession())) {
-        document.getElementById('pin-gate').style.display = 'flex';
-      }
+      document.getElementById('outside-gate').style.display = 'flex';
     }
   });
 
@@ -1393,13 +1247,13 @@
   function showNotApproved(customMessage) {
     document.getElementById('app').style.display = 'none';
     document.getElementById('setup-gate').style.display = 'none';
-    document.getElementById('pin-gate').style.display = 'none';
+    document.getElementById('outside-gate').style.display = 'none';
     if (customMessage) document.getElementById('not-approved-message').textContent = customMessage;
     document.getElementById('not-approved-gate').style.display = 'flex';
   }
 
   async function showApp() {
-    document.getElementById('pin-gate').style.display = 'none';
+    document.getElementById('outside-gate').style.display = 'none';
     document.getElementById('not-approved-gate').style.display = 'none';
     applyBrandHeader();
     renderSettingsProfileFields(); // keep Settings tab in sync regardless of which screen shows first
@@ -1707,71 +1561,39 @@
   }
 
   /* ================= TAX SETTINGS (5% Government Commercial Tax) ================= */
-  // Saved on the restaurant as { enableTax: boolean, taxMode: 'inclusive' | 'exclusive' }.
-  // index.html reads them from GET /api/restaurant-info, and the server re-calculates the tax on every
-  // order from these same saved values, so the customer app can never charge a stale amount.
-  const TAX_RATE = 5;
-  function taxFormValues() {
-    const checked = document.querySelector('input[name="tax-mode"]:checked');
-    return {
-      enableTax: document.getElementById('tax-enable-input').checked,
-      taxMode: checked ? checked.value : 'inclusive'
-    };
-  }
-  // Same whole-MMK rounding as the server and index.html.
-  function calcTax(subtotal, mode) {
-    return mode === 'exclusive' ? Math.floor((subtotal + 10) / 20) : Math.floor((2 * subtotal + 21) / 42);
-  }
-  function setTaxStatus(text, state) {
-    const el = document.getElementById('tax-save-status');
-    el.textContent = text || '';
-    el.className = state || '';
-  }
-  // Fills the form from what is saved (also discards unsaved edits).
+  // Saved on the restaurant as { enableTax: boolean, taxMode: 'inclusive' | 'exclusive' }. index.html reads
+  // them from GET /api/restaurant-info, and the server re-calculates the tax on every order.
+  // The toggle and the Inclusive / Exclusive buttons save the moment they're tapped.
+  let taxDraft = { enableTax: false, taxMode: 'inclusive' }, taxSaving = false, taxResave = false;
   function renderTaxSettings() {
-    document.getElementById('tax-enable-input').checked = !!restaurantProfile.enableTax;
-    document.querySelectorAll('input[name="tax-mode"]').forEach(r => { r.checked = r.value === (restaurantProfile.taxMode || 'inclusive'); });
-    setTaxStatus('');
-    refreshTaxForm();
+    taxDraft = { enableTax: !!restaurantProfile.enableTax, taxMode: restaurantProfile.taxMode === 'exclusive' ? 'exclusive' : 'inclusive' };
+    paintTax();
   }
-  // Re-draws everything that depends on the current form values (mode cards, example, Save button).
-  function refreshTaxForm() {
-    const v = taxFormValues();
-    document.getElementById('tax-mode-wrap').classList.toggle('off', !v.enableTax);
-    document.querySelectorAll('input[name="tax-mode"]').forEach(r => { r.disabled = !v.enableTax; });
-    document.getElementById('tax-opt-inclusive').classList.toggle('selected', v.taxMode === 'inclusive');
-    document.getElementById('tax-opt-exclusive').classList.toggle('selected', v.taxMode === 'exclusive');
-    const sample = 10000, tax = calcTax(sample, v.taxMode);
-    document.getElementById('tax-example').innerHTML = v.taxMode === 'exclusive'
-      ? `<span class="dim">Example — items 10,000 MMK</span><br>Gov Tax (5%): ${fmtMMK(tax)} MMK<br><b>Total: ${fmtMMK(sample + tax)} MMK</b>`
-      : `<span class="dim">Example — items 10,000 MMK</span><br>(incl. 5% commercial tax: ${fmtMMK(tax)} MMK)<br><b>Total: ${fmtMMK(sample)} MMK</b>`;
-    const saved = { enableTax: !!restaurantProfile.enableTax, taxMode: restaurantProfile.taxMode || 'inclusive' };
-    document.getElementById('tax-save-btn').disabled = (v.enableTax === saved.enableTax && v.taxMode === saved.taxMode);
+  function paintTax() {
+    document.getElementById('tax-enable-input').checked = taxDraft.enableTax;
+    document.getElementById('tax-mode-wrap').classList.toggle('show', taxDraft.enableTax);   // choices only appear when ON
+    document.getElementById('tax-opt-inclusive').classList.toggle('active', taxDraft.taxMode === 'inclusive');
+    document.getElementById('tax-opt-exclusive').classList.toggle('active', taxDraft.taxMode === 'exclusive');
+    document.getElementById('tax-card').classList.toggle('saving', taxSaving);
   }
-  function onTaxFormChange() { setTaxStatus(''); refreshTaxForm(); }
+  function onTaxToggle() { taxDraft.enableTax = document.getElementById('tax-enable-input').checked; paintTax(); saveTaxSettings(); }
+  function setTaxMode(mode) { if (taxDraft.taxMode === mode) return; taxDraft.taxMode = mode; paintTax(); saveTaxSettings(); }
 
   async function saveTaxSettings() {
-    const v = taxFormValues();
-    const btn = document.getElementById('tax-save-btn');
-    btn.disabled = true;
-    setTaxStatus('Saving…');
-    // /api/admin/restaurant-info always wants the name; the other profile fields are sent back
-    // unchanged, so saving tax never alters the profile.
+    if (taxSaving) { taxResave = true; return; }
+    taxSaving = true; paintTax();
+    const sent = { enableTax: taxDraft.enableTax, taxMode: taxDraft.taxMode };
+    // /api/admin/restaurant-info always wants the name; the other profile fields are sent back unchanged.
     const ok = await saveRestaurantProfile({
-      name: restaurantProfile.name,
-      tagline: restaurantProfile.tagline,
-      logoUrl: restaurantProfile.logoUrl,
-      address: restaurantProfile.address,
-      enableTax: v.enableTax,
-      taxMode: v.taxMode
+      name: restaurantProfile.name, tagline: restaurantProfile.tagline,
+      logoUrl: restaurantProfile.logoUrl, address: restaurantProfile.address,
+      enableTax: sent.enableTax, taxMode: sent.taxMode
     });
-    if (ok) {
-      setTaxStatus(v.enableTax ? `Saved — ${v.taxMode === 'exclusive' ? 'tax added at checkout' : 'tax included in prices'}.` : 'Saved — tax is off.', 'ok');
-      showToast('Tax settings saved.');
-    } else {
-      setTaxStatus(lastSaveError || 'Could not save — check your connection.', 'bad');
-    }
-    refreshTaxForm();
+    taxSaving = false;
+    if (taxResave) { taxResave = false; paintTax(); return saveTaxSettings(); }   // changed again while saving
+    if (ok) showToast(sent.enableTax ? (sent.taxMode === 'exclusive' ? 'Tax on — added at checkout.' : 'Tax on — included in prices.') : 'Tax is off.');
+    else { showToast(lastSaveError || 'Could not save — check your connection.'); renderTaxSettings(); }   // put the controls back to what's really saved
+    paintTax();
   }
 
   /* ================= LAUNCH (publish) ================= */
@@ -1834,28 +1656,33 @@
   function renderShareLink() {
     const box = document.getElementById('share-box');
     if (!box) return;
-    const handle = restaurantProfile.handle;             // the owner-chosen Restaurant ID (not the internal database ID)
-    box.style.display = handle ? 'block' : 'none';
-    if (!handle) return;
-    document.getElementById('share-link-input').value = shareLinkFor(handle);
-    const note = document.getElementById('share-note');
-    const live = restaurantProfile.isPublished !== false;
-    note.classList.toggle('warn', !live);
-    note.textContent = live
-      ? 'Customers who tap this link open your menu directly in Telegram.'
-      : "Your restaurant isn't live yet — the link will work as soon as you launch it from the Menu tab.";
+    box.style.display = restaurantProfile.handle ? 'flex' : 'none';   // the link needs the owner-chosen Restaurant ID
+    document.getElementById('share-tag').style.display = restaurantProfile.isPublished !== false ? 'none' : 'inline-block';
   }
-  async function copyShareLink() {
-    const input = document.getElementById('share-link-input');
-    const link = input.value;
-    if (!link) return;
-    let ok = false;
-    try { await navigator.clipboard.writeText(link); ok = true; } catch (e) {}
-    if (!ok) {                                           // some Telegram apps block the clipboard API
-      try { input.focus(); input.select(); input.setSelectionRange(0, link.length); ok = document.execCommand('copy'); } catch (e) {}
+  // Opens the phone's own share sheet (Telegram, WhatsApp, Facebook, TikTok ...). Where that isn't available
+  // (some desktop/WebView apps) the link is copied instead.
+  function shareRestaurantLink() {
+    const handle = restaurantProfile.handle;
+    if (!handle) return;
+    const shareUrl = shareLinkFor(handle);
+    const restaurantName = restaurantProfile.name || 'Our restaurant';
+    if (navigator.share) {
+      navigator.share({ title: restaurantName, text: 'Check out our menu on IWTEAT!', url: shareUrl })
+        .catch(() => {});                       // closing the share sheet without choosing isn't an error
+    } else {
+      copyTextToClipboard(shareUrl).then(ok => showToast(ok ? 'Link copied to clipboard!' : 'Could not copy — ' + shareUrl));
     }
-    if (ok) { tg?.HapticFeedback?.notificationOccurred('success'); showToast('Link copied! Ready to paste in TikTok/Facebook'); }
-    else showToast('Press and hold the link to copy it.');
+  }
+  async function copyTextToClipboard(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    try {                                       // some Telegram apps block the clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e) { return false; }
   }
 
   function renderSettingsProfileFields() {
@@ -1956,6 +1783,8 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`view-${view}`).classList.add('active');
     document.getElementById(`tab-btn-${view}`).classList.add('active');
+    document.getElementById('app').classList.toggle('no-top-bar', view !== 'orders');   // name + Open/Busy pill: Orders tab only
+    if (typeof closeStatusMenu === 'function') closeStatusMenu();
     if (view === 'items') renderItemsView();
     if (view === 'orders') loadOrders();
   }
@@ -1988,6 +1817,40 @@
   }
 
   /* ---- Category drawer ---- */
+  /* ================= SLIDE-OVER FORMS: scroll reset + Telegram Back button ================= */
+  const DRAWER_IDS = ['group-drawer-overlay', 'item-drawer-overlay', 'cat-drawer-overlay'];   // top-most first
+  const openDrawerIds = () => DRAWER_IDS.filter(id => document.getElementById(id).classList.contains('open'));
+
+  // The form must always open at the top. This runs AFTER the drawer is shown — a hidden element has no
+  // scroll position to reset, which is why resetting before opening wasn't enough.
+  function resetDrawerScroll(id) {
+    const ov = document.getElementById(id);
+    if (!ov) return;
+    const reset = () => {
+      ov.scrollTop = 0;
+      const drawer = ov.querySelector('.drawer'); if (drawer) drawer.scrollTop = 0;
+      const body = ov.querySelector('.drawer-body'); if (body) body.scrollTop = 0;
+    };
+    reset();
+    requestAnimationFrame(reset);
+  }
+  // Telegram's own Back arrow is visible exactly while a form is open.
+  function syncBackButton() {
+    if (!tg || !tg.BackButton) return;
+    if (openDrawerIds().length) tg.BackButton.show(); else tg.BackButton.hide();
+  }
+  function afterDrawerOpen(id) { resetDrawerScroll(id); syncBackButton(); }
+  // Back closes the top-most form only (an option group opens on top of an item/category). The category form
+  // still asks before throwing away unsaved changes; if you say no it simply stays open.
+  function handleTelegramBack() {
+    const top = openDrawerIds()[0];
+    if (top === 'group-drawer-overlay') closeGroupDrawer();
+    else if (top === 'item-drawer-overlay') closeItemDrawer();
+    else if (top === 'cat-drawer-overlay') closeCategoryDrawer();
+    syncBackButton();
+  }
+  if (tg && tg.BackButton) tg.BackButton.onClick(handleTelegramBack);
+
   function openCategoryDrawer(index = null) {
     if (index === null) {
       catDraft = { editIndex: null, name: '', icon: '🍽️', sizeNames: [], optionGroups: [], defaultPrices: [], defaultFlatPrice: null };
@@ -2012,8 +1875,8 @@
     renderOptionGroupsList('cat-option-groups-list', catDraft.optionGroups, 'category');
     renderCatBulkPriceInputs();
     // A previous category's drawer may have been left scrolled halfway down — reset so it always opens fresh.
-    document.querySelector('#cat-drawer-overlay .drawer-body').scrollTop = 0;
     document.getElementById('cat-drawer-overlay').classList.add('open');
+    afterDrawerOpen('cat-drawer-overlay');
     catDraftSnapshot = JSON.stringify(collectCategoryFormState());
   }
   function toggleAddBtn(inputId, btnId) {
@@ -2042,6 +1905,7 @@
     document.getElementById('cat-drawer-overlay').classList.remove('open');
     catDraft = null;
     catDraftSnapshot = null;
+    syncBackButton();
   }
 
   function renderCatSizeChips() {
@@ -2376,9 +2240,8 @@
     renderInheritedGroups();
     renderOptionGroupsList('item-option-groups-list', itemDraft.optionGroups, 'item');
     // A previous item's drawer may have been left scrolled halfway down — reset so New Item always opens fresh.
-    const itemDrawerBody = document.querySelector('#item-drawer-overlay .drawer-body');
-    if (itemDrawerBody) itemDrawerBody.scrollTop = 0;
     document.getElementById('item-drawer-overlay').classList.add('open');
+    afterDrawerOpen('item-drawer-overlay');
   }
   // Fixed prep-time choices; an older item whose saved time isn't one of them keeps it as an extra option.
   function setPrepTimeSelect(value) {
@@ -2413,6 +2276,7 @@
   function closeItemDrawer() {
     document.getElementById('item-drawer-overlay').classList.remove('open');
     itemDraft = null;
+    syncBackButton();
   }
   function updateItemImagePreview() {
     const url = document.getElementById('item-image-input').value.trim();
@@ -2698,13 +2562,14 @@
     document.getElementById('group-required-hint').textContent =
       groupDraft.kind === 'single' ? '(customer must pick exactly one)' : '(customer must pick at least one)';
     renderGroupOptionsList();
-    document.querySelector('#group-drawer-overlay .drawer-body').scrollTop = 0;
     document.getElementById('group-drawer-overlay').classList.add('open');
+    afterDrawerOpen('group-drawer-overlay');
   }
   function closeGroupDrawer() {
     document.getElementById('group-drawer-overlay').classList.remove('open');
     groupDraft = null;
     groupDraftCtx = null;
+    syncBackButton();
   }
   function renderGroupOptionsList() {
     const box = document.getElementById('group-options-list');
@@ -2814,7 +2679,6 @@
   function adminHeaders() {
     const h = { 'Content-Type': 'application/json' };
     if (tg && tg.initData) h['X-Telegram-Init-Data'] = tg.initData;
-    else { try { const ss = JSON.parse(sessionStorage.getItem('admin_session') || '{}'); if (ss.telegramId) h['X-Admin-Telegram-Id'] = ss.telegramId; } catch (e) {} }
     return h;
   }
   function startOrders() {
