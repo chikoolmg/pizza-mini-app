@@ -1782,13 +1782,28 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         return 0;
     }
 
+    // A Self-pick up order has no rider: its last stage is "Ready for pickup" (reached once the restaurant marks it ready).
+    const isPickupOrder = order => order.deliveryMethod === 'pickup';
+    function orderStage(order) {
+        if (isPickupOrder(order) && order.status === 'awaiting_rider' && order.readyAt) return 3;
+        return ORDER_STAGE_OF[order.status] ?? 0;
+    }
+    // Status label + colour for an order, adjusted for Cash on Delivery (waits for approval, not a payment check)
+    // and for Self-pick up (no rider).
+    function orderMeta(order) {
+        const status = order.status || 'pending';
+        const meta = ORDER_STATUS_META[status] || ORDER_STATUS_META.pending;
+        if (status === 'payment_pending' && order.paymentVerify === false) return Object.assign({}, meta, { label: 'Awaiting Approval' });
+        if (isPickupOrder(order) && status === 'awaiting_rider') return Object.assign({}, meta, { label: order.readyAt ? 'Ready for Pickup' : 'Preparing' });
+        return meta;
+    }
     function buildOrderTracker(order) {
-        const stage = ORDER_STAGE_OF[order.status] ?? 0;     // 0–3 = the current stage, 4 = delivered
+        const stage = orderStage(order);                     // 0–3 = the current stage, 4 = delivered
         const done = stage >= 4;
         // Cash-on-delivery style methods have no payment check, so that step is worded differently.
         const steps = TRACKER_STAGES.map((s, i) => ({
-            label: (i === 1 && order.paymentVerify === false) ? 'Order confirmed' : s.label,
-            time: i <= stage ? fmtClock(trkStageTime(order, i)) : '',
+            label: (i === 1 && order.paymentVerify === false) ? 'Order confirmed' : (i === 3 && isPickupOrder(order) ? 'Ready for pickup' : s.label),
+            time: i <= stage ? fmtClock(i === 3 && isPickupOrder(order) ? (order.readyAt || 0) : trkStageTime(order, i)) : '',
         }));
         steps.push({ label: 'Succeed', time: done ? fmtClock((order.statusTimes || {}).delivered) : '', goal: true });
 
@@ -1809,7 +1824,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         return `${escPay(order.orderId)} · ${n} item${n === 1 ? '' : 's'} · ${Number(order.total || 0).toLocaleString('en-US')} MMK`;
     }
     function renderActiveOrderCard(order) {
-        const meta = ORDER_STATUS_META[order.status] || ORDER_STATUS_META.pending;
+        const meta = orderMeta(order);
         const etaText = order.eta && order.eta.min != null ? `${order.eta.min}–${order.eta.max} mins` : '15–25 mins';   // older orders have no saved estimate
         const est = order.deliveryMethod === 'pickup' ? `Est. Pickup: ${etaText}` : `Est. Delivery: ${etaText}`;
         return `
@@ -1932,7 +1947,7 @@ const telegramUser = tg?.initDataUnsafe?.user || null;
         }
         listEl.innerHTML = rows.map(order => {
             const status = order.status || 'pending';
-            const meta = ORDER_STATUS_META[status] || ORDER_STATUS_META.pending;
+            const meta = orderMeta(order);
             const expandable = !ORDER_CANCELLED.has(status);
             const when = order.createdAt
                 ? new Date(order.createdAt * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + fmtClock(order.createdAt) : '';
@@ -2023,6 +2038,7 @@ async function submitFinalOrder() {
     if (!items.length) return alert('This restaurant\'s cart is empty');
 
     if (!deliveryMethod || !selectedPaymentMethod) return alert('Please choose a delivery and payment method');
+    if (deliveryMethod === 'pickup' && selectedPaymentMethod === 'cod') return alert('Cash on Delivery is only available for delivery — please choose a digital payment method.');
     const activeAddr = savedAddresses.find(a => a.id === activeAddressId);
     if (!activeAddr) return alert('Please select your address first');
 
@@ -3740,6 +3756,11 @@ async function submitFinalOrder() {
 
         // Payment methods: the list is replaced by the latest one; a choice that no longer exists is cleared.
         if (Array.isArray(d.paymentMethods)) { paymentMethods = d.paymentMethods; paymentMethodsLoaded = true; }
+        if (selectedPaymentMethod === COD_ID && deliveryMethod === 'pickup') {
+            selectedPaymentMethod = null;
+            leaveCheckout = true;
+            showToast('Cash on Delivery is only for delivery — please choose a digital payment.');
+        }
         if (selectedPaymentMethod && !paymentMethods.some(p => p.id === selectedPaymentMethod)) {
             selectedPaymentMethod = null;
             leaveCheckout = true;
@@ -3919,12 +3940,13 @@ async function submitFinalOrder() {
 
             <div class="cart-section-title" id="sec-payment" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px;">Payment Method${checkoutTried && !selectedPaymentMethod ? '<span class="req">Choose one</span>' : ''}</div>
             <div class="pay-row">
-                ${paymentMethods.map(p => `
+                ${visiblePaymentMethods().map(p => `
                     <button class="pay-tile ${selectedPaymentMethod === p.id ? 'selected' : ''}" onclick="selectPayment('${escPay(p.id)}')">
                         <span class="pay-img">${p.logoUrl ? `<img src="${escPay(p.logoUrl)}" alt="" onerror="payIconFallback(this)">` : (PAY_EMOJI[p.id] || icon('card', 30))}</span>
                         <span class="pay-name">${escPay(p.name)}</span>
-                    </button>`).join('') || (paymentMethodsLoaded ? `<p class="sub-hint">No payment methods are set up yet — ask the restaurant to add one.</p>` : `<p class="sub-hint">Loading payment methods…</p>`)}
+                    </button>`).join('') || (paymentMethodsLoaded ? `<p class="sub-hint">${deliveryMethod === 'pickup' && paymentMethods.length ? 'Self-pick up needs a digital payment method, but none is set up yet — choose Delivery or ask the restaurant to add one.' : 'No payment methods are set up yet — ask the restaurant to add one.'}</p>` : `<p class="sub-hint">Loading payment methods…</p>`)}
             </div>
+            ${deliveryMethod === 'pickup' && paymentMethods.some(p => p.id === COD_ID) ? `<p class="sub-hint" style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Cash on Delivery isn't available for Self-pick up — please pay digitally.</p>` : ''}
 
             ${etaSectionHtml(activeCartRestaurantId)}
 
@@ -4100,8 +4122,18 @@ async function submitFinalOrder() {
         syncCart(activeCartRestaurantId);   // if this method was just removed, it is cleared again with a message
     }
 
+    // Cash on Delivery only makes sense for Delivery. With Self-pick up it is hidden, and a COD choice made
+    // earlier is cleared. (The server refuses COD + Self-pick up too, so this can't be bypassed.)
+    const COD_ID = 'cod';
+    function visiblePaymentMethods() {
+        return deliveryMethod === 'pickup' ? paymentMethods.filter(p => p.id !== COD_ID) : paymentMethods;
+    }
     function selectDeliveryMethod(method) {
         deliveryMethod = method;
+        if (method === 'pickup' && selectedPaymentMethod === COD_ID) {
+            selectedPaymentMethod = null;
+            showToast('Cash on Delivery is only for delivery — please choose a digital payment for Self-pick up.');
+        }
         renderRestaurantCartPage(); // Re-render: toggles the address section and updates the shipping fee
         syncCart(activeCartRestaurantId);
     }
