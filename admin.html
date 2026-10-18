@@ -548,6 +548,8 @@
 
 
   /* ============ SETTLEMENTS + AUDIT BADGES ============ */
+  .mchip{display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:2px 8px;margin-left:8px;background:var(--paper);border:1px solid var(--line);color:var(--muted);vertical-align:middle}
+  .mchip.pickup{background:var(--primary-tint);border-color:#F9C79B;color:var(--primary-dark)}
   .o-badges{margin-top:2px}
   .sbadge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 10px 3px 8px;border-radius:999px;margin-top:8px}
   .sbadge i{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
@@ -2741,9 +2743,12 @@
     if (o.status === 'restaurant_pending') return 'new st-new';
     return o.readyAt ? 'st-ready' : 'st-prep';
   }
+  const isPickup = o => o.deliveryMethod === 'pickup';
   function orderHead(o) {
-    const [label, cls] = STATUS[o.status] || [o.status, 'wait'];
-    return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span></span><span class="pill ${o.readyAt && CURRENT.includes(o.status) ? 'ok' : cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
+    let [label, cls] = STATUS[o.status] || [o.status, 'wait'];
+    if (isPickup(o) && o.status === 'awaiting_rider') label = 'Preparing';          // Self-pick up has no rider to find
+    const method = isPickup(o) ? `<span class="mchip pickup">Self-pick up</span>` : `<span class="mchip">Delivery</span>`;
+    return `<div class="o-top"><span><span class="o-id">${escapeHtml(o.orderId)}</span><span class="o-time">${ago(o.createdAt)}</span>${method}</span><span class="pill ${o.readyAt && CURRENT.includes(o.status) ? 'ok' : cls}">${o.readyAt && CURRENT.includes(o.status) ? 'Ready' : label}</span></div>`;
   }
   function renderOrders() {
     if (ordersScope === 'settlements') return;       // that tab draws itself (renderSettlements)
@@ -2753,7 +2758,9 @@
       box.innerHTML = list.length ? list.map(o => `<div class="o-card ${cardState(o)}">${orderHead(o)}${prepTimerHtml(o)}${orderBody(o)}${
         o.status === 'restaurant_pending'
           ? `<div class="o-actions"><button class="btn btn-danger-ghost" onclick="orderAction('${o.orderId}','reject')">Reject</button><button class="btn btn-primary" onclick="orderAction('${o.orderId}','accept')">Accept</button></div>`
-          : (o.readyAt ? '' : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">${icon('check')} Mark ready</button></div>`)}</div>`).join('')
+          : (o.readyAt
+              ? (isPickup(o) ? `<div class="o-actions"><button class="btn btn-primary" onclick="orderAction('${o.orderId}','handover')">${icon('check')} Picked up</button></div>` : '')
+              : `<div class="o-actions"><button class="btn btn-outline" onclick="orderAction('${o.orderId}','ready')">${icon('check')} Mark ready</button></div>`)}</div>`).join('')
         : `<div class="empty-state"><div class="display">No active orders</div>New orders appear here with a sound alert.</div>`;
       tickPrep();
       return;
@@ -2921,7 +2928,7 @@
       const res = await fetch(`${API_BASE}/api/admin/order-action`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify(action === 'accept' ? { orderId: id, action, prepMinutes: pendingPrepMinutes(id) } : { orderId: id, action }) });
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d.error || res.status);
-      showToast(action === 'accept' ? 'Order accepted.' : action === 'reject' ? 'Order rejected.' : 'Marked ready.');
+      showToast(action === 'accept' ? 'Order accepted.' : action === 'reject' ? 'Order rejected.' : action === 'handover' ? 'Order completed.' : 'Marked ready.');
     } catch (e) { showToast('Could not update: ' + e.message); }
     loadOrders();
   }
@@ -3052,7 +3059,7 @@
     const st = prepState(o), id = escapeHtml(o.orderId);
     if (st.done) {
       return `<div class="o-prep"><div class="prep-main"><span class="prep-ring done"><svg viewBox="0 0 56 56"><circle class="trk" cx="28" cy="28" r="${RING_R}"/><circle class="arc" cx="28" cy="28" r="${RING_R}" stroke-dasharray="${RING_C}" stroke-dashoffset="0"/></svg><span class="prep-txt">${icon('check')}</span></span>
-        <div class="prep-label"><b>Ready</b><small>Waiting for the rider</small></div></div></div>`;
+        <div class="prep-label"><b>Ready</b><small>${isPickup(o) ? 'Waiting for the customer' : 'Waiting for the rider'}</small></div></div></div>`;
     }
     const open = openPrepId === o.orderId;
     const label = st.waiting ? ['Estimated prep time', (restaurantProfile.busyMinutes > 0 ? 'Includes +' + restaurantProfile.busyMinutes + ' min busy time · ' : '') + 'Tap the circle to change before accepting']
